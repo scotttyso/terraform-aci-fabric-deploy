@@ -1,0 +1,24 @@
+type,serial,name,node_id,node_type,pod_id,Switch_Role,oob_ipv4,oob_gwv4,inb_ipv4,Inb_gwv4
+switch,TEP-1-101,sw101,101,unspecified,1,unspecified,192.168.86.11/24,192.168.86.1,192.168.87.11/24,192.168.87.1
+switch,TEP-1-102,sw102,102,unspecified,1,unspecified,192.168.86.12/24,192.168.86.1,192.168.87.12/24,192.168.87.1
+switch,TEP-1-103,sw103,103,unspecified,1,unspecified,192.168.88.13/24,192.168.88.1,192.168.89.13/24,192.168.89.1
+
+type,AS Number,RR_node_id,RR2_node_id
+bgp,65535,103,
+
+type,attr,timezone
+timezone,local,America/Detroit
+
+type,ntp_server,preferred
+ntp,192.168.64.39,true
+ntp,10.101.128.15,false
+
+type,dns_ip,preferred
+dns,10.101.128.15,false
+dns,10.101.128.16,true
+
+type,domain,default
+search_domain,rich.ciscolabs.com,true
+
+type,Company Name
+Company,Cisco Labs,
