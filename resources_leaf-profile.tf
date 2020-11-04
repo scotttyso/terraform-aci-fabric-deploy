@@ -20,6 +20,7 @@ resource "aci_leaf_interface_profile" "example" {
 resource "aci_rest" "leaf_int_selector" {
 	for_each	= var.leaf_profile
 	path		= "/api/node/mo/uni/infra/nprof-${each.value.name}.json"
+	class       = infraRsAccPortP
 	payload		= <<EOF
 {
 	"infraRsAccPortP": {

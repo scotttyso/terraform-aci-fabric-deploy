@@ -48,7 +48,7 @@ def validate_node_id(line_count, name, node_id):
     if not validators.between(node_id, min=101, max=4001):
         print(f"----------------\r")
         print(f"  Error on Row {line_count}. {name} node_id {node_id} is invalid.")
-        print(f"  A valid Node ID is between 101 and 40000.  Exiting....")
+        print(f"  A valid Node ID is between 101 and 4000.  Exiting....")
         print("----------------")
         exit()
 
