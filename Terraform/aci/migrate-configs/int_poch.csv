@@ -1,0 +1,12 @@
+143b-core01|port-channel7|7|yes|1-994,997,999-4094|undefined|9216|r143b-ucs-a-vpc
+143b-core01|port-channel8|8|yes|1-994,997,999-4094|undefined|9216|r143b-ucs-b-vpc
+143b-core01|port-channel21|21|yes|64|undefined|9216|142b-oob-vpc
+143b-core01|port-channel27|27|yes|169,811-812,3960,3963,3965-3967|undefined|9216|asgard-leaf-vpc
+143b-core01|port-channel30|30|yes|168,812,3910,3961-3962,3964|undefined|9216|wakanda-leaf-vpc
+143b-core01|port-channel31|31|yes|1-994,997,1000-3966,3968-4094|undefined|9216|143-oob-vpc
+143b-core01|port-channel33|33|yes|1-994,997,1000-3966,3968-4094|undefined|9216|143-dist-vpc
+143b-core01|port-channel35|peer-link|yes|undefined|undefined|undefined|Peer-Link - Core
+143b-core01|port-channel111|111|yes|998-999|undefined|undefined|r143b-fp02-vpc
+143b-core01|port-channel112|112|yes|998-999|undefined|undefined|r143c-fp02-vpc
+143b-core01|port-channel121|121|no|undefined|691|9216|r143c-netapp01-ct0-vpc
+143b-core01|port-channel122|122|no|undefined|691|9216|r143c-netapp01-ct1-vpc
