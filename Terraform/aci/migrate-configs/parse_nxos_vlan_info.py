@@ -4,20 +4,20 @@ import os, re, sys, traceback, validators
 from csv import reader
 from csv import writer
 
-re_dhcp = re.compile('^  ip dhcp relay address (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})$')
+re_dhcp = re.compile('^  ip dhcp relay address (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3})$')
 re_desc = re.compile('^  description (.+)$')
-re_hsv4 = re.compile('^    ip (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})$')
-re_hsv4_sec = re.compile('^    ip (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}) secondary$')
-re_ipv4 = re.compile('^  ip address (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}(?:/\d{1,2}|))$')
-re_ipv4_sec = re.compile('^  ip address (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}(?:/\d{1,2}|)) secondary$')
+re_hsv4 = re.compile('^    ip (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3})$')
+re_hsv4_sec = re.compile('^    ip (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}) secondary$')
+re_ipv4 = re.compile('^  ip address (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}(?:/\\d{1,2}|))$')
+re_ipv4_sec = re.compile('^  ip address (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}(?:/\\d{1,2}|)) secondary$')
 re_ivln = re.compile('^interface Vlan([0-9]+)$')
-re_vlan = re.compile('^vlan (\d{1,4})$')
-re_vlan_list = re.compile('^vlan (\d{1,4}[\-,]+.+\d{1,4})$')
+re_vlan = re.compile('^vlan (\\d{1,4})$')
+re_vlan_list = re.compile('^vlan (\\d{1,4}[\\-,]+.+\\d{1,4})$')
 re_vlan_name = re.compile('^  name (.+)$')
 re_vrfd = re.compile('^  vrf member (.+)$')
 
 def function_dhcp(line):
-    search_dhcp = re.search('^  ip dhcp relay address (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})$', line)
+    search_dhcp = re.search('^  ip dhcp relay address (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3})$', line)
     return search_dhcp.group(1)
 
 def function_desc(line):
@@ -25,19 +25,19 @@ def function_desc(line):
     return search_desc.group(1)
 
 def function_hsv4(line):
-    search_hsv4 = re.search('^    ip (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})$', line)
+    search_hsv4 = re.search('^    ip (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3})$', line)
     return search_hsv4.group(1)
 
 def function_hsv4_sec(line):
-    search_hsv4_sec = re.search('^    ip (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}) secondary$', line)
+    search_hsv4_sec = re.search('^    ip (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}) secondary$', line)
     return search_hsv4_sec.group(1)
 
 def function_ipv4(line):
-    search_ipv4 = re.search('^  ip address (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}(?:/\d{1,2}|))$', line)
+    search_ipv4 = re.search('^  ip address (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}(?:/\\d{1,2}|))$', line)
     return search_ipv4.group(1)
 
 def function_ipv4_sec(line):
-    search_ipv4_sec = re.search('^  ip address (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}(?:/\d{1,2}|)) secondary$', line)
+    search_ipv4_sec = re.search('^  ip address (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}(?:/\\d{1,2}|)) secondary$', line)
     return search_ipv4_sec.group(1)
 
 def function_ivln(line):
@@ -45,7 +45,7 @@ def function_ivln(line):
     return search_ivln.group(1)
 
 def function_vlan(line):
-    search_vlan = re.search('^vlan (\d{1,4})$', line)
+    search_vlan = re.search('^vlan (\\d{1,4})$', line)
     return search_vlan.group(1)
 
 def function_vlan_name(line):
@@ -53,7 +53,7 @@ def function_vlan_name(line):
     return search_vlan_name.group(1)
 
 def function_vlan_list(line):
-    search_vlan_list = re.search('^vlan (\d{1,4}[\-,]+.+\d{1,4})$', line)
+    search_vlan_list = re.search('^vlan (\\d{1,4}[\\-,]+.+\\d{1,4})$', line)
     return search_vlan_list.group(1)
 
 def function_vrfd(line):
@@ -108,14 +108,14 @@ def function_vlan_to_bd(vlan):
 def function_expand_vlan_list(vlan_list):
     vlist = str_vlan_list.split(',')
     for v in vlist:
-        if re.search('^\d{1,4}\-\d{1,4}$', v):
+        if re.search('^\\d{1,4}\\-\\d{1,4}$', v):
             a,b = v.split('-')
             a = int(a)
             b = int(b)
             vrange = range(a,b+1)
             for vl in vrange:
                 function_wr_vlan(vl)
-        elif re.search('^\d{1,4}$', v):
+        elif re.search('^\\d{1,4}$', v):
             v = int(v)
             function_wr_vlan(v)
     

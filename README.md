@@ -48,8 +48,7 @@ Terraform Requirements
 - terraform must be installed and the Providers / CiscoDevNet / aci / Version 0.5.0+ in place
 
 Python Requirements
-- Python 3.6+ 
-- Refer to requirements.txt for modules
+- Python 3.6+.  Refer to requirements.txt for modules
 
 ## Disclaimer
 
