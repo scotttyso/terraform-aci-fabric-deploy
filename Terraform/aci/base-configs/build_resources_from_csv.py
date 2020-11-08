@@ -47,7 +47,7 @@ else:
     wr_file_tenants = open(file_tenants, 'w')
 
 def validate_hostname(line_count, name):
-    pattern = re.compile('^[a-zA-Z0-9\-]+$')
+    pattern = re.compile('^[a-zA-Z0-9\\-]+$')
     if not re.search(pattern, name) and validators.length(name, min=1, max=63):
         print(f"----------------\r")
         print(f"  Error on Row {line_count}. {name} is not a valid Hostname.")
