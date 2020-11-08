@@ -1,10 +1,10 @@
 variable "physical_domain" {
 	default = {
 		"access" = {
-			name        = "access.phys"
+			name        = "access_phys"
 		},
 		"Inband" = {
-			name        = "inband.phys"
+			name        = "inband_phys"
 		},
 	}
 }

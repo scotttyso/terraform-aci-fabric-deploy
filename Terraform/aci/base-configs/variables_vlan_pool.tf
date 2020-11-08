@@ -1,19 +1,19 @@
 variable "vlan_pool" {
 	default = {
-		"dynamic.vl-pool" = {
-			name        = "dynamic.vl-pool"
+		"dynamic_vl-pool" = {
+			name        = "dynamic_vl-pool"
 			alloc_mode  = "dynamic"
 		},
-		"inband.vl-pool" = {
-			name        = "inband.vl-pool"
+		"inband_vl-pool" = {
+			name        = "inband_vl-pool"
 			alloc_mode  = "static"
 		},
-		"msite.vl-pool" = {
-			name        = "msite.vl-pool"
+		"msite_vl-pool" = {
+			name        = "msite_vl-pool"
 			alloc_mode  = "static"
 		},
-		"static.vl-pool" = {
-			name        = "static.vl-pool"
+		"static_vl-pool" = {
+			name        = "static_vl-pool"
 			alloc_mode  = "static"
 		},
 	}

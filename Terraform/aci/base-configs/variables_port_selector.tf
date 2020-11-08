@@ -1,441 +1,441 @@
 variable "port_selector_48" {
 	default = {
-		"Eth1-01" = {
-			name        = "Eth1-01"
+		"Eth1_01" = {
+			name        = "Eth1_01"
 		},
-		"Eth1-02" = {
-			name        = "Eth1-02"
+		"Eth1_02" = {
+			name        = "Eth1_02"
 		},
-		"Eth1-03" = {
-			name        = "Eth1-03"
+		"Eth1_03" = {
+			name        = "Eth1_03"
 		},
-		"Eth1-04" = {
-			name        = "Eth1-04"
+		"Eth1_04" = {
+			name        = "Eth1_04"
 		},
-		"Eth1-05" = {
-			name        = "Eth1-05"
+		"Eth1_05" = {
+			name        = "Eth1_05"
 		},
-		"Eth1-06" = {
-			name        = "Eth1-06"
+		"Eth1_06" = {
+			name        = "Eth1_06"
 		},
-		"Eth1-07" = {
-			name        = "Eth1-07"
+		"Eth1_07" = {
+			name        = "Eth1_07"
 		},
-		"Eth1-08" = {
-			name        = "Eth1-08"
+		"Eth1_08" = {
+			name        = "Eth1_08"
 		},
-		"Eth1-09" = {
-			name        = "Eth1-09"
+		"Eth1_09" = {
+			name        = "Eth1_09"
 		},
-		"Eth1-10" = {
-			name        = "Eth1-10"
+		"Eth1_10" = {
+			name        = "Eth1_10"
 		},
-		"Eth1-11" = {
-			name        = "Eth1-11"
+		"Eth1_11" = {
+			name        = "Eth1_11"
 		},
-		"Eth1-12" = {
-			name        = "Eth1-12"
+		"Eth1_12" = {
+			name        = "Eth1_12"
 		},
-		"Eth1-13" = {
-			name        = "Eth1-13"
+		"Eth1_13" = {
+			name        = "Eth1_13"
 		},
-		"Eth1-14" = {
-			name        = "Eth1-14"
+		"Eth1_14" = {
+			name        = "Eth1_14"
 		},
-		"Eth1-15" = {
-			name        = "Eth1-15"
+		"Eth1_15" = {
+			name        = "Eth1_15"
 		},
-		"Eth1-16" = {
-			name        = "Eth1-16"
+		"Eth1_16" = {
+			name        = "Eth1_16"
 		},
-		"Eth1-17" = {
-			name        = "Eth1-17"
+		"Eth1_17" = {
+			name        = "Eth1_17"
 		},
-		"Eth1-18" = {
-			name        = "Eth1-18"
+		"Eth1_18" = {
+			name        = "Eth1_18"
 		},
-		"Eth1-19" = {
-			name        = "Eth1-19"
+		"Eth1_19" = {
+			name        = "Eth1_19"
 		},
-		"Eth1-20" = {
-			name        = "Eth1-20"
+		"Eth1_20" = {
+			name        = "Eth1_20"
 		},
-		"Eth1-21" = {
-			name        = "Eth1-21"
+		"Eth1_21" = {
+			name        = "Eth1_21"
 		},
-		"Eth1-22" = {
-			name        = "Eth1-22"
+		"Eth1_22" = {
+			name        = "Eth1_22"
 		},
-		"Eth1-23" = {
-			name        = "Eth1-23"
+		"Eth1_23" = {
+			name        = "Eth1_23"
 		},
-		"Eth1-24" = {
-			name        = "Eth1-24"
+		"Eth1_24" = {
+			name        = "Eth1_24"
 		},
-		"Eth1-25" = {
-			name        = "Eth1-25"
+		"Eth1_25" = {
+			name        = "Eth1_25"
 		},
-		"Eth1-26" = {
-			name        = "Eth1-26"
+		"Eth1_26" = {
+			name        = "Eth1_26"
 		},
-		"Eth1-27" = {
-			name        = "Eth1-27"
+		"Eth1_27" = {
+			name        = "Eth1_27"
 		},
-		"Eth1-28" = {
-			name        = "Eth1-28"
+		"Eth1_28" = {
+			name        = "Eth1_28"
 		},
-		"Eth1-29" = {
-			name        = "Eth1-29"
+		"Eth1_29" = {
+			name        = "Eth1_29"
 		},
-		"Eth1-30" = {
-			name        = "Eth1-30"
+		"Eth1_30" = {
+			name        = "Eth1_30"
 		},
-		"Eth1-31" = {
-			name        = "Eth1-31"
+		"Eth1_31" = {
+			name        = "Eth1_31"
 		},
-		"Eth1-32" = {
-			name        = "Eth1-32"
+		"Eth1_32" = {
+			name        = "Eth1_32"
 		},
-		"Eth1-33" = {
-			name        = "Eth1-33"
+		"Eth1_33" = {
+			name        = "Eth1_33"
 		},
-		"Eth1-34" = {
-			name        = "Eth1-34"
+		"Eth1_34" = {
+			name        = "Eth1_34"
 		},
-		"Eth1-35" = {
-			name        = "Eth1-35"
+		"Eth1_35" = {
+			name        = "Eth1_35"
 		},
-		"Eth1-36" = {
-			name        = "Eth1-36"
+		"Eth1_36" = {
+			name        = "Eth1_36"
 		},
-		"Eth1-37" = {
-			name        = "Eth1-37"
+		"Eth1_37" = {
+			name        = "Eth1_37"
 		},
-		"Eth1-38" = {
-			name        = "Eth1-38"
+		"Eth1_38" = {
+			name        = "Eth1_38"
 		},
-		"Eth1-39" = {
-			name        = "Eth1-39"
+		"Eth1_39" = {
+			name        = "Eth1_39"
 		},
-		"Eth1-40" = {
-			name        = "Eth1-40"
+		"Eth1_40" = {
+			name        = "Eth1_40"
 		},
-		"Eth1-41" = {
-			name        = "Eth1-41"
+		"Eth1_41" = {
+			name        = "Eth1_41"
 		},
-		"Eth1-42" = {
-			name        = "Eth1-42"
+		"Eth1_42" = {
+			name        = "Eth1_42"
 		},
-		"Eth1-43" = {
-			name        = "Eth1-43"
+		"Eth1_43" = {
+			name        = "Eth1_43"
 		},
-		"Eth1-44" = {
-			name        = "Eth1-44"
+		"Eth1_44" = {
+			name        = "Eth1_44"
 		},
-		"Eth1-45" = {
-			name        = "Eth1-45"
+		"Eth1_45" = {
+			name        = "Eth1_45"
 		},
-		"Eth1-46" = {
-			name        = "Eth1-46"
+		"Eth1_46" = {
+			name        = "Eth1_46"
 		},
-		"Eth1-47" = {
-			name        = "Eth1-47"
+		"Eth1_47" = {
+			name        = "Eth1_47"
 		},
-		"Eth1-48" = {
-			name        = "Eth1-48"
+		"Eth1_48" = {
+			name        = "Eth1_48"
 		},
 	}
 }
 
 variable "port_selector_96" {
 	default = {
-		"Eth1-01" = {
-			name        = "Eth1-01"
+		"Eth1_01" = {
+			name        = "Eth1_01"
 		},
-		"Eth1-02" = {
-			name        = "Eth1-02"
+		"Eth1_02" = {
+			name        = "Eth1_02"
 		},
-		"Eth1-03" = {
-			name        = "Eth1-03"
+		"Eth1_03" = {
+			name        = "Eth1_03"
 		},
-		"Eth1-04" = {
-			name        = "Eth1-04"
+		"Eth1_04" = {
+			name        = "Eth1_04"
 		},
-		"Eth1-05" = {
-			name        = "Eth1-05"
+		"Eth1_05" = {
+			name        = "Eth1_05"
 		},
-		"Eth1-06" = {
-			name        = "Eth1-06"
+		"Eth1_06" = {
+			name        = "Eth1_06"
 		},
-		"Eth1-07" = {
-			name        = "Eth1-07"
+		"Eth1_07" = {
+			name        = "Eth1_07"
 		},
-		"Eth1-08" = {
-			name        = "Eth1-08"
+		"Eth1_08" = {
+			name        = "Eth1_08"
 		},
-		"Eth1-09" = {
-			name        = "Eth1-09"
+		"Eth1_09" = {
+			name        = "Eth1_09"
 		},
-		"Eth1-10" = {
-			name        = "Eth1-10"
+		"Eth1_10" = {
+			name        = "Eth1_10"
 		},
-		"Eth1-11" = {
-			name        = "Eth1-11"
+		"Eth1_11" = {
+			name        = "Eth1_11"
 		},
-		"Eth1-12" = {
-			name        = "Eth1-12"
+		"Eth1_12" = {
+			name        = "Eth1_12"
 		},
-		"Eth1-13" = {
-			name        = "Eth1-13"
+		"Eth1_13" = {
+			name        = "Eth1_13"
 		},
-		"Eth1-14" = {
-			name        = "Eth1-14"
+		"Eth1_14" = {
+			name        = "Eth1_14"
 		},
-		"Eth1-15" = {
-			name        = "Eth1-15"
+		"Eth1_15" = {
+			name        = "Eth1_15"
 		},
-		"Eth1-16" = {
-			name        = "Eth1-16"
+		"Eth1_16" = {
+			name        = "Eth1_16"
 		},
-		"Eth1-17" = {
-			name        = "Eth1-17"
+		"Eth1_17" = {
+			name        = "Eth1_17"
 		},
-		"Eth1-18" = {
-			name        = "Eth1-18"
+		"Eth1_18" = {
+			name        = "Eth1_18"
 		},
-		"Eth1-19" = {
-			name        = "Eth1-19"
+		"Eth1_19" = {
+			name        = "Eth1_19"
 		},
-		"Eth1-20" = {
-			name        = "Eth1-20"
+		"Eth1_20" = {
+			name        = "Eth1_20"
 		},
-		"Eth1-21" = {
-			name        = "Eth1-21"
+		"Eth1_21" = {
+			name        = "Eth1_21"
 		},
-		"Eth1-22" = {
-			name        = "Eth1-22"
+		"Eth1_22" = {
+			name        = "Eth1_22"
 		},
-		"Eth1-23" = {
-			name        = "Eth1-23"
+		"Eth1_23" = {
+			name        = "Eth1_23"
 		},
-		"Eth1-24" = {
-			name        = "Eth1-24"
+		"Eth1_24" = {
+			name        = "Eth1_24"
 		},
-		"Eth1-25" = {
-			name        = "Eth1-25"
+		"Eth1_25" = {
+			name        = "Eth1_25"
 		},
-		"Eth1-26" = {
-			name        = "Eth1-26"
+		"Eth1_26" = {
+			name        = "Eth1_26"
 		},
-		"Eth1-27" = {
-			name        = "Eth1-27"
+		"Eth1_27" = {
+			name        = "Eth1_27"
 		},
-		"Eth1-28" = {
-			name        = "Eth1-28"
+		"Eth1_28" = {
+			name        = "Eth1_28"
 		},
-		"Eth1-29" = {
-			name        = "Eth1-29"
+		"Eth1_29" = {
+			name        = "Eth1_29"
 		},
-		"Eth1-30" = {
-			name        = "Eth1-30"
+		"Eth1_30" = {
+			name        = "Eth1_30"
 		},
-		"Eth1-31" = {
-			name        = "Eth1-31"
+		"Eth1_31" = {
+			name        = "Eth1_31"
 		},
-		"Eth1-32" = {
-			name        = "Eth1-32"
+		"Eth1_32" = {
+			name        = "Eth1_32"
 		},
-		"Eth1-33" = {
-			name        = "Eth1-33"
+		"Eth1_33" = {
+			name        = "Eth1_33"
 		},
-		"Eth1-34" = {
-			name        = "Eth1-34"
+		"Eth1_34" = {
+			name        = "Eth1_34"
 		},
-		"Eth1-35" = {
-			name        = "Eth1-35"
+		"Eth1_35" = {
+			name        = "Eth1_35"
 		},
-		"Eth1-36" = {
-			name        = "Eth1-36"
+		"Eth1_36" = {
+			name        = "Eth1_36"
 		},
-		"Eth1-37" = {
-			name        = "Eth1-37"
+		"Eth1_37" = {
+			name        = "Eth1_37"
 		},
-		"Eth1-38" = {
-			name        = "Eth1-38"
+		"Eth1_38" = {
+			name        = "Eth1_38"
 		},
-		"Eth1-39" = {
-			name        = "Eth1-39"
+		"Eth1_39" = {
+			name        = "Eth1_39"
 		},
-		"Eth1-40" = {
-			name        = "Eth1-40"
+		"Eth1_40" = {
+			name        = "Eth1_40"
 		},
-		"Eth1-41" = {
-			name        = "Eth1-41"
+		"Eth1_41" = {
+			name        = "Eth1_41"
 		},
-		"Eth1-42" = {
-			name        = "Eth1-42"
+		"Eth1_42" = {
+			name        = "Eth1_42"
 		},
-		"Eth1-43" = {
-			name        = "Eth1-43"
+		"Eth1_43" = {
+			name        = "Eth1_43"
 		},
-		"Eth1-44" = {
-			name        = "Eth1-44"
+		"Eth1_44" = {
+			name        = "Eth1_44"
 		},
-		"Eth1-45" = {
-			name        = "Eth1-45"
+		"Eth1_45" = {
+			name        = "Eth1_45"
 		},
-		"Eth1-46" = {
-			name        = "Eth1-46"
+		"Eth1_46" = {
+			name        = "Eth1_46"
 		},
-		"Eth1-47" = {
-			name        = "Eth1-47"
+		"Eth1_47" = {
+			name        = "Eth1_47"
 		},
-		"Eth1-48" = {
-			name        = "Eth1-48"
+		"Eth1_48" = {
+			name        = "Eth1_48"
 		},
-		"Eth1-49" = {
-			name        = "Eth1-49"
+		"Eth1_49" = {
+			name        = "Eth1_49"
 		},
-		"Eth1-50" = {
-			name        = "Eth1-50"
+		"Eth1_50" = {
+			name        = "Eth1_50"
 		},
-		"Eth1-51" = {
-			name        = "Eth1-51"
+		"Eth1_51" = {
+			name        = "Eth1_51"
 		},
-		"Eth1-52" = {
-			name        = "Eth1-52"
+		"Eth1_52" = {
+			name        = "Eth1_52"
 		},
-		"Eth1-53" = {
-			name        = "Eth1-53"
+		"Eth1_53" = {
+			name        = "Eth1_53"
 		},
-		"Eth1-54" = {
-			name        = "Eth1-54"
+		"Eth1_54" = {
+			name        = "Eth1_54"
 		},
-		"Eth1-55" = {
-			name        = "Eth1-55"
+		"Eth1_55" = {
+			name        = "Eth1_55"
 		},
-		"Eth1-56" = {
-			name        = "Eth1-56"
+		"Eth1_56" = {
+			name        = "Eth1_56"
 		},
-		"Eth1-57" = {
-			name        = "Eth1-57"
+		"Eth1_57" = {
+			name        = "Eth1_57"
 		},
-		"Eth1-58" = {
-			name        = "Eth1-58"
+		"Eth1_58" = {
+			name        = "Eth1_58"
 		},
-		"Eth1-59" = {
-			name        = "Eth1-59"
+		"Eth1_59" = {
+			name        = "Eth1_59"
 		},
-		"Eth1-60" = {
-			name        = "Eth1-60"
+		"Eth1_60" = {
+			name        = "Eth1_60"
 		},
-		"Eth1-61" = {
-			name        = "Eth1-61"
+		"Eth1_61" = {
+			name        = "Eth1_61"
 		},
-		"Eth1-62" = {
-			name        = "Eth1-62"
+		"Eth1_62" = {
+			name        = "Eth1_62"
 		},
-		"Eth1-63" = {
-			name        = "Eth1-63"
+		"Eth1_63" = {
+			name        = "Eth1_63"
 		},
-		"Eth1-64" = {
-			name        = "Eth1-64"
+		"Eth1_64" = {
+			name        = "Eth1_64"
 		},
-		"Eth1-65" = {
-			name        = "Eth1-65"
+		"Eth1_65" = {
+			name        = "Eth1_65"
 		},
-		"Eth1-66" = {
-			name        = "Eth1-66"
+		"Eth1_66" = {
+			name        = "Eth1_66"
 		},
-		"Eth1-67" = {
-			name        = "Eth1-67"
+		"Eth1_67" = {
+			name        = "Eth1_67"
 		},
-		"Eth1-68" = {
-			name        = "Eth1-68"
+		"Eth1_68" = {
+			name        = "Eth1_68"
 		},
-		"Eth1-69" = {
-			name        = "Eth1-69"
+		"Eth1_69" = {
+			name        = "Eth1_69"
 		},
-		"Eth1-70" = {
-			name        = "Eth1-70"
+		"Eth1_70" = {
+			name        = "Eth1_70"
 		},
-		"Eth1-71" = {
-			name        = "Eth1-71"
+		"Eth1_71" = {
+			name        = "Eth1_71"
 		},
-		"Eth1-72" = {
-			name        = "Eth1-72"
+		"Eth1_72" = {
+			name        = "Eth1_72"
 		},
-		"Eth1-73" = {
-			name        = "Eth1-73"
+		"Eth1_73" = {
+			name        = "Eth1_73"
 		},
-		"Eth1-74" = {
-			name        = "Eth1-74"
+		"Eth1_74" = {
+			name        = "Eth1_74"
 		},
-		"Eth1-75" = {
-			name        = "Eth1-75"
+		"Eth1_75" = {
+			name        = "Eth1_75"
 		},
-		"Eth1-76" = {
-			name        = "Eth1-76"
+		"Eth1_76" = {
+			name        = "Eth1_76"
 		},
-		"Eth1-77" = {
-			name        = "Eth1-77"
+		"Eth1_77" = {
+			name        = "Eth1_77"
 		},
-		"Eth1-78" = {
-			name        = "Eth1-78"
+		"Eth1_78" = {
+			name        = "Eth1_78"
 		},
-		"Eth1-79" = {
-			name        = "Eth1-79"
+		"Eth1_79" = {
+			name        = "Eth1_79"
 		},
-		"Eth1-80" = {
-			name        = "Eth1-80"
+		"Eth1_80" = {
+			name        = "Eth1_80"
 		},
-		"Eth1-81" = {
-			name        = "Eth1-81"
+		"Eth1_81" = {
+			name        = "Eth1_81"
 		},
-		"Eth1-82" = {
-			name        = "Eth1-82"
+		"Eth1_82" = {
+			name        = "Eth1_82"
 		},
-		"Eth1-83" = {
-			name        = "Eth1-83"
+		"Eth1_83" = {
+			name        = "Eth1_83"
 		},
-		"Eth1-84" = {
-			name        = "Eth1-84"
+		"Eth1_84" = {
+			name        = "Eth1_84"
 		},
-		"Eth1-85" = {
-			name        = "Eth1-85"
+		"Eth1_85" = {
+			name        = "Eth1_85"
 		},
-		"Eth1-86" = {
-			name        = "Eth1-86"
+		"Eth1_86" = {
+			name        = "Eth1_86"
 		},
-		"Eth1-87" = {
-			name        = "Eth1-87"
+		"Eth1_87" = {
+			name        = "Eth1_87"
 		},
-		"Eth1-88" = {
-			name        = "Eth1-88"
+		"Eth1_88" = {
+			name        = "Eth1_88"
 		},
-		"Eth1-89" = {
-			name        = "Eth1-89"
+		"Eth1_89" = {
+			name        = "Eth1_89"
 		},
-		"Eth1-90" = {
-			name        = "Eth1-90"
+		"Eth1_90" = {
+			name        = "Eth1_90"
 		},
-		"Eth1-91" = {
-			name        = "Eth1-91"
+		"Eth1_91" = {
+			name        = "Eth1_91"
 		},
-		"Eth1-92" = {
-			name        = "Eth1-92"
+		"Eth1_92" = {
+			name        = "Eth1_92"
 		},
-		"Eth1-93" = {
-			name        = "Eth1-93"
+		"Eth1_93" = {
+			name        = "Eth1_93"
 		},
-		"Eth1-94" = {
-			name        = "Eth1-94"
+		"Eth1_94" = {
+			name        = "Eth1_94"
 		},
-		"Eth1-95" = {
-			name        = "Eth1-95"
+		"Eth1_95" = {
+			name        = "Eth1_95"
 		},
-		"Eth1-96" = {
-			name        = "Eth1-96"
+		"Eth1_96" = {
+			name        = "Eth1_96"
 		},
 	}
 }

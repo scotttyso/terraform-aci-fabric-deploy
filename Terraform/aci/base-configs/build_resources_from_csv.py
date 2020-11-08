@@ -23,6 +23,18 @@ if append == 'yes':
     wr_file_sw = open(file_sw, 'a')
 else:
     wr_file_sw = open(file_sw, 'w')
+    wr_file_sw.write('# Use this Resource File to Register Nodes to the Fabric\n')
+    wr_file_sw.write('# Variables are:\n')
+    wr_file_sw.write('# serial: Actual Serial Number of the switch.\n')
+    wr_file_sw.write('# name: Hostname you want to assign.\n')
+    wr_file_sw.write('# node_id: unique ID used to identify the switch in the APIC.\n')
+    wr_file_sw.write('#   in the "Cisco ACI Object Naming and Numbering: Best Practice\n')
+    wr_file_sw.write('#   The recommendation is that the Spines should be 101-199\n')
+    wr_file_sw.write('#   and leafs should start at 200+ thru 4000.  As the number of\n')
+    wr_file_sw.write('#   spines should always be less than the number of leafs\n')
+    wr_file_sw.write('# node_type: uremote-leaf-wan or unspecified.\n')
+    wr_file_sw.write('# role: spine, leaf, or unspecified.\n')
+    wr_file_sw.write('# pod_id: Typically this will be one unless you are running multipod.\n')
 
 if append == 'yes':
     wr_file_time = open(file_time, 'a')

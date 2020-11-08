@@ -1,13 +1,13 @@
 variable "l3dom_profile" {
 	default = {
 		"Inband" = {
-			name        = "inband.L3"
+			name        = "inband_L3"
 		},
 		"l3out" = {
-			name        = "l3out.L3"
+			name        = "l3out_L3"
 		},
 		"msite" = {
-			name        = "msite.L3"
+			name        = "msite_L3"
 		},
 	}
 }

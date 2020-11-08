@@ -1,13 +1,13 @@
 variable "mcp_policies" {
 	default = {
-		"mcp.Disabled" = {
+		"mcp_Disabled" = {
 			description = "Base Miscabling Policy; Mode Disabled"
-			name        = "mcp.Disabled"
+			name        = "mcp_Disabled"
 			admin_st    = "disabled"
 		},
-		"mcp.Enabled" = {
+		"mcp_Enabled" = {
 			description = "Base LACP Policy; Mode Enabled"
-			name        = "mcp.Enabled"
+			name        = "mcp_Enabled"
 			admin_st    = "enabled"
 		},
 	}

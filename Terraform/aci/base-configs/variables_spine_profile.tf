@@ -1,12 +1,12 @@
 variable "spine_profile" {
 	default = {
-		"Leaf Number 1" = {
-			name        = "Spine201"
-			node_id     = "201"
+		"Spine Number 1" = {
+			name        = "Spine101"
+			node_id     = "101"
 		},
-		"Leaf Number 2" = {
-			name        = "Spine202"
-			node_id     = "202"
+		"Spine Number 2" = {
+			name        = "Spine102"
+			node_id     = "102"
 		},
 	}
 }
