@@ -20,7 +20,7 @@ resource "aci_leaf_interface_profile" "example" {
 resource "aci_rest" "leaf_int_selector" {
 	for_each	= var.leaf_profile
 	path		= "/api/node/mo/uni/infra/nprof-${each.value.name}.json"
-	class       = infraRsAccPortP
+	class_name  = "infraRsAccPortP"
 	payload		= <<EOF
 {
 	"infraRsAccPortP": {
@@ -32,16 +32,16 @@ resource "aci_rest" "leaf_int_selector" {
 	EOF
 }
 
-resource "aci_access_port_selector" "Leaf101" {
+resource "aci_access_port_selector" "Leaf201" {
 	for_each					= var.port_selector_48
-	leaf_interface_profile_dn 	= aci_leaf_interface_profile.example["Leaf101"].id
+	leaf_interface_profile_dn 	= aci_leaf_interface_profile.example["Leaf201"].id
 	name                      	= each.value.name
 	access_port_selector_type 	= "range"
 }
 
-resource "aci_access_port_selector" "Leaf102" {
+resource "aci_access_port_selector" "Leaf202" {
 	for_each					= var.port_selector_48
-	leaf_interface_profile_dn 	= aci_leaf_interface_profile.example["Leaf102"].id
+	leaf_interface_profile_dn 	= aci_leaf_interface_profile.example["Leaf202"].id
 	name                      	= each.value.name
 	access_port_selector_type 	= "range"
 }
