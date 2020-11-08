@@ -1,0 +1,3 @@
+type|Relay Address|vrf
+dhcp_relay|10.101.128.15|default
+dhcp_relay|10.101.128.16|default

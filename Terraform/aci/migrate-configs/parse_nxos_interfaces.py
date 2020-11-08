@@ -159,7 +159,7 @@ file.close()
 wr_poch.close()
 wr_intf.close()
 
-#remove_poch_file = 'rm int_poch.csv'
-#os.system(remove_poch_file)
+remove_poch_file = 'rm int_poch.csv'
+os.system(remove_poch_file)
 
 print('end script')

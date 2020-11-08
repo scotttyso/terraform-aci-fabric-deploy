@@ -122,7 +122,7 @@ def function_expand_vlan_list(vlan_list):
 
 # Start by Creating Empty Variables
 str_dhcp = ''
-str_desc = ''
+str_desc = 'undefined'
 str_hsv4 = ''
 str_hsv4_sec = ''
 str_ipv4 = ''
@@ -202,14 +202,14 @@ for line in lines:
         line_count += 1
     elif line == "\n":
         # Found blank line, which means the end of the interface, time to create the output
-        if not str_desc:
-            str_desc = 'undefined'
         if not str_ipv4:
+            line_count += 1
+        elif not str_ivln:
             line_count += 1
         elif str_ipv4:
             bd = function_vlan_to_bd(str_ivln)
-            check_ipv4 = ipaddress.IPv4Interface(str_ipv4)
-            network_v4 = check_ipv4.network
+            #check_ipv4 = ipaddress.IPv4Interface(str_ipv4)
+            #network_v4 = check_ipv4.network
             if str_hsv4:
                 a,b = str_ipv4.split('/')
                 gtwy = str(str_hsv4) + '/' + str(b)
@@ -233,7 +233,7 @@ for line in lines:
         
         # Reset the Variables back to Blank
         str_dhcp = ''
-        str_desc = ''
+        str_desc = 'undefined'
         str_hsv4 = ''
         str_hsv4_sec = ''
         str_ipv4 = ''

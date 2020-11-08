@@ -19,3 +19,4 @@ intf_add|vpc|143b-core01||Ethernet1/32|31|yes|1-994,997,1000-3966,3968-4094|unde
 intf_add|vpc|143b-core01||Ethernet1/33|33|yes|1-994,997,1000-3966,3968-4094|undefined|9216|33|143-dist-vpc|
 intf_add|vpc|143b-core01||Ethernet1/34|33|yes|1-994,997,1000-3966,3968-4094|undefined|9216|33|143-dist-vpc|
 intf_add|vpc|143b-core01||Ethernet1/35|35|yes|undefined|undefined|undefined|peer-link|Peer-Link - Core|143c-core02-Eth1/35
+intf_add|vpc|143b-core01||Ethernet1/36|35|yes|undefined|undefined|undefined|peer-link|Peer-Link - Core|143c-core02-Eth1/36
