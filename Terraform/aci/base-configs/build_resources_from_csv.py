@@ -9,24 +9,12 @@ elif len(sys.argv) == 1:
     csv_input = sys.argv[1]
     append = 'no'
 
-file_ui_dns = 'resources_user_import_dns.tf'
-file_ui_time = 'resources_user_import_time.tf'
-file_ui_tenants = 'resources_default_tenants.tf'
+file_basic_pod_info = 'resources_user_import_base_pod_policies.tf'
 
 if append == 'yes':
-    wr_file_ui_dns = open(file_ui_dns, 'a')
+    wr_file_basic_pod_info = open(file_basic_pod_info, 'a')
 else:
-    wr_file_ui_dns = open(file_ui_dns, 'w')
-
-if append == 'yes':
-    wr_file_ui_time = open(file_ui_time, 'a')
-else:
-    wr_file_ui_time = open(file_ui_time, 'w')
-
-if append == 'yes':
-    wr_file_ui_tenants = open(file_ui_tenants, 'a')
-else:
-    wr_file_ui_tenants = open(file_ui_tenants, 'w')
+    wr_file_basic_pod_info = open(file_basic_pod_info, 'w')
 
 def validate_hostname(line_count, name):
     pattern = re.compile('^[a-zA-Z0-9\\-]+$')
@@ -165,7 +153,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modul
         print('----------------\r\r')
         exit()
     pod_id = str(pod_id)
-    file_sw = ('resources_%s.tf' % (name))
+    file_sw = ('resources_user_import_%s.tf' % (name))
     wr_file_sw = open(file_sw, 'w')
     wr_file_sw.write(f'# Use this Resource File to Register {name} with node id {node_id} to the Fabric\n')
     wr_file_sw.write('# Requirements are:\n')
@@ -321,9 +309,7 @@ with open(csv_input) as csv_file:
 
 #Close out the Open Files
 csv_file.close()
-wr_file_ui_dns.close()
-wr_file_ui_time.close()
-wr_file_ui_tenants.close()
+wr_file_basic_pod_info.close()
 
 #End Script
 print('\r\r----------------\r')
