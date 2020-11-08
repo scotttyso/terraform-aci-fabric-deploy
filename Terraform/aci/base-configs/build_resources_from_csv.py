@@ -189,7 +189,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modul
     wr_file_sw.write('\tpod_id    = "%s"\n' % (pod_id))
     wr_file_sw.write('}\n')
     wr_file_sw.write('\n')
-    wr_file_sw.write('resource "aci_rest" "inband_mgmt_%s" {\n' % (name))
+    wr_file_sw.write('resource "aci_rest" "oob_mgmt_%s" {\n' % (name))
     wr_file_sw.write('\tpath       = "/api/node/mo/uni/tn-mgmt"\n')
     wr_file_sw.write('\tclass_name = "mgmtRsOoBStNode"\n')
     wr_file_sw.write('\tpayload    = <<EOF\n')

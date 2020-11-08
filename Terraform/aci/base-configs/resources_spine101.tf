@@ -20,7 +20,7 @@ resource "aci_fabric_node_member" "spine101" {
 	pod_id    = "1"
 }
 
-resource "aci_rest" "inband_mgmt_spine101" {
+resource "aci_rest" "oob_mgmt_spine101" {
 	path       = "/api/node/mo/uni/tn-mgmt"
 	class_name = "mgmtRsOoBStNode"
 	payload    = <<EOF
