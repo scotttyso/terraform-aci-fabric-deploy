@@ -1,7 +1,7 @@
-type,serial,name,node_id,node_type,pod_id,Switch_Role,oob_ipv4,oob_gwv4,inb_ipv4,Inb_gwv4
-switch,TEP-1-101,sw101,201,unspecified,1,unspecified,192.168.86.11/24,192.168.86.1,192.168.87.11/24,192.168.87.1
-switch,TEP-1-102,sw102,202,unspecified,1,unspecified,192.168.86.12/24,192.168.86.1,192.168.87.12/24,192.168.87.1
-switch,TEP-1-103,sw103,101,unspecified,1,unspecified,192.168.88.13/24,192.168.88.1,192.168.89.13/24,192.168.89.1
+type,serial,name,node_id,node_type,pod_id,modules,port_count,Switch_Role,oob_ipv4,oob_gwv4,inb_ipv4,Inb_gwv4
+switch,TEP-1-101,leaf201,201,unspecified,1,leaf,1,48,192.168.86.11/24,192.168.86.1,192.168.87.11/24,192.168.87.1
+switch,TEP-1-102,leaf202,202,unspecified,1,leaf,1,48,192.168.86.12/24,192.168.86.1,192.168.87.12/24,192.168.87.1
+switch,TEP-1-103,spine101,101,unspecified,1,spine,8,36,192.168.88.13/24,192.168.88.1,192.168.89.13/24,192.168.89.1
 
 type,AS Number,RR_node_id,RR2_node_id
 bgp,65535,103,
