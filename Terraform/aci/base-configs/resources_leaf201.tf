@@ -28,9 +28,9 @@ resource "aci_rest" "oob_mgmt_leaf201" {
 	"mgmtRsOoBStNode": {
 		"attributes": {
 			"addr":"192.168.87.11/24",
-			"dn":"uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-'1'/node-201]",
+			"dn":"uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-1/node-201]",
 			"gw":"192.168.87.1",
-			"tDn":"topology/pod-'1'/node-201",
+			"tDn":"topology/pod-1/node-201",
 			"v6Addr":"::",
 			"v6Gw":"::"
 		}
@@ -47,9 +47,9 @@ resource "aci_rest" "inband_mgmt_leaf201" {
 	"mgmtRsInBStNode": {
 		"attributes": {
 			"addr":"192.168.86.11/24",
-			"dn":"uni/tn-mgmt/mgmtp-default/inb-inband_epg/rsinBStNode-[[topology/pod-'1'/node-201]",
+			"dn":"uni/tn-mgmt/mgmtp-default/inb-inband_epg/rsinBStNode-[topology/pod-1/node-201]",
 			"gw":"192.168.86.1",
-			"tDn":"topology/pod-'1'/node-201",
+			"tDn":"topology/pod-1/node-201",
 		}
 	}
 }

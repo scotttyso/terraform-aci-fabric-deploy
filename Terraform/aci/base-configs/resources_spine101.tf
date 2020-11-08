@@ -28,9 +28,9 @@ resource "aci_rest" "oob_mgmt_spine101" {
 	"mgmtRsOoBStNode": {
 		"attributes": {
 			"addr":"192.168.89.13/24",
-			"dn":"uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-'1'/node-101]",
+			"dn":"uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-1/node-101]",
 			"gw":"192.168.89.1",
-			"tDn":"topology/pod-'1'/node-101",
+			"tDn":"topology/pod-1/node-101",
 			"v6Addr":"::",
 			"v6Gw":"::"
 		}
@@ -47,9 +47,9 @@ resource "aci_rest" "inband_mgmt_spine101" {
 	"mgmtRsInBStNode": {
 		"attributes": {
 			"addr":"192.168.88.13/24",
-			"dn":"uni/tn-mgmt/mgmtp-default/inb-inband_epg/rsinBStNode-[[topology/pod-'1'/node-101]",
+			"dn":"uni/tn-mgmt/mgmtp-default/inb-inband_epg/rsinBStNode-[topology/pod-1/node-101]",
 			"gw":"192.168.88.1",
-			"tDn":"topology/pod-'1'/node-101",
+			"tDn":"topology/pod-1/node-101",
 		}
 	}
 }
