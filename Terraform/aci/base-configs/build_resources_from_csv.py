@@ -164,6 +164,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modul
     wr_file_sw.write('#   The recommendation is that the Spines should be 101-199\n')
     wr_file_sw.write('#   and leafs should start at 200+ thru 4000.  As the number of\n')
     wr_file_sw.write('#   spines should always be less than the number of leafs\n')
+    wr_file_sw.write('#   https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/b-Cisco-ACI-Naming-and-Numbering.html#id_107280\n')
     wr_file_sw.write('# node_type: uremote-leaf-wan or unspecified.\n')
     wr_file_sw.write('# role: spine, leaf, or unspecified.\n')
     wr_file_sw.write('# pod_id: Typically this will be one unless you are running multipod.\n')

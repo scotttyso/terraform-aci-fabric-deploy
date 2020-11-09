@@ -7,14 +7,15 @@ from csv import writer
 re_dhcp = re.compile('^  ip dhcp relay address (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3})$')
 re_desc = re.compile('^  description (.+)$')
 re_hsv4 = re.compile('^    ip (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3})$')
-re_hsv4_sec = re.compile('^    ip (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}) secondary$')
+re_hsv4s = re.compile('^    ip (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}) secondary$')
 re_ipv4 = re.compile('^  ip address (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}(?:/\\d{1,2}|))$')
-re_ipv4_sec = re.compile('^  ip address (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}(?:/\\d{1,2}|)) secondary$')
-re_ivln = re.compile('^interface Vlan([0-9]+)$')
+re_ipv4s = re.compile('^  ip address (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}(?:/\\d{1,2}|)) secondary$')
+re_ivln = re.compile('^interface Vlan(\\d+)$')
+re_mtu_ = re.compile('^ mtu (\\d+)$')
 re_vlan = re.compile('^vlan (\\d{1,4})$')
-re_vlan_list = re.compile('^vlan (\\d{1,4}[\\-,]+.+\\d{1,4})$')
-re_vlan_name = re.compile('^  name (.+)$')
-re_vrfd = re.compile('^  vrf member (.+)$')
+re_vlst = re.compile('^vlan (\\d{1,4}[\\-,]+.+\\d{1,4})$')
+re_vlnm = re.compile('^  name (.+)$')
+re_vrf_ = re.compile('^  vrf member (.+)$')
 
 def function_dhcp(line):
     search_dhcp = re.search('^  ip dhcp relay address (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3})$', line)
@@ -28,17 +29,21 @@ def function_hsv4(line):
     search_hsv4 = re.search('^    ip (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3})$', line)
     return search_hsv4.group(1)
 
-def function_hsv4_sec(line):
-    search_hsv4_sec = re.search('^    ip (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}) secondary$', line)
-    return search_hsv4_sec.group(1)
+def function_hsv4s(line):
+    search_hsv4s = re.search('^    ip (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}) secondary$', line)
+    return search_hsv4s.group(1)
 
 def function_ipv4(line):
     search_ipv4 = re.search('^  ip address (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}(?:/\\d{1,2}|))$', line)
     return search_ipv4.group(1)
 
-def function_ipv4_sec(line):
-    search_ipv4_sec = re.search('^  ip address (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}(?:/\\d{1,2}|)) secondary$', line)
-    return search_ipv4_sec.group(1)
+def function_ipv4s(line):
+    search_ipv4s = re.search('^  ip address (\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}(?:/\\d{1,2}|)) secondary$', line)
+    return search_ipv4s.group(1)
+
+def function_mtu_(line):
+    search_mtu_ = re.search('^ mtu (\\d+)$', line)
+    return search_mtu_.group(1)
 
 def function_ivln(line):
     search_ivln = re.search('^interface Vlan([0-9]+)$', line)
@@ -48,17 +53,17 @@ def function_vlan(line):
     search_vlan = re.search('^vlan (\\d{1,4})$', line)
     return search_vlan.group(1)
 
-def function_vlan_name(line):
-    search_vlan_name = re.search('^  name (.+)$', line)
-    return search_vlan_name.group(1)
+def function_vlnm(line):
+    search_vlnm = re.search('^  name (.+)$', line)
+    return search_vlnm.group(1)
 
-def function_vlan_list(line):
-    search_vlan_list = re.search('^vlan (\\d{1,4}[\\-,]+.+\\d{1,4})$', line)
-    return search_vlan_list.group(1)
+def function_vlst(line):
+    search_vlst = re.search('^vlan (\\d{1,4}[\\-,]+.+\\d{1,4})$', line)
+    return search_vlst.group(1)
 
-def function_vrfd(line):
-    search_vrfd = re.search('^  vrf member (.+)$', line)
-    return search_vrfd.group(1)
+def function_vrf_(line):
+    search_vrf_ = re.search('^  vrf member (.+)$', line)
+    return search_vrf_.group(1)
 
 def function_wr_vlan(vlan):
     if vlan < 10:
@@ -105,8 +110,8 @@ def function_vlan_to_bd(vlan):
         bd = 'v' + vlan + '_bd'
         return bd
 
-def function_expand_vlan_list(vlan_list):
-    vlist = str_vlan_list.split(',')
+def function_expand_vlst(vlst):
+    vlist = str_vlst.split(',')
     for v in vlist:
         if re.search('^\\d{1,4}\\-\\d{1,4}$', v):
             a,b = v.split('-')
@@ -124,14 +129,15 @@ def function_expand_vlan_list(vlan_list):
 str_dhcp = ''
 str_desc = 'undefined'
 str_hsv4 = ''
-str_hsv4_sec = ''
+str_hsv4s = ''
 str_ipv4 = ''
-str_ipv4_sec = ''
+str_ipv4s = ''
 str_ivln = ''
+str_mtu_ = '9000'
 str_vlan = ''
-str_vlan_list = ''
-str_vlan_name = ''
-str_vrfd = ''
+str_vlst = ''
+str_vlnm = ''
+str_vrf_ = 'default'
 
 # Import the Configuration File
 file = open('143b-core01.cfg', 'r')
@@ -143,58 +149,61 @@ wr_dhcp = open('dhcp.csv', 'w')
 # Read the Conifguration File and Gather Vlan Information
 lines = file.readlines()
 
-wr_ivln.write('type|int_type|Bridge_Domain|Gateway IPv4|vrf|Description\n')
+wr_ivln.write('type,int_type,Bridge_Domain,Gateway IPv4,vrf,Description\n')
 
 line_count = 0
 for line in lines:
-    if re.search(re_vlan_list, line):
+    if re.search(re_vlst, line):
         # Found the Vlan List
-        str_vlan_list = function_vlan_list(line)
-        function_expand_vlan_list(str_vlan_list)
+        str_vlst = function_vlst(line)
+        function_expand_vlst(str_vlst)
         line_count += 1
     elif re.search(re_vlan, line):
         # Found a VLAN
         str_vlan = function_vlan(line)
         str_vlan = int(str_vlan)
         line_count += 1
-    elif re.search(re_vlan_name, line):
+    elif re.search(re_vlnm, line):
         # Found the VLAN name
-        str_vlan_name = function_vlan_name(line)
-        function_wr_name(str_vlan,str_vlan_name)
-        #print(f'vlan is {str_vlan} and name is {str_vlan_name}')
+        str_vlnm = function_vlnm(line)
+        function_wr_name(str_vlan,str_vlnm)
         line_count += 1
     elif re.search(re_ivln, line):
         # Found the Vlan Interface
         str_ivln = function_ivln(line)
         str_ivln = int(str_ivln)
         line_count += 1
-    elif re.search(re_vrfd, line):
+    elif re.search(re_mtu_, line):
         # Found VRF on the Interface
-        str_vrfd = function_vrfd(line)
+        str_mtu_ = function_mtu_(line)
+        line_count += 1
+    elif re.search(re_vrf_, line):
+        # Found VRF on the Interface
+        str_vrf_ = function_vrf_(line)
         line_count += 1
     elif re.search(re_ipv4, line):
         # Found IPv4 Address on the Interface
         str_ipv4 = function_ipv4(line)
         line_count += 1
-    elif re.search(re_ipv4_sec, line):
+    elif re.search(re_ipv4s, line):
         # Found IPv4 Secondary Address on the Interface
-        str_ipv4_sec = function_ipv4_sec(line)
+        str_ipv4s = function_ipv4s(line)
         line_count += 1
     elif re.search(re_hsv4, line):
         # Found IPv4 Address on the Interface
         str_hsv4 = function_hsv4(line)
         line_count += 1
-    elif re.search(re_hsv4_sec, line):
+    elif re.search(re_hsv4s, line):
         # Found IPv4 Secondary Address on the Interface
-        str_hsv4_sec = function_hsv4_sec(line)
+        str_hsv4s = function_hsv4s(line)
         line_count += 1
     elif re.search(re_dhcp, line):
         # Found IPv4 Secondary Address on the Interface
         str_dhcp = function_dhcp(line)
-        if str_vrfd:
-            wr_dhcp.write('dhcp_relay|{}|{}\n'.format(str_dhcp, str_vrfd))
+        if str_vrf_:
+            wr_dhcp.write('dhcp_relay,{},{}\n'.format(str_dhcp, str_vrf_))
         else:
-            wr_dhcp.write('dhcp_relay|{}|default\n'.format(str_dhcp))
+            wr_dhcp.write('dhcp_relay,{},default\n'.format(str_dhcp))
         line_count += 1
     elif re.search(re_desc, line):
         # Found a Description on the Interface
@@ -215,31 +224,35 @@ for line in lines:
                 gtwy = str(str_hsv4) + '/' + str(b)
             else:
                 gtwy = str(str_ipv4)
-            if str_vrfd:
-                wr_ivln.write('subnet_add|primary|{}|{}|{}|{}\n'.format(bd, gtwy, str_vrfd, str_desc))
+            if str_vrf_:
+                wr_ivln.write('subnet_add,primary,{},{},{},{}\n'.format(bd, gtwy, str_vrf_, str_desc))
             else:
-                wr_ivln.write('subnet_add|primary|{}|{}|default|{}\n'.format(bd, gtwy, str_desc))
-            if str_ipv4_sec:
-                if str_hsv4_sec:
-                    a,b = str_ipv4_sec.split('/')
-                    gtwy = str(str_hsv4_sec) + '/' + str(b)
+                wr_ivln.write('subnet_add,primary,{},{},default,{}\n'.format(bd, gtwy, str_desc))
+            if str_ipv4s:
+                if str_hsv4s:
+                    a,b = str_ipv4s.split('/')
+                    gtwy = str(str_hsv4s) + '/' + str(b)
                 else:
                     gtwy = str(str_ipv4)
-                if str_vrfd:
-                    wr_ivln.write('subnet_add|secondary|{}|{}|{}|{}\n'.format(bd, gtwy, str_vrfd, str_desc))
+                if str_vrf_:
+                    wr_ivln.write('subnet_add,secondary,{},{},{},{}\n'.format(bd, gtwy, str_vrf_, str_desc))
                 else:
-                    wr_ivln.write('subnet_add|secondary|{}|{}|default|{}\n'.format(bd, gtwy, str_desc))
+                    wr_ivln.write('subnet_add,secondary,{},{},default,{}\n'.format(bd, gtwy, str_desc))
             line_count += 1
         
         # Reset the Variables back to Blank
         str_dhcp = ''
         str_desc = 'undefined'
         str_hsv4 = ''
-        str_hsv4_sec = ''
+        str_hsv4s = ''
         str_ipv4 = ''
-        str_ipv4_sec = ''
+        str_ipv4s = ''
         str_ivln = ''
-        str_vrfd = ''
+        str_mtu_ = '9000'
+        str_vlan = ''
+        str_vlst = ''
+        str_vlnm = ''
+        str_vrf_ = 'default'
     else:
         line_count += 1
 
@@ -251,12 +264,12 @@ wr_ivln.close()
 wr_dhcp.close()
 
 #Get VLAN's that don't have a name and those that do and combine into one file
-vlan_line_count = len(open('vlan_list.csv').readlines(  ))
-bg_list_1 = open('vlan_list.csv', 'r') 
-bg_list_2 = open('vlan_name.csv', 'r')
-bg_list_3 = open('vlan_comb.csv', 'w')
-vlan_lines = bg_list_1.readlines()
-name_lines = bg_list_2.readlines()
+vl_count = len(open('vlan_list.csv').readlines(  ))
+bg_list1 = open('vlan_list.csv', 'r') 
+bg_list2 = open('vlan_name.csv', 'r')
+bg_list3 = open('vlan_comb.csv', 'w')
+vlan_lines = bg_list1.readlines()
+name_lines = bg_list2.readlines()
 for lineg1 in vlan_lines:
     matched = 0
     lineg1 = lineg1.strip()
@@ -265,31 +278,31 @@ for lineg1 in vlan_lines:
         if lineg1 in lineg2:
             matched +=1
     if matched == 0:
-        bg_list_3.write('{}\n'.format(lineg1))
+        bg_list3.write('{}\n'.format(lineg1))
         #print(x,y)
 for line in name_lines:
     line.strip()
-    bg_list_3.write('{}'.format(line))
+    bg_list3.write('{}'.format(line))
 
-bg_list_1.close()
-bg_list_2.close()
-bg_list_3.close()
+bg_list1.close()
+bg_list2.close()
+bg_list3.close()
 
 #Sort the combined VLANs in final output file
-bg_list_3 = open('vlan_comb.csv', 'r')
-bg_list_4 = open('vlan_bddm.csv', 'w')
-bg_list_4.write('type|bd_type|Bridge_Domain|Description\n')
-bddm = bg_list_3.readlines()
+bg_list3 = open('vlan_comb.csv', 'r')
+bg_list4 = open('vlan_bddm.csv', 'w')
+bg_list4.write('Type,bd_type,Bridge_Domain,Description\n')
+bddm = bg_list3.readlines()
 bddm.sort()
 for line in range(len(bddm)):
     bddm[line]
-    bg_list_4.write('bd_add|extend_out|{}'.format(bddm[line]))
+    bg_list4.write('bd_add,extend_out,{}'.format(bddm[line]))
 
-bg_list_3.close()
-bg_list_4.close()
+bg_list3.close()
+bg_list4.close()
 
 dhcp_relay_uniq = 'cat dhcp.csv | sort | uniq > dhcp_sort.csv'
-dhcp_relay_add_header = 'echo "type|Relay Address|vrf" | cat - dhcp_sort.csv > dhcp_relay.csv'
+dhcp_relay_add_header = 'echo "Type,Relay Address,vrf" | cat - dhcp_sort.csv > dhcp_relay.csv'
 remove_extra_dhcp_file1 = 'rm dhcp.csv'
 remove_extra_dhcp_file2 = 'rm dhcp_sort.csv'
 remove_extra_vlan_file1 = 'rm vlan_comb.csv'
