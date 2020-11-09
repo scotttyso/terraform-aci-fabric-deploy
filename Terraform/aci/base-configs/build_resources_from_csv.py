@@ -248,13 +248,16 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modul
         wr_file_sw.write('\tEOF\n')
         wr_file_sw.write('}\n')
         wr_file_sw.write('\n')
-        wr_file_sw.write('resource "aci_access_port_selector" "%s" {\n' % (name))
-        wr_file_sw.write('\tfor_each                  = var.port_selector_48\n')
-        wr_file_sw.write('\tleaf_interface_profile_dn = aci_leaf_interface_profile.%s.id\n' % (name))
-        wr_file_sw.write('\tname                      = each.value.name\n')
-        wr_file_sw.write('\taccess_port_selector_type = "range"\n')
-        wr_file_sw.write('}\n')
-        wr_file_sw.write('\n')
+        mod_count = 0
+        while mod_count < int(modules):
+            mod_count += 1
+            wr_file_sw.write('resource "aci_access_port_selector" "%s" {\n' % (name))
+            wr_file_sw.write('\tfor_each                  = var.port_selector_%s\n' %(port_count))
+            wr_file_sw.write('\tleaf_interface_profile_dn = aci_leaf_interface_profile.%s.id\n' % (name))
+            wr_file_sw.write('\tname                      = Eth%s-[each.value.name]\n' % (mod_count))
+            wr_file_sw.write('\taccess_port_selector_type = "range"\n')
+            wr_file_sw.write('}\n')
+            wr_file_sw.write('\n')
     elif switch_role == 'spine':
         dummy_number += 1
     wr_file_sw.close()

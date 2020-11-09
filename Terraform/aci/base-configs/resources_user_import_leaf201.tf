@@ -7,6 +7,7 @@
 #   The recommendation is that the Spines should be 101-199
 #   and leafs should start at 200+ thru 4000.  As the number of
 #   spines should always be less than the number of leafs
+#   https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/b-Cisco-ACI-Naming-and-Numbering.html#id_107280
 # node_type: uremote-leaf-wan or unspecified.
 # role: spine, leaf, or unspecified.
 # pod_id: Typically this will be one unless you are running multipod.
@@ -90,7 +91,7 @@ resource "aci_rest" "leaf_int_selector_leaf201" {
 resource "aci_access_port_selector" "leaf201" {
 	for_each                  = var.port_selector_48
 	leaf_interface_profile_dn = aci_leaf_interface_profile.leaf201.id
-	name                      = each.value.name
+	name                      = Eth1-[each.value.name]
 	access_port_selector_type = "range"
 }
 
