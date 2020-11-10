@@ -71,7 +71,76 @@ resource "aci_vlan_pool" "default" {
 }
 
 resource "aci_ranges" "default" {
-  vlan_pool_dn	= "uni/infra/vlanns-[msite.vl-pool]-static"
+  vlan_pool_dn	= "uni/infra/vlanns-[msite_vl-pool]-static"
   _from		= "vlan-4"
   to		= "vlan-4"
 }
+
+resource "aci_rest" "default-oob" {
+	path       = "/api/node/mo/uni/fabric/connectivityPrefs.json"
+	class_name = "mgmtConnectivityPrefs"
+	payload    = <<EOF
+{
+	"mgmtConnectivityPrefs": {
+		"attributes": {
+			"dn": "uni/fabric/connectivityPrefs",
+			"interfacePref": "ooband"
+		},
+		"children": []
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "phys_to_vl-pool" {
+	for_each   = var.physical_domain
+	path       = "/api/node/mo/uni/phys-[${each.value.name}].json"
+	class_name = "physDomP"
+	payload    = <<EOF
+{
+    "physDomP": {
+        "attributes": {
+            "dn": "uni/phys-${each.value.name}",
+            "name": "${each.value.name}",
+        },
+        "children": [
+            {
+                "infraRsVlanNs": {
+                    "attributes": {
+                        "rn": "rsvlanNs",
+                        "tDn": "uni/infra/vlanns-[${each.value.vl-pool}]-static"
+                    }
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "l3_to_vl-pool" {
+	for_each   = var.l3dom_profile
+	path       = "/api/node/mo/uni/l3dom-[${each.value.name}].json"
+	class_name = "physDomP"
+	payload    = <<EOF
+{
+    "l3extDomP": {
+        "attributes": {
+            "dn": "uni/l3dom-${each.value.name}",
+            "name": "${each.value.name}",
+        },
+        "children": [
+            {
+                "infraRsVlanNs": {
+                    "attributes": {
+                        "rn": "rsvlanNs",
+                        "tDn": "uni/infra/vlanns-[${each.value.vl-pool}]-static"
+                    }
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+

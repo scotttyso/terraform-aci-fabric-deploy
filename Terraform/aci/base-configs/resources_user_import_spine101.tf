@@ -9,7 +9,7 @@
 #   spines should always be less than the number of leafs
 #   https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/b-Cisco-ACI-Naming-and-Numbering.html#id_107280
 # node_type: uremote-leaf-wan or unspecified.
-# role: spine, leaf, or unspecified.
+# role: spine, leaf.
 # pod_id: Typically this will be one unless you are running multipod.
 
 resource "aci_fabric_node_member" "spine101" {
@@ -22,15 +22,15 @@ resource "aci_fabric_node_member" "spine101" {
 }
 
 resource "aci_rest" "oob_mgmt_spine101" {
-	path       = "/api/node/mo/uni/tn-mgmt"
+	path       = "/api/node/mo/uni/tn-mgmt.json"
 	class_name = "mgmtRsOoBStNode"
 	payload    = <<EOF
 {
 	"mgmtRsOoBStNode": {
 		"attributes": {
-			"addr":"192.168.89.13/24",
+			"addr":"192.168.86.13/24",
 			"dn":"uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-1/node-101]",
-			"gw":"192.168.89.1",
+			"gw":"192.168.86.254",
 			"tDn":"topology/pod-1/node-101",
 			"v6Addr":"::",
 			"v6Gw":"::"
@@ -40,18 +40,297 @@ resource "aci_rest" "oob_mgmt_spine101" {
 	EOF
 }
 
-resource "aci_rest" "inband_mgmt_spine101" {
-	path       = "/api/node/mo/uni/tn-mgmt"
+resource "aci_rest" "inb_mgmt_spine101" {
+	path       = "/api/node/mo/uni/tn-mgmt.json"
 	class_name = "mgmtRsInBStNode"
 	payload    = <<EOF
 {
 	"mgmtRsInBStNode": {
 		"attributes": {
-			"addr":"192.168.88.13/24",
-			"dn":"uni/tn-mgmt/mgmtp-default/inb-inband_epg/rsinBStNode-[topology/pod-1/node-101]",
-			"gw":"192.168.88.1",
+			"addr":"192.168.87.13/24",
+			"dn":"uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-1/node-101]",
+			"gw":"192.168.87.254",
 			"tDn":"topology/pod-1/node-101",
 		}
+	}
+}
+	EOF
+}
+
+resource "aci_spine_profile" "spine101_SwSel" {
+	name = "spine101_SwSel"
+}
+
+resource "aci_spine_interface_profile" "spine101_IntProf" {
+	name = "spine101_IntProf"
+}
+
+resource "aci_spine_port_policy_group" "spine101" {
+	name = "spine101"
+}
+
+resource "aci_spine_switch_association" "spine101" {
+		spine_profile_dn              = aci_spine_profile.spine101_SwSel.id
+		name                          = "spine101"
+		spine_switch_association_type = "range"
+}
+
+resource "aci_spine_port_selector" "spine101" {
+		spine_profile_dn              = aci_spine_profile.spine101_SwSel.id
+		tdn                           = aci_spine_interface_profile.spine101_IntProf.id
+}
+
+resource "aci_rest" "spine101_1_IntProf" {
+	for_each         = var.port-selector-36
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth1-${each.value.name}-typ-range.json"
+	class_name       = "infraSHPortS"
+	payload          = <<EOF
+{
+	"infraSHPortS": {
+		"attributes": {
+			"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth1-${each.value.name}-typ-range",
+			"name": "Eth1-${each.value.name}",
+			"rn": "shports-Eth1-${each.value.name}-typ-range"
+		},
+		"children": [
+			{
+				"infraPortBlk": {
+					"attributes": {
+						"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth1-${each.value.name}-typ-range/portblk-block2",
+						"fromCard": "1",
+						"fromPort": "${each.value.name}",
+						"toCard": "1",
+						"toPort": "${each.value.name}",
+						"name": "block2",
+						"rn": "portblk-block2"
+					}
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "spine101_2_IntProf" {
+	for_each         = var.port-selector-36
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth2-${each.value.name}-typ-range.json"
+	class_name       = "infraSHPortS"
+	payload          = <<EOF
+{
+	"infraSHPortS": {
+		"attributes": {
+			"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth2-${each.value.name}-typ-range",
+			"name": "Eth2-${each.value.name}",
+			"rn": "shports-Eth2-${each.value.name}-typ-range"
+		},
+		"children": [
+			{
+				"infraPortBlk": {
+					"attributes": {
+						"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth2-${each.value.name}-typ-range/portblk-block2",
+						"fromCard": "2",
+						"fromPort": "${each.value.name}",
+						"toCard": "2",
+						"toPort": "${each.value.name}",
+						"name": "block2",
+						"rn": "portblk-block2"
+					}
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "spine101_3_IntProf" {
+	for_each         = var.port-selector-36
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth3-${each.value.name}-typ-range.json"
+	class_name       = "infraSHPortS"
+	payload          = <<EOF
+{
+	"infraSHPortS": {
+		"attributes": {
+			"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth3-${each.value.name}-typ-range",
+			"name": "Eth3-${each.value.name}",
+			"rn": "shports-Eth3-${each.value.name}-typ-range"
+		},
+		"children": [
+			{
+				"infraPortBlk": {
+					"attributes": {
+						"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth3-${each.value.name}-typ-range/portblk-block2",
+						"fromCard": "3",
+						"fromPort": "${each.value.name}",
+						"toCard": "3",
+						"toPort": "${each.value.name}",
+						"name": "block2",
+						"rn": "portblk-block2"
+					}
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "spine101_4_IntProf" {
+	for_each         = var.port-selector-36
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth4-${each.value.name}-typ-range.json"
+	class_name       = "infraSHPortS"
+	payload          = <<EOF
+{
+	"infraSHPortS": {
+		"attributes": {
+			"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth4-${each.value.name}-typ-range",
+			"name": "Eth4-${each.value.name}",
+			"rn": "shports-Eth4-${each.value.name}-typ-range"
+		},
+		"children": [
+			{
+				"infraPortBlk": {
+					"attributes": {
+						"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth4-${each.value.name}-typ-range/portblk-block2",
+						"fromCard": "4",
+						"fromPort": "${each.value.name}",
+						"toCard": "4",
+						"toPort": "${each.value.name}",
+						"name": "block2",
+						"rn": "portblk-block2"
+					}
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "spine101_5_IntProf" {
+	for_each         = var.port-selector-36
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth5-${each.value.name}-typ-range.json"
+	class_name       = "infraSHPortS"
+	payload          = <<EOF
+{
+	"infraSHPortS": {
+		"attributes": {
+			"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth5-${each.value.name}-typ-range",
+			"name": "Eth5-${each.value.name}",
+			"rn": "shports-Eth5-${each.value.name}-typ-range"
+		},
+		"children": [
+			{
+				"infraPortBlk": {
+					"attributes": {
+						"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth5-${each.value.name}-typ-range/portblk-block2",
+						"fromCard": "5",
+						"fromPort": "${each.value.name}",
+						"toCard": "5",
+						"toPort": "${each.value.name}",
+						"name": "block2",
+						"rn": "portblk-block2"
+					}
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "spine101_6_IntProf" {
+	for_each         = var.port-selector-36
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth6-${each.value.name}-typ-range.json"
+	class_name       = "infraSHPortS"
+	payload          = <<EOF
+{
+	"infraSHPortS": {
+		"attributes": {
+			"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth6-${each.value.name}-typ-range",
+			"name": "Eth6-${each.value.name}",
+			"rn": "shports-Eth6-${each.value.name}-typ-range"
+		},
+		"children": [
+			{
+				"infraPortBlk": {
+					"attributes": {
+						"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth6-${each.value.name}-typ-range/portblk-block2",
+						"fromCard": "6",
+						"fromPort": "${each.value.name}",
+						"toCard": "6",
+						"toPort": "${each.value.name}",
+						"name": "block2",
+						"rn": "portblk-block2"
+					}
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "spine101_7_IntProf" {
+	for_each         = var.port-selector-36
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth7-${each.value.name}-typ-range.json"
+	class_name       = "infraSHPortS"
+	payload          = <<EOF
+{
+	"infraSHPortS": {
+		"attributes": {
+			"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth7-${each.value.name}-typ-range",
+			"name": "Eth7-${each.value.name}",
+			"rn": "shports-Eth7-${each.value.name}-typ-range"
+		},
+		"children": [
+			{
+				"infraPortBlk": {
+					"attributes": {
+						"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth7-${each.value.name}-typ-range/portblk-block2",
+						"fromCard": "7",
+						"fromPort": "${each.value.name}",
+						"toCard": "7",
+						"toPort": "${each.value.name}",
+						"name": "block2",
+						"rn": "portblk-block2"
+					}
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "spine101_8_IntProf" {
+	for_each         = var.port-selector-36
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth8-${each.value.name}-typ-range.json"
+	class_name       = "infraSHPortS"
+	payload          = <<EOF
+{
+	"infraSHPortS": {
+		"attributes": {
+			"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth8-${each.value.name}-typ-range",
+			"name": "Eth8-${each.value.name}",
+			"rn": "shports-Eth8-${each.value.name}-typ-range"
+		},
+		"children": [
+			{
+				"infraPortBlk": {
+					"attributes": {
+						"dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth8-${each.value.name}-typ-range/portblk-block2",
+						"fromCard": "8",
+						"fromPort": "${each.value.name}",
+						"toCard": "8",
+						"toPort": "${each.value.name}",
+						"name": "block2",
+						"rn": "portblk-block2"
+					}
+				}
+			}
+		]
 	}
 }
 	EOF

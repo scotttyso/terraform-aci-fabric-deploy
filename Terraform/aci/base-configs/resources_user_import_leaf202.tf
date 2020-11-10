@@ -9,7 +9,7 @@
 #   spines should always be less than the number of leafs
 #   https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/b-Cisco-ACI-Naming-and-Numbering.html#id_107280
 # node_type: uremote-leaf-wan or unspecified.
-# role: spine, leaf, or unspecified.
+# role: spine, leaf.
 # pod_id: Typically this will be one unless you are running multipod.
 
 resource "aci_fabric_node_member" "leaf202" {
@@ -22,15 +22,15 @@ resource "aci_fabric_node_member" "leaf202" {
 }
 
 resource "aci_rest" "oob_mgmt_leaf202" {
-	path       = "/api/node/mo/uni/tn-mgmt"
+	path       = "/api/node/mo/uni/tn-mgmt.json"
 	class_name = "mgmtRsOoBStNode"
 	payload    = <<EOF
 {
 	"mgmtRsOoBStNode": {
 		"attributes": {
-			"addr":"192.168.87.12/24",
+			"addr":"192.168.85.12/24",
 			"dn":"uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-1/node-202]",
-			"gw":"192.168.87.1",
+			"gw":"192.168.85.254",
 			"tDn":"topology/pod-1/node-202",
 			"v6Addr":"::",
 			"v6Gw":"::"
@@ -40,16 +40,16 @@ resource "aci_rest" "oob_mgmt_leaf202" {
 	EOF
 }
 
-resource "aci_rest" "inband_mgmt_leaf202" {
-	path       = "/api/node/mo/uni/tn-mgmt"
+resource "aci_rest" "inb_mgmt_leaf202" {
+	path       = "/api/node/mo/uni/tn-mgmt.json"
 	class_name = "mgmtRsInBStNode"
 	payload    = <<EOF
 {
 	"mgmtRsInBStNode": {
 		"attributes": {
-			"addr":"192.168.86.12/24",
-			"dn":"uni/tn-mgmt/mgmtp-default/inb-inband_epg/rsinBStNode-[topology/pod-1/node-202]",
-			"gw":"192.168.86.1",
+			"addr":"192.168.87.12/24",
+			"dn":"uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-1/node-202]",
+			"gw":"192.168.87.254",
 			"tDn":"topology/pod-1/node-202",
 		}
 	}
@@ -57,8 +57,8 @@ resource "aci_rest" "inband_mgmt_leaf202" {
 	EOF
 }
 
-resource "aci_leaf_profile" "leaf202" {
-	name = "leaf202"
+resource "aci_leaf_profile" "leaf202_SwSel" {
+	name = "leaf202_SwSel"
 	leaf_selector {
 		name                    = "leaf202"
 		switch_association_type = "range"
@@ -70,28 +70,28 @@ resource "aci_leaf_profile" "leaf202" {
 	}
 }
 
-resource "aci_leaf_interface_profile" "leaf202" {
-	name = "leaf202"
+resource "aci_leaf_interface_profile" "leaf202_IntProf" {
+	name = "leaf202_IntProf"
 }
 
-resource "aci_rest" "leaf_int_selector_leaf202" {
-	path       = "/api/node/mo/uni/infra/nprof-leaf202.json"
+resource "aci_rest" "leaf_int_selector_leaf202_IntProf" {
+	path       = "/api/node/mo/uni/infra/nprof-leaf202_SwSel.json"
 	class_name = "infraRsAccPortP"
 	payload    = <<EOF
 {
 	"infraRsAccPortP": {
 		"attributes": {
-			"tDn": "uni/infra/accportprof-leaf202"
+			"tDn": "uni/infra/accportprof-leaf202_IntProf"
 		}
 	}
 }
 	EOF
 }
 
-resource "aci_access_port_selector" "leaf202" {
-	for_each                  = var.port_selector_48
-	leaf_interface_profile_dn = aci_leaf_interface_profile.leaf202.id
-	name                      = Eth1-[each.value.name]
+resource "aci_access_port_selector" "leaf202_IntProf" {
+	for_each                  = var.port-selector-48
+	leaf_interface_profile_dn = aci_leaf_interface_profile.leaf202_IntProf.id
+	name                      = "Eth1-${each.value.name}"
 	access_port_selector_type = "range"
 }
 

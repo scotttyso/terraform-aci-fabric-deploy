@@ -152,11 +152,14 @@ for line in lines:
                     str_tkvl = str_tkvl.replace(',', '_')
                 if re.search('[,]+', str_desc):
                     str_desc = str_desc.replace(',', '_')
-                wr_poch.write('{},{},{},{},{},{},{},{},{}\n'.format(str_host, str_intf, str_vpc_, str_mtu_, str_swmd, str_swav, str_tknv, str_tkvl, str_desc))
+                wr_poch.write('{},{},{},{},{},{},{},{},{}\n'.format(str_host, str_intf, str_vpc_, str_mtu_, str_swmd, str_swav, str_tknv, 
+                              str_tkvl, str_desc))
         elif 'Ethernet' in str_intf:
             if ethn_count == 0:
                 wr_poch.close()
-                wr_intf.write('Type,New Host,New Interface,Current Host,Current Interface,Port Type ,port-channel ID,VPC_ID,MTU,Switchport Mode,Access VLAN or Native VLAN,Trunk Allowed VLANs,CDP Enabled,LLDP Receive, LLDP Transmit, BPDU Guard, Port-Channel Description,Port Description\n')
+                wr_intf.write('Type,New Host,New Interface,Current Host,Current Interface,Port Type ,port-channel ID,VPC_ID,MTU,Switchport Mode,\
+                              Access VLAN or Native VLAN,Trunk Allowed VLANs,CDP Enabled,LLDP Receive,LLDP Transmit,BPDU Guard,\
+                              Port-Channel Description,Port Description\n')
                 wr_poch = open('int_poch.csv', 'r')
                 po_lines = wr_poch.readlines()
                 ethn_count += 1
@@ -168,23 +171,29 @@ for line in lines:
                         if str_poch in x[1]:
                             if x[3] == 'undefined':
                                 if str_swmd == 'access':
-                                    wr_intf.write('intf_add,,,{},{},pc,{},n/a,{},{},{},{},n/a,{},{},{},{},{}\n'.format(str_host, str_intf, str_poch, x[3], x[4], x[5], str_cdp_, str_lldr, str_lldt, str_bpdg, desc, str_desc))
+                                    wr_intf.write('intf_add,,,{},{},pc,{},n/a,{},{},{},{},n/a,{},{},{},{},{}\n'.format(str_host, str_intf, str_poch, x[3], 
+                                                  x[4], x[5], str_cdp_, str_lldr, str_lldt, str_bpdg, desc, str_desc))
                                 elif str_swmd == 'trunk':
-                                    wr_intf.write('intf_add,,,{},{},pc,{},n/a,{},{},{},{},{},{},{},{},{},{}\n'.format(str_host, str_intf, str_poch, x[3], x[4], x[6], x[7], str_cdp_, str_lldr, str_lldt, str_bpdg, desc, str_desc))
+                                    wr_intf.write('intf_add,,,{},{},pc,{},n/a,{},{},{},{},{},{},{},{},{},{}\n'.format(str_host, str_intf, str_poch, x[3], 
+                                                  x[4], x[6], x[7], str_cdp_, str_lldr, str_lldt, str_bpdg, desc, str_desc))
                             else:
                                 if str_swmd == 'access':
-                                    wr_intf.write('intf_add,,,{},{},vpc,{},{},{},{},{},{},n/a,{},{},{},{},{}\n'.format(str_host, str_intf, str_poch, x[2], x[3], x[4], x[5], str_cdp_, str_lldr, str_lldt, str_bpdg, desc, str_desc))
+                                    wr_intf.write('intf_add,,,{},{},vpc,{},{},{},{},{},{},n/a,{},{},{},{},{}\n'.format(str_host, str_intf, str_poch, x[2], 
+                                                  x[3], x[4], x[5], str_cdp_, str_lldr, str_lldt, str_bpdg, desc, str_desc))
                                 elif str_swmd == 'trunk':
-                                    wr_intf.write('intf_add,,,{},{},vpc,{},{},{},{},{},{},{},{},{},{},{},{}\n'.format(str_host, str_intf, str_poch, x[2], x[3], x[4], x[6], x[7], str_cdp_, str_lldr, str_lldt, str_bpdg, desc, str_desc))
+                                    wr_intf.write('intf_add,,,{},{},vpc,{},{},{},{},{},{},{},{},{},{},{},{}\n'.format(str_host, str_intf, str_poch, x[2], 
+                                                  x[3], x[4], x[6], x[7], str_cdp_, str_lldr, str_lldt, str_bpdg, desc, str_desc))
                 else:
                     if re.search('[,]+', str_tkvl):
                         str_tkvl = str_tkvl.replace(',', '_')
                     if re.search('[,]+', str_desc):
                         str_desc = str_desc.replace(',', '_')
                     if str_swmd == 'access':
-                        wr_intf.write('intf_add,,,{},{},ap,n/a,n/a,{},{},{},n/a,{},{},{},{},n/a,{}\n'.format(str_host, str_intf, str_mtu_, str_swmd, str_swav, str_cdp_, str_lldr, str_lldt, str_bpdg, str_desc))
+                        wr_intf.write('intf_add,,,{},{},ap,n/a,n/a,{},{},{},n/a,{},{},{},{},n/a,{}\n'.format(str_host, str_intf, str_mtu_, str_swmd, 
+                                      str_swav, str_cdp_, str_lldr, str_lldt, str_bpdg, str_desc))
                     elif str_swmd == 'trunk':
-                        wr_intf.write('intf_add,,,{},{},ap,n/a,n/a,{},{},{},{},{},{},{},{},n/a,{}\n'.format(str_host, str_intf, str_mtu_, str_swmd, str_tknv, str_tkvl, str_cdp_, str_lldr, str_lldt, str_bpdg, str_desc))
+                        wr_intf.write('intf_add,,,{},{},ap,n/a,n/a,{},{},{},{},{},{},{},{},n/a,{}\n'.format(str_host, str_intf, str_mtu_, str_swmd, 
+                                      str_tknv, str_tkvl, str_cdp_, str_lldr, str_lldt, str_bpdg, str_desc))
 
         
         # Reset the Variables back to Default

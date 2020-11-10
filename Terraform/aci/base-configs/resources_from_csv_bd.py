@@ -298,7 +298,8 @@ with open(csv_input) as csv_file:
                     oob_gwv4 = column[12]
                     
                     # Create Resource Record for Switch
-                    resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modules, port_count, inb_ipv4, inb_gwv4, oob_ipv4, oob_gwv4)
+                    resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modules, port_count, inb_ipv4, inb_gwv4, 
+                                    oob_ipv4, oob_gwv4)
                     
                     # Increment Line Count
                     line_count += 1
