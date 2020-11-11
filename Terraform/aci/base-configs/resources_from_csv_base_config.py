@@ -356,7 +356,7 @@ def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
 
     pfx = inb_ipv4.split('/', 2)
     gwv4 = str(inb_gwv4) + '/' + str(pfx[1])
-    file_inb = ('resources_from_user_tenant_inband.tf')
+    file_inb = ('resources_from_user_tenant_mgmt.tf')
     wr_file_inb = open(file_inb, 'w')
     wr_file_inb.write('# Use this Resource File to Register the inband management network for the Fabric\n')
     wr_file_inb.write('\n')
