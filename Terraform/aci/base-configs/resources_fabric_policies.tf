@@ -144,3 +144,85 @@ resource "aci_rest" "l3_to_vl-pool" {
 	EOF
 }
 
+resource "aci_rest" "fabric_best_practice" {
+	path       = "/api/node/mo/uni/fabric.json"
+	class_name = "fabricInst"
+	payload    = <<EOF
+{
+    "fabricInst": {
+        "attributes": {
+            "dn": "uni/fabric"
+        },
+        "children": [
+            {
+                "isisDomPol": {
+                    "attributes": {
+                        "dn": "uni/fabric/isisDomP-default",
+                        "rn": "isisDomP-default",
+                        "redistribMetric": "63"
+					},
+					"children": []
+				}
+			},
+			{
+				"coopPol": {
+					"attributes": {
+						"dn": "uni/fabric/pol-default",
+						"rn": "pol-default",
+						"type": "strict"
+					},
+					"children": []
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "infra_best_practice" {
+	path       = "/api/node/mo/uni/infra.json"
+	class_name = "infraInfra"
+	payload    = <<EOF
+{
+	"infraInfra": {
+		"attributes": {
+			"dn": "uni/infra",
+		},
+		"children": [
+			{
+				"infraSetPol": {
+					"attributes": {
+						"dn": "uni/infra/settings",
+						"domainValidation": "true",
+						"enforceSubnetCheck": "true"
+					},
+					"children": []
+				}
+			},
+			{
+				"epIpAgingP": {
+					"attributes": {
+						"dn": "uni/infra/ipAgingP-default",
+						"rn": "ipAgingP-default",
+						"adminSt": "enabled"
+					},
+					"children": []
+				}
+			},
+			{
+				"epControlP": {
+					"attributes": {
+						"dn": "uni/infra/epCtrlP-default",
+						"rn": "epCtrlP-default",
+						"adminSt": "enabled"
+					},
+					"children": []
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+

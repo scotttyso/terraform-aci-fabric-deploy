@@ -9,12 +9,22 @@ elif len(sys.argv) == 1:
     csv_input = sys.argv[1]
     append = 'no'
 
-file_basic_pod_info = 'resources_user_import_base_pod_policies.tf'
+file_base_pod_info = 'resources_user_import_base_pod_policies.tf'
 
 if append == 'yes':
-    wr_file_basic_pod_info = open(file_basic_pod_info, 'a')
+    wr_base_info = open(file_base_pod_info, 'a')
 else:
-    wr_file_basic_pod_info = open(file_basic_pod_info, 'w')
+    wr_base_info = open(file_base_pod_info, 'w')
+    wr_base_info.write('# This File will include DNS, Domain, NTP, Timezone and other base configuration parameters\n')
+
+def validate_bgp_as(line_count, bgp_as):
+    bgp_as=int(bgp_as)
+    if not validators.between(bgp_as, min=1, max=4294967295):
+        print(f"----------------\r")
+        print(f"  Error on Row {line_count}. BGP AS {bgp_as} is invalid.")
+        print(f"  A valid BGP AS is between 1 and 4294967295.  Exiting....")
+        print("----------------")
+        exit()
 
 def validate_hostname(line_count, name):
     pattern = re.compile('^[a-zA-Z0-9\\-]+$')
@@ -112,6 +122,27 @@ def validate_inband(line_count, name, inb_ipv4, inb_gwv4):
         print('----------------\r\r')
         exit()
 
+def validate_ipv4(line_count, ipv4):
+    if not ipaddress.IPv4Address(ipv4):
+        print(f"----------------")
+        print(f"  Error on Row {line_count}. {ipv4} is not a valid IPv4 Address.")
+        print(f"  Exiting...")
+        print("----------------")
+        exit()
+
+def validate_mgmt_domain(line_count, mgmt_domain):
+    if mgmt_domain == 'oob':
+        mgmt_domain = 'oob-default'
+    elif mgmt_domain == 'inband':
+        mgmt_domain = 'inb-inb_epg'
+    else:
+        print('\r----------------\r')
+        print(f'   Error, the Management Domain Should be inband or oob')
+        print(f'   Error on Row {line_count}, Please verify input information.')
+        print('----------------\r')
+        exit()
+    return mgmt_domain
+
 def validate_oob(line_count, name, oob_ipv4, oob_gwv4):
     oob_check_ipv4 = ipaddress.IPv4Interface(oob_ipv4)
     oob_network_v4 = oob_check_ipv4.network
@@ -124,10 +155,124 @@ def validate_oob(line_count, name, oob_ipv4, oob_gwv4):
         print("----------------")
         exit()
 
+def resource_bgp_as(bgp_as):
+    # Validate BGP AS Number
+    validate_bgp_as(line_count, bgp_as)
+        
+    wr_base_info.write('resource "aci_rest" "bgp_as" {\n')
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/bgpInstP-default/as.json"\n')
+    wr_base_info.write('\tclass_name = "bgpAsP"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"bgpAsP": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/bgpInstP-default/as",\n')
+    wr_base_info.write('\t\t\t"asn": "%s",\n' % (bgp_as))
+    wr_base_info.write('\t\t\t"rn": "as"\n')
+    wr_base_info.write('\t\t}\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+
+def resource_bgp_rr(node_id):
+    # Validate BGP AS Number
+    validate_bgp_as(line_count, bgp_as)
+        
+    wr_base_info.write('resource "aci_rest" "bgp_rr_%s" {\n' % (node_id))
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/bgpInstP-default/rr/node-%s.json"\n' % (node_id))
+    wr_base_info.write('\tclass_name = "bgpRRNodePEp"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"bgpRRNodePEp": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/bgpInstP-default/rr/node-%s",\n' % (node_id))
+    wr_base_info.write('\t\t\t"id": "%s",\n' % (node_id))
+    wr_base_info.write('\t\t\t"rn": "node-%s"\n' % (node_id))
+    wr_base_info.write('\t\t}\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+
+def resource_dns(dns_ipv4, prefer):
+    # Validate DNS IPv4 Address
+    try:
+        validate_ipv4(line_count, dns_ipv4)
+    except Exception as err:
+        print('\r\r----------------\r')
+        print(f'   {SystemExit(err)}')
+        print(f'   Error on Row {line_count}, Please verify input information.')
+        print('----------------\r\r')
+        exit()
+    
+    dns_ipv4_ = dns_ipv4.replace('.', '_')
+    wr_base_info.write('resource "aci_rest" "dns_%s" {\n' % (dns_ipv4_))
+    wr_base_info.write('\tpath       = "api/node/mo/uni/fabric/dnsp-default/prov-[%s].json"\n' % (dns_ipv4))
+    wr_base_info.write('\tclass_name = "dnsProv"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"dnsProv": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/dnsp-default/prov-[%s]",\n' % (dns_ipv4))
+    wr_base_info.write('\t\t\t"addr": "%s",\n' % (dns_ipv4))
+    wr_base_info.write('\t\t\t"preferred": "%s",\n' % (prefer))
+    wr_base_info.write('\t\t\t"rn": "prov-[%s]"\n' % (dns_ipv4))
+    wr_base_info.write('\t\t},\n')
+    wr_base_info.write('\t\t"children": []\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+
+def resource_dns_mgmt(mgmt_domain):
+    # Validate Management Domain
+    mgmt_domain = validate_mgmt_domain(line_count, mgmt_domain)
+        
+    wr_base_info.write('resource "aci_rest" "dns_mgmt" {\n')
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/dnsp-default.json"\n')
+    wr_base_info.write('\tclass_name = "dnsRsProfileToEpg"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"dnsRsProfileToEpg": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"tDn": "uni/tn-mgmt/mgmtp-default/%s",\n' % (mgmt_domain))
+    wr_base_info.write('\t\t}\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+
+def resource_domain(domain, prefer):
+
+    domain_ = domain.replace('.', '_')
+    wr_base_info.write('resource "aci_rest" "domain_%s" {\n' % (domain_))
+    wr_base_info.write('\tpath       = "api/node/mo/uni/fabric/dnsp-default/dom-[%s].json"\n' % (domain))
+    wr_base_info.write('\tclass_name = "dnsDomain"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"dnsDomain": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/dnsp-default/dom-[%s]",\n' % (domain))
+    wr_base_info.write('\t\t\t"name": "%s",\n' % (domain))
+    wr_base_info.write('\t\t\t"isDefault": "%s",\n' % (prefer))
+    wr_base_info.write('\t\t\t"rn": "dom-[%s]"\n' % (domain))
+    wr_base_info.write('\t\t},\n')
+    wr_base_info.write('\t\t"children": []\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+
 def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
     
+    # Validate Inband VLAN
     try:
-        #Validate Inband VLAN
         validate_inb_vlan(line_count, inb_vlan)
     except Exception as err:
         print('\r\r----------------\r')
@@ -202,6 +347,48 @@ def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
     wr_file_inb.write('\n')
     wr_file_inb.close()
 
+
+def resource_ntp(ntp_ipv4, prefer, mgmt_domain):
+    # Validate Management Domain
+    mgmt_domain = validate_mgmt_domain(line_count, mgmt_domain)
+    
+    # Validate NTP IPv4 Address
+    try:
+        validate_ipv4(line_count, ntp_ipv4)
+    except Exception as err:
+        print('\r\r----------------\r')
+        print(f'   {SystemExit(err)}')
+        print(f'   Error on Row {line_count}, Please verify input information.')
+        print('----------------\r\r')
+        exit()
+
+    ntp_ipv4_ = ntp_ipv4.replace('.', '_')
+    wr_base_info.write('resource "aci_rest" "ntp_%s" {\n' % (ntp_ipv4_))
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/time-default/ntpprov-%s.json"\n' % (ntp_ipv4))
+    wr_base_info.write('\tclass_name = "datetimeNtpProv"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"datetimeNtpProv": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/time-default/ntpprov-%s",\n' % (ntp_ipv4))
+    wr_base_info.write('\t\t\t"name": "%s",\n' % (ntp_ipv4))
+    wr_base_info.write('\t\t\t"preferred": "%s",\n' % (prefer))
+    wr_base_info.write('\t\t\t"rn": "ntpprov-%s",\n' % (ntp_ipv4))
+    wr_base_info.write('\t\t},\n')
+    wr_base_info.write('\t\t"children": [\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"datetimeRsNtpProvToEpg": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"tDn": "uni/tn-mgmt/mgmtp-default/%s",\n' % (mgmt_domain))
+    wr_base_info.write('\t\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t}\n')
+    wr_base_info.write('\t\t]\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
 
 def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modules, port_count, oob_ipv4, oob_gwv4, inb_ipv4, inb_gwv4, inb_vlan):
     try:
@@ -422,54 +609,109 @@ with open(csv_input) as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=',')
     line_count = 0
     count_inb_gwv4 = 0
+    count_inb_vlan = 0
+    count_dns_servers = 0
+    inb_vlan = ''
     for column in csv_reader:
         if any(column):        
             type = column[0]
-            if type == 'Company':
+            if type == 'bgp_as':
+                bgp_as = column[1]
+                # Configure the Default BGP AS Number
+                resource_bgp_as(bgp_as)
+                line_count += 1
+            elif type == 'bgp_rr':
+                bgp_rr = column[2]
+                # Configure the Default BGP Route Reflector
+                resource_bgp_rr(node_id)
+                line_count += 1
+            elif type == 'Company':
                 line_count += 1
             elif type == 'dns':
+                dns_ipv4 = column[1]
+                prefer = column[2]
+                if count_dns_servers < 2:
+                    # Create Resource Record for DNS Servers
+                    resource_dns(dns_ipv4, prefer) 
+                else:
+                    print(f"----------------")
+                    print(f"  At this time it is only supported to add two DNS Providers")
+                    print(f"  Remove one or more providers.  Exiting....")
+                    print(f"----------------")
+                    exit()
+                count_dns_servers += 1
+                line_count += 1
+            elif type == 'dns_mgmt':
+                mgmt_domain = column[1]
+                # Create Resource Record for DNS Servers
+                resource_dns_mgmt(mgmt_domain) 
+                line_count += 1
+            elif type == 'search_domain':
+                domain = column[1]
+                prefer = column[2]
+                # Create Resource Record for Search Domain
+                resource_domain(domain, prefer) 
                 line_count += 1
             elif type == 'inband_acl':
                 protocol = column[1]
                 port = column[2]
                 
                 line_count += 1
+            elif type == 'inband_vlan':
+                inb_vlan = column[1]
+                line_count += 1
+            elif type == 'ntp':
+                ntp_ipv4 = column[1]
+                prefer = column[2]
+                mgmt_domain = column[3]
+                # Create Resource Record for NTP Servers
+                resource_ntp(ntp_ipv4, prefer, mgmt_domain) 
+
+                line_count += 1
             elif type == 'switch':
-                    serial = column[1]
-                    name = column[2]
-                    node_id = column[3]
-                    node_type = column[4]
-                    pod_id = column[5]
-                    switch_role = column[6]
-                    modules = column[7]
-                    port_count = column[8]
-                    oob_ipv4 = column[9]
-                    oob_gwv4 = column[10]
-                    inb_ipv4 = column[11]
-                    inb_gwv4 = column[12]
-                    inb_vlan = column[13]
+                serial = column[1]
+                name = column[2]
+                node_id = column[3]
+                node_type = column[4]
+                pod_id = column[5]
+                switch_role = column[6]
+                modules = column[7]
+                port_count = column[8]
+                oob_ipv4 = column[9]
+                oob_gwv4 = column[10]
+                inb_ipv4 = column[11]
+                inb_gwv4 = column[12]
+                
+                # Make sure the inband_vlan exists
+                if not inb_vlan:
+                    print(f"----------------")
+                    print(f"  The Inband VLAN must be defined before configuring management")
+                    print(f"  on all switches.  Please first add the Inband VLAN to the")
+                    print(f"  definitions.  Exiting...")
+                    print(f"----------------")
+                    exit()
+
+                # Create Resource Record for Switch and inband Bridge  Domain AP/EPG
+                resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modules, port_count, oob_ipv4, oob_gwv4, 
+                                inb_ipv4, inb_gwv4, inb_vlan)
+                if count_inb_gwv4 == 0: 
+                    resource_inband(inb_ipv4, inb_gwv4, inb_vlan)
+                    count_inb_gwv4 += 1
+                    current_inb_gwv4 = inb_gwv4
+                else:
+                    if not current_inb_gwv4 == inb_gwv4:
+                            print(f"----------------")
+                            print(f"  current inband = {current_inb_gwv4} and found {inb_gwv4} next")
+                            print(f"  The Inband Network should be the same on all switches.")
+                            print(f"  Different Gateway's were found")
+                            print(f"  Exiting...")
+                            print(f"----------------")
+                            exit()
+
                     
-                    # Create Resource Record for Switch and inband Bridge  Domain AP/EPG
-                    resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modules, port_count, oob_ipv4, oob_gwv4, 
-                                    inb_ipv4, inb_gwv4, inb_vlan)
-                    if count_inb_gwv4 == 0: 
-                        resource_inband(inb_ipv4, inb_gwv4, inb_vlan)
-                        count_inb_gwv4 += 1
-                        current_inb_gwv4 = inb_gwv4
-                    else:
-                        if not current_inb_gwv4 == inb_gwv4:
-                                print(f"----------------")
-                                print(f"  current inband = {current_inb_gwv4} and found {inb_gwv4} next")
-                                print(f"  The Inband Network should be the same on all switches.")
-                                print(f"  Different Gateway's were found")
-                                print(f"  Exiting...")
-                                print(f"----------------")
-                                exit()
 
-                        
-
-                    # Increment Line Count
-                    line_count += 1
+                # Increment Line Count
+                line_count += 1
             elif type == 'time':
                 line_count += 1
             elif type == 'tenants':
@@ -481,7 +723,7 @@ with open(csv_input) as csv_file:
 
 #Close out the Open Files
 csv_file.close()
-wr_file_basic_pod_info.close()
+wr_base_info.close()
 
 #End Script
 print('\r\r----------------\r')
