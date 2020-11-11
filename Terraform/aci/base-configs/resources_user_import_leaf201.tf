@@ -88,10 +88,35 @@ resource "aci_rest" "leaf_int_selector_leaf201_IntProf" {
 	EOF
 }
 
-resource "aci_access_port_selector" "leaf201_IntProf" {
-	for_each                  = var.port-selector-48
-	leaf_interface_profile_dn = aci_leaf_interface_profile.leaf201_IntProf.id
-	name                      = "Eth1-${each.value.name}"
-	access_port_selector_type = "range"
+resource "aci_rest" "leaf201_1_IntProf" {
+	for_each         = var.port-selector-48
+	path             = "/api/node/mo/uni/infra/accportprof-leaf201_IntProf/hports-Eth1-${each.value.name}-typ-range.json"
+	class_name       = "infraHPortS"
+	payload          = <<EOF
+{
+	"infraHPortS": {
+		"attributes": {
+			"dn": "uni/infra/accportprof-leaf201_IntProf/hports-Eth1-${each.value.name}-typ-range",
+			"name": "Eth1-${each.value.name}",
+			"rn": "hports-Eth1-${each.value.name}-typ-range"
+		},
+		"children": [
+			{
+				"infraPortBlk": {
+					"attributes": {
+						"dn": "uni/infra/accportprof-leaf201_IntProf/hports-Eth1-${each.value.name}-typ-range/portblk-block2",
+						"fromCard": "1",
+						"fromPort": "${each.value.name}",
+						"toCard": "1",
+						"toPort": "${each.value.name}",
+						"name": "block2",
+						"rn": "portblk-block2"
+					}
+				}
+			}
+		]
+	}
+}
+	EOF
 }
 

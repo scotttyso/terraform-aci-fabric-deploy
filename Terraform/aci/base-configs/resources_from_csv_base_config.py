@@ -53,6 +53,15 @@ def validate_node_id(line_count, name, node_id):
         print("----------------")
         exit()
 
+def validate_node_id_apic(line_count, name, node_id):
+    node_id=int(node_id)
+    if not validators.between(node_id, min=1, max=7):
+        print(f"----------------\r")
+        print(f"  Error on Row {line_count}. APIC node_id {node_id} is invalid.")
+        print(f"  A valid Node ID is between 1 and 7.  Exiting....")
+        print("----------------")
+        exit()
+
 def validate_node_type(line_count, name, node_type):
     pattern = re.compile('^(remote-leaf-wan|unspecified)$')
     if not re.search(pattern, node_type):
@@ -154,6 +163,70 @@ def validate_oob(line_count, name, oob_ipv4, oob_gwv4):
         print(f"  Exiting...")
         print("----------------")
         exit()
+
+def resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_leaf, p1_swpt, p2_leaf, p2_swpt):
+    try:
+        # Validate APIC Node_ID
+        validate_node_id_apic(line_count, name, node_id)
+
+        # Validate Pod_ID
+        validate_pod_id(line_count, name, pod_id)
+
+        # Validate InBand Network
+        validate_inband(line_count, name, inb_ipv4, inb_gwv4)
+    except Exception as err:
+        print('\r\r----------------\r')
+        print(f'   {SystemExit(err)}')
+        print(f'   Error on Row {line_count}, Please verify input information.')
+        print('----------------\r\r')
+        exit()
+    pod_id = str(pod_id)
+    file_apic = ('resources_user_import_apic_%s.tf' % (name))
+    wr_apic = open(file_apic, 'w')
+    wr_apic.write('resource "aci_rest" "inb_mgmt_apic_%s" {\n' % (name))
+    wr_apic.write('\tpath       = "/api/node/mo/uni/tn-mgmt.json"\n')
+    wr_apic.write('\tclass_name = "mgmtRsInBStNode"\n')
+    wr_apic.write('\tpayload    = <<EOF\n')
+    wr_apic.write('{\n')
+    wr_apic.write('\t"mgmtRsInBStNode": {\n')
+    wr_apic.write('\t\t"attributes": {\n')
+    wr_apic.write('\t\t\t"addr":"%s",\n' % (inb_ipv4))
+    wr_apic.write('\t\t\t"dn":"uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-%s/node-%s]",\n' % (pod_id, node_id))
+    wr_apic.write('\t\t\t"gw":"%s",\n' % (inb_gwv4))
+    wr_apic.write('\t\t\t"tDn":"topology/pod-%s/node-%s",\n' % (pod_id, node_id))
+    wr_apic.write('\t\t}\n')
+    wr_apic.write('\t}\n')
+    wr_apic.write('}\n')
+    wr_apic.write('\tEOF\n')
+    wr_apic.write('}\n')
+    wr_apic.write('\n')
+    # resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_leaf, p1_swpt, p2_leaf, p2_swpt):
+    list_ports = [p1_leaf + ',' + p1_swpt,p2_leaf + ',' + p2_swpt]
+    port_list_count = 0
+    for x in list_ports:
+        port_list_count += 1
+        var_list = x.split(',')
+        leaf = var_list[0]
+        port_x = var_list[1]
+        port_split = port_x.split('/')
+        module = port_split[0]
+        port = port_split[1]
+        wr_apic.write('resource "aci_rest" "%s_port_2_%s" {\n' % (name, port_list_count))
+        wr_apic.write('\tpath       = "/api/node/mo/uni/infra/accportprof-%s_IntProf/hports-Eth%s-%s-typ-range/rsaccBaseGrp.json"\n'% (leaf, module, port))
+        wr_apic.write('\tclass_name = "infraRsAccBaseGrp"\n')
+        wr_apic.write('\tpayload    = <<EOF\n')
+        wr_apic.write('{\n')
+        wr_apic.write('\t"infraRsAccBaseGrp": {\n')
+        wr_apic.write('\t\t"attributes": {\n')
+        wr_apic.write('\t\t\t"tDn": "uni/infra/funcprof/accportgrp-inband_ap",\n')
+        wr_apic.write('\t\t}\n')
+        wr_apic.write('\t}\n')
+        wr_apic.write('}\n')
+        wr_apic.write('\tEOF\n')
+        wr_apic.write('}\n')
+        wr_apic.write('\n')
+    wr_apic.close()
+
 
 def resource_bgp_as(bgp_as):
     # Validate BGP AS Number
@@ -526,11 +599,36 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modul
         mod_count = 0
         while mod_count < int(modules):
             mod_count += 1
-            wr_file_sw.write('resource "aci_access_port_selector" "%s_IntProf" {\n' % (name))
-            wr_file_sw.write('\tfor_each                  = var.port-selector-%s\n' %(port_count))
-            wr_file_sw.write('\tleaf_interface_profile_dn = aci_leaf_interface_profile.%s_IntProf.id\n' % (name))
-            wr_file_sw.write('\tname                      = "Eth%s-${each.value.name}"\n' % (mod_count))
-            wr_file_sw.write('\taccess_port_selector_type = "range"\n')
+            wr_file_sw.write('resource "aci_rest" "%s_%s_IntProf" {\n' % (name, mod_count))
+            wr_file_sw.write('\tfor_each         = var.port-selector-%s\n' %(port_count))
+            wr_file_sw.write('\tpath             = "/api/node/mo/uni/infra/accportprof-%s_IntProf/hports-Eth%s-${each.value.name}-typ-range.json"\n' % (name, mod_count))
+            wr_file_sw.write('\tclass_name       = "infraHPortS"\n')
+            wr_file_sw.write('\tpayload          = <<EOF\n')
+            wr_file_sw.write('{\n')
+            wr_file_sw.write('\t"infraHPortS": {\n')
+            wr_file_sw.write('\t\t"attributes": {\n')
+            wr_file_sw.write('\t\t\t"dn": "uni/infra/accportprof-%s_IntProf/hports-Eth%s-${each.value.name}-typ-range",\n' % (name, mod_count))
+            wr_file_sw.write('\t\t\t"name": "Eth%s-${each.value.name}",\n' % (mod_count))
+            wr_file_sw.write('\t\t\t"rn": "hports-Eth%s-${each.value.name}-typ-range"\n' % (mod_count))
+            wr_file_sw.write('\t\t},\n')
+            wr_file_sw.write('\t\t"children": [\n')
+            wr_file_sw.write('\t\t\t{\n')
+            wr_file_sw.write('\t\t\t\t"infraPortBlk": {\n')
+            wr_file_sw.write('\t\t\t\t\t"attributes": {\n')
+            wr_file_sw.write('\t\t\t\t\t\t"dn": "uni/infra/accportprof-%s_IntProf/hports-Eth%s-${each.value.name}-typ-range/portblk-block2",\n' % (name, mod_count))
+            wr_file_sw.write('\t\t\t\t\t\t"fromCard": "%s",\n' % (mod_count))
+            wr_file_sw.write('\t\t\t\t\t\t"fromPort": "${each.value.name}",\n')
+            wr_file_sw.write('\t\t\t\t\t\t"toCard": "%s",\n' % (mod_count))
+            wr_file_sw.write('\t\t\t\t\t\t"toPort": "${each.value.name}",\n')
+            wr_file_sw.write('\t\t\t\t\t\t"name": "block2",\n')
+            wr_file_sw.write('\t\t\t\t\t\t"rn": "portblk-block2"\n')
+            wr_file_sw.write('\t\t\t\t\t}\n')
+            wr_file_sw.write('\t\t\t\t}\n')
+            wr_file_sw.write('\t\t\t}\n')
+            wr_file_sw.write('\t\t]\n')
+            wr_file_sw.write('\t}\n')
+            wr_file_sw.write('}\n')
+            wr_file_sw.write('\tEOF\n')
             wr_file_sw.write('}\n')
             wr_file_sw.write('\n')
     elif switch_role == 'spine':
@@ -615,13 +713,49 @@ with open(csv_input) as csv_file:
     for column in csv_reader:
         if any(column):        
             type = column[0]
-            if type == 'bgp_as':
+            if type == 'apic_inb':
+                name = column[1]
+                node_id = column[2]
+                pod_id = column[3]
+                inb_ipv4 = column[4]
+                inb_gwv4 = column[5]
+                p1_leaf = column[6]
+                p1_swpt = column[7]
+                p2_leaf = column[8]
+                p2_swpt = column[9]
+
+                # Make sure the inband_vlan exists
+                if not inb_vlan:
+                    print(f"----------------")
+                    print(f"  The Inband VLAN must be defined before configuring management")
+                    print(f"  on all switches.  Please first add the Inband VLAN to the")
+                    print(f"  definitions.  Exiting...")
+                    print(f"----------------")
+                    exit()
+
+                # Create Resource Record for Switch and inband Bridge  Domain AP/EPG
+                resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_leaf, p1_swpt, p2_leaf, p2_swpt)
+                if count_inb_gwv4 == 0: 
+                    resource_inband(inb_ipv4, inb_gwv4, inb_vlan)
+                    count_inb_gwv4 += 1
+                    current_inb_gwv4 = inb_gwv4
+                else:
+                    if not current_inb_gwv4 == inb_gwv4:
+                            print(f"----------------")
+                            print(f"  current inband = {current_inb_gwv4} and found {inb_gwv4} next")
+                            print(f"  The Inband Network should be the same on all APIC's and Switches.")
+                            print(f"  Different Gateway's were found")
+                            print(f"  Exiting...")
+                            print(f"----------------")
+                            exit()
+                line_count += 1
+            elif type == 'bgp_as':
                 bgp_as = column[1]
                 # Configure the Default BGP AS Number
                 resource_bgp_as(bgp_as)
                 line_count += 1
             elif type == 'bgp_rr':
-                bgp_rr = column[2]
+                node_id = column[2]
                 # Configure the Default BGP Route Reflector
                 resource_bgp_rr(node_id)
                 line_count += 1
@@ -702,7 +836,7 @@ with open(csv_input) as csv_file:
                     if not current_inb_gwv4 == inb_gwv4:
                             print(f"----------------")
                             print(f"  current inband = {current_inb_gwv4} and found {inb_gwv4} next")
-                            print(f"  The Inband Network should be the same on all switches.")
+                            print(f"  The Inband Network should be the same on all APIC's and Switches.")
                             print(f"  Different Gateway's were found")
                             print(f"  Exiting...")
                             print(f"----------------")

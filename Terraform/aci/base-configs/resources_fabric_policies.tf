@@ -11,7 +11,7 @@ resource "aci_cdp_interface_policy" "default" {
 }
 
 resource "aci_fabric_if_pol" "default" {
-	for_each    = var.interface_policies
+	for_each    = var.Link_Level_policies
 	name        = each.value.name
 	description = each.value.description
 	auto_neg    = each.value.auto_neg
@@ -30,11 +30,6 @@ resource "aci_interface_fc_policy" "default" {
 	port_mode	= each.value.port_mode
 	speed		= each.value.speed
 	trunk_mode  = each.value.trunk_mode
-}
-
-resource "aci_l3_domain_profile" "default" {
-	for_each    = var.l3dom_profile
-	name        = each.value.name
 }
 
 resource "aci_lacp_policy" "default" {
@@ -59,21 +54,45 @@ resource "aci_miscabling_protocol_interface_policy" "default" {
 	admin_st    = each.value.admin_st
 }
 
-resource "aci_physical_domain" "default" {
-	for_each    = var.physical_domain
-	name        = each.value.name
-}
-
 resource "aci_vlan_pool" "default" {
 	for_each    = var.vlan_pool
 	name        = each.value.name
 	alloc_mode  = each.value.alloc_mode
 }
 
+resource "aci_l3_domain_profile" "default" {
+	for_each    			  = var.l3dom_profile
+	name        			  = each.value.name
+	relation_infra_rs_vlan_ns = "uni/infra/vlanns-[${each.value.vl_pool}]-static"
+}
+
+resource "aci_physical_domain" "default" {
+	for_each    = var.physical_domain
+	name        = each.value.name
+	relation_infra_rs_vlan_ns = "uni/infra/vlanns-[${each.value.vl_pool}]-static"
+}
+
 resource "aci_ranges" "default" {
   vlan_pool_dn	= "uni/infra/vlanns-[msite_vl-pool]-static"
   _from		= "vlan-4"
   to		= "vlan-4"
+}
+
+resource "aci_rest" "stp-policies" {
+	for_each   = var.stp_policies
+	path       = "/api/node/mo/uni/infra/ifPol-${each.value.name}.json"
+	class_name = "stpIfPol"
+	payload    = <<EOF
+{
+	"stpIfPol": {
+		"attributes": {
+			"dn": "uni/infra/ifPol-${each.value.name}",
+			"name": "${each.value.name}",
+			"ctrl": "${each.value.ctrl}",
+		},
+	}
+}
+	EOF
 }
 
 resource "aci_rest" "default-oob" {
@@ -92,57 +111,6 @@ resource "aci_rest" "default-oob" {
 	EOF
 }
 
-resource "aci_rest" "phys_to_vl-pool" {
-	for_each   = var.physical_domain
-	path       = "/api/node/mo/uni/phys-[${each.value.name}].json"
-	class_name = "physDomP"
-	payload    = <<EOF
-{
-    "physDomP": {
-        "attributes": {
-            "dn": "uni/phys-${each.value.name}",
-            "name": "${each.value.name}",
-        },
-        "children": [
-            {
-                "infraRsVlanNs": {
-                    "attributes": {
-                        "rn": "rsvlanNs",
-                        "tDn": "uni/infra/vlanns-[${each.value.vl-pool}]-static"
-                    }
-                }
-            }
-        ]
-    }
-}
-	EOF
-}
-
-resource "aci_rest" "l3_to_vl-pool" {
-	for_each   = var.l3dom_profile
-	path       = "/api/node/mo/uni/l3dom-[${each.value.name}].json"
-	class_name = "physDomP"
-	payload    = <<EOF
-{
-    "l3extDomP": {
-        "attributes": {
-            "dn": "uni/l3dom-${each.value.name}",
-            "name": "${each.value.name}",
-        },
-        "children": [
-            {
-                "infraRsVlanNs": {
-                    "attributes": {
-                        "rn": "rsvlanNs",
-                        "tDn": "uni/infra/vlanns-[${each.value.vl-pool}]-static"
-                    }
-                }
-            }
-        ]
-    }
-}
-	EOF
-}
 
 resource "aci_rest" "fabric_best_practice" {
 	path       = "/api/node/mo/uni/fabric.json"

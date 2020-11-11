@@ -6,17 +6,14 @@ switch,TEP-1-101,leaf201,201,unspecified,1,leaf,1,48,192.168.85.11/24,192.168.85
 switch,TEP-1-102,leaf202,202,unspecified,1,leaf,1,48,192.168.85.12/24,192.168.85.254,192.168.87.12/24,192.168.87.254
 switch,TEP-1-103,spine101,101,unspecified,1,spine,8,36,192.168.86.13/24,192.168.86.254,192.168.87.13/24,192.168.87.254
 
-type,apic_node_id,inb_ipv4,inb_gwv4,1st_leaf_name,switchport,2nd_leaf_name,switchport
-apic_inb,1,192.168.87.1/24,192.168.87.254,leaf201,1/48,leaf202,1/48
+type,apic_name,apic_node_id,pod_id,inb_ipv4,inb_gwv4,port1_leaf_name,leaf1_switchport,port2_leaf_name,leaf2_switchport
+apic_inb,apic1,1,1,192.168.87.1/24,192.168.87.254,leaf201,1/48,leaf202,1/48
 
 type,AS Number
 bgp_as,65535
 
 type,BGP Route_Reflector Spine Name,node_id
 bgp_rr,spine101,101
-
-type,attr,timezone
-timezone,local,America/Detroit
 
 type,ntp_server,preferred,Management Domain [inband,oob]
 ntp,192.168.64.39,true,oob

@@ -1,4 +1,4 @@
-variable "interface_policies" {
+variable "Link_Level_policies" {
 	default = {
 		"100M_Auto" = {
 			name        = "100M_Auto"
