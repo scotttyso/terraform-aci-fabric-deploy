@@ -1,4 +1,4 @@
-variable "lacp_policies" {
+variable "policies_lacp" {
 	default = {
 		"Active" = {
 			description = "Base LACP Policy; Mode Active"

@@ -1,4 +1,4 @@
-variable "aep_policies" {
+variable "policies_aep" {
 	default = {
 		"access" = {
 			description = "Base AEP Policy.  Used for Host/Device Connectivity to Fabric"

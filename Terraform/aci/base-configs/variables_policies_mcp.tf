@@ -1,4 +1,4 @@
-variable "mcp_policies" {
+variable "policies_mcp" {
 	default = {
 		"mcp_Disabled" = {
 			description = "Base Miscabling Policy; Mode Disabled"

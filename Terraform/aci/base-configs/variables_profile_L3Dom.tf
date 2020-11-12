@@ -1,4 +1,4 @@
-variable "l3dom_profile" {
+variable "profile_l3dom" {
 	default = {
 		"Inband" = {
 			name        = "inband_L3"

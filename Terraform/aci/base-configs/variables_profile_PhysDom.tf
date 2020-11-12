@@ -1,4 +1,4 @@
-variable "physical_domain" {
+variable "profile_physdom" {
 	default = {
 		"access" = {
 			name        = "access_phys"

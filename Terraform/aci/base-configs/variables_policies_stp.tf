@@ -1,4 +1,4 @@
-variable "stp_policies" {
+variable "policies_stp" {
 	default = {
 		"BPDU_ft" = {
 			name        = "BPDU_ft"

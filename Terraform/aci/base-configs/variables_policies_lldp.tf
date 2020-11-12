@@ -1,4 +1,4 @@
-variable "lldp_policies" {
+variable "policies_lldp" {
 	default = {
 		"Disabled" = {
 			description = "Base LLDP Policy; Disabled"

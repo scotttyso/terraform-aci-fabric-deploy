@@ -1,4 +1,4 @@
-variable "cdp_policies" {
+variable "policies_cdp" {
 	default = {
 		"Disabled" = {
 			name        = "cdp_Disabled"

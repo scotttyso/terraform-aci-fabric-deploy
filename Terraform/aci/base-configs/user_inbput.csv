@@ -37,5 +37,12 @@ snmp_client,snmp-server2,10.0.0.2,inband
 type,snmp_contact,snmp_location
 snmp_info,rich-lab@cisco.com,Richfield Ohio
 
+type,snmp_client_name,snmp_client_ipv4,Management Domain [inband,oob]
+snmp_comm,snmp-server1,10.0.0.1,oob
+snmp_comm,snmp-server2,10.0.0.2,inband
+
+type,snmp_contact,snmp_location
+snmp_user,rich-lab@cisco.com,Richfield Ohio
+
 type,Company Name
 Company,Cisco Labs,

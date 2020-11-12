@@ -1,4 +1,4 @@
-variable "int_fc_policies" {
+variable "policies_int_fc" {
 	default = {
 		"4G_f_port" = {
 			name        = "4G_f_port"

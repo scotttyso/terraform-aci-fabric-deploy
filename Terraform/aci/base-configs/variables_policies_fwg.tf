@@ -1,4 +1,4 @@
-variable "fwg_policies" {
+variable "policies_fwg" {
 	default = {
 		"fwg_A" = {
 			name        = "fwg_A"

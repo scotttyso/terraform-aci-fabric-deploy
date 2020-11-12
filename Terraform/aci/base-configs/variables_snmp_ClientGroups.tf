@@ -1,4 +1,4 @@
-variable "snmp_policies" {
+variable "policies_snmp" {
 	default = {
 		"Inband" = {
 			name        = "Inband"
