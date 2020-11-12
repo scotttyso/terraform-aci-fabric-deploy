@@ -164,6 +164,19 @@ def validate_oob(line_count, name, oob_ipv4, oob_gwv4):
         print("----------------")
         exit()
 
+def validate_snmp_mgmt(line_count, mgmt_domain):
+    if mgmt_domain == 'oob':
+        mgmt_domain = 'Out-of-Band'
+    elif mgmt_domain == 'inband':
+        mgmt_domain = 'Inband'
+    else:
+        print('\r----------------\r')
+        print(f'   Error, the Management Domain Should be inband or oob')
+        print(f'   Error on Row {line_count}, Please verify input information.')
+        print('----------------\r')
+        exit()
+    return mgmt_domain
+
 def resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_leaf, p1_swpt, p2_leaf, p2_swpt):
     try:
         # Validate APIC Node_ID
@@ -431,7 +444,7 @@ def resource_ntp(ntp_ipv4, prefer, mgmt_domain):
     except Exception as err:
         print('\r\r----------------\r')
         print(f'   {SystemExit(err)}')
-        print(f'   Error on Row {line_count}, Please verify input information.')
+        print(f'   Error on Row {line_count}, Please verify {ntp_ipv4} input information.')
         print('----------------\r\r')
         exit()
 
@@ -457,6 +470,61 @@ def resource_ntp(ntp_ipv4, prefer, mgmt_domain):
     wr_base_info.write('\t\t\t\t}\n')
     wr_base_info.write('\t\t\t}\n')
     wr_base_info.write('\t\t]\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+
+def resource_snmp_client(client_name, client_ipv4, mgmt_domain):
+    # Validate Management Domain
+    snmp_mgmt = validate_snmp_mgmt(line_count, mgmt_domain)
+    
+    # Validate SNMP IPv4 Client Address
+    try:
+        validate_ipv4(line_count, client_ipv4)
+    except Exception as err:
+        print('\r\r----------------\r')
+        print(f'   {SystemExit(err)}')
+        print(f'   Error on Row {line_count}, Please verify {client_ipv4} input information.')
+        print('----------------\r\r')
+        exit()
+
+    client_ipv4_ = client_ipv4.replace('.', '_')
+    wr_base_info.write('resource "aci_rest" "snmp_client_%s" {\n' % (client_ipv4_))
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/snmppol-default/clgrp-%s_Clients/client-[%s].json"\n' % (snmp_mgmt, client_ipv4))
+    wr_base_info.write('\tclass_name = "snmpClientP"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"snmpClientP": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/snmppol-default/clgrp-%s_Clients/client-[%s]",\n' % (snmp_mgmt, client_ipv4))
+    wr_base_info.write('\t\t\t"name": "%s",\n' % (client_name))
+    wr_base_info.write('\t\t\t"addr": "%s",\n' % (client_ipv4))
+    wr_base_info.write('\t\t\t"rn": "client-%s",\n' % (client_ipv4))
+    wr_base_info.write('\t\t},\n')
+    wr_base_info.write('\t\t"children": []\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+
+def resource_snmp_info(contact, location):
+    wr_base_info.write('resource "aci_rest" "snmp_info" {\n')
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/snmppol-default.json"\n')
+    wr_base_info.write('\tclass_name = "snmpPol"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"snmpPol": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/snmppol-default",\n')
+    wr_base_info.write('\t\t\t"descr": "This is the default SNMP Policy",\n')
+    wr_base_info.write('\t\t\t"adminSt": "enabled",\n')
+    wr_base_info.write('\t\t\t"contact": "%s",\n' % (contact))
+    wr_base_info.write('\t\t\t"loc": "%s",\n' % (location))
+    wr_base_info.write('\t\t},\n')
+    wr_base_info.write('\t\t"children": []\n')
     wr_base_info.write('\t}\n')
     wr_base_info.write('}\n')
     wr_base_info.write('\tEOF\n')
@@ -786,11 +854,6 @@ with open(csv_input) as csv_file:
                 # Create Resource Record for Search Domain
                 resource_domain(domain, prefer) 
                 line_count += 1
-            elif type == 'inband_acl':
-                protocol = column[1]
-                port = column[2]
-                
-                line_count += 1
             elif type == 'inband_vlan':
                 inb_vlan = column[1]
                 line_count += 1
@@ -799,8 +862,20 @@ with open(csv_input) as csv_file:
                 prefer = column[2]
                 mgmt_domain = column[3]
                 # Create Resource Record for NTP Servers
-                resource_ntp(ntp_ipv4, prefer, mgmt_domain) 
-
+                resource_ntp(ntp_ipv4, prefer, mgmt_domain)
+                line_count += 1
+            elif type == 'snmp_client':
+                client_name = column[1]
+                client_ipv4 = column[2]
+                mgmt_domain = column[3]
+                # Create Resource Record for SNMP Client
+                resource_snmp_client(client_name, client_ipv4, mgmt_domain)
+                line_count += 1
+            elif type == 'snmp_info':
+                contact = column[1]
+                location = column[2]
+                # Create Resource Record for SNMP Default Policy
+                resource_snmp_info(contact, location)
                 line_count += 1
             elif type == 'switch':
                 serial = column[1]

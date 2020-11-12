@@ -15,10 +15,6 @@ bgp_as,65535
 type,BGP Route_Reflector Spine Name,node_id
 bgp_rr,spine101,101
 
-type,ntp_server,preferred,Management Domain [inband,oob]
-ntp,192.168.64.39,true,oob
-ntp,10.101.128.15,false,oob
-
 type,Management Domain [inband,oob]
 dns_mgmt,oob
 
@@ -26,8 +22,20 @@ type,dns_ip,preferred
 dns,10.101.128.15,no
 dns,10.101.128.16,yes
 
+type,ntp_server,preferred,Management Domain [inband,oob]
+ntp,192.168.64.39,true,oob
+ntp,10.101.128.15,false,oob
+
+
 type,domain,default_domain
 search_domain,rich.ciscolabs.com,yes
+
+type,snmp_client_name,snmp_client_ipv4,Management Domain [inband,oob]
+snmp_client,snmp-server1,10.0.0.1,oob
+snmp_client,snmp-server2,10.0.0.2,inband
+
+type,snmp_contact,snmp_location
+snmp_info,rich-lab@cisco.com,Richfield Ohio
 
 type,Company Name
 Company,Cisco Labs,
