@@ -9,7 +9,7 @@ elif len(sys.argv) == 1:
     csv_input = sys.argv[1]
     append = 'no'
 
-file_base_pod_info = 'resources_user_import_base_pod_policies.tf'
+file_base_pod_info = 'resources_user_import_Fabric_Policies.tf'
 
 if append == 'yes':
     wr_base_info = open(file_base_pod_info, 'a')
@@ -194,7 +194,7 @@ def resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_le
         print('----------------\r\r')
         exit()
     pod_id = str(pod_id)
-    file_apic = ('resources_user_import_%s.tf' % (name))
+    file_apic = ('resources_user_import_xDevice_%s.tf' % (name))
     wr_apic = open(file_apic, 'w')
     wr_apic.write('resource "aci_rest" "inb_mgmt_apic_%s" {\n' % (name))
     wr_apic.write('\tpath       = "/api/node/mo/uni/tn-mgmt.json"\n')
@@ -369,7 +369,7 @@ def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
 
     pfx = inb_ipv4.split('/', 2)
     gwv4 = str(inb_gwv4) + '/' + str(pfx[1])
-    file_inb = ('resources_from_user_tenant_mgmt.tf')
+    file_inb = ('resources_user_import_Tenant_Mgmt.tf')
     wr_file_inb = open(file_inb, 'w')
     wr_file_inb.write('# Use this Resource File to Register the inband management network for the Fabric\n')
     wr_file_inb.write('\n')
@@ -609,7 +609,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modul
         print('----------------\r\r')
         exit()
     pod_id = str(pod_id)
-    file_sw = ('resources_user_import_%s.tf' % (name))
+    file_sw = ('resources_user_import_xDevice_%s.tf' % (name))
     wr_file_sw = open(file_sw, 'w')
     wr_file_sw.write(f'# Use this Resource File to Register {name} with node id {node_id} to the Fabric\n')
     wr_file_sw.write('# Requirements are:\n')
