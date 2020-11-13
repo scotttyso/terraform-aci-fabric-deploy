@@ -5,10 +5,10 @@ resource "aci_rest" "inb_mgmt_apic_apic1" {
 {
 	"mgmtRsInBStNode": {
 		"attributes": {
-			"addr":"192.168.87.1/24",
-			"dn":"uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-1/node-1]",
-			"gw":"192.168.87.254",
-			"tDn":"topology/pod-1/node-1",
+			"addr": "192.168.87.1/24",
+			"dn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-1/node-1]",
+			"gw": "192.168.87.254",
+			"tDn": "topology/pod-1/node-1",
 		}
 	}
 }

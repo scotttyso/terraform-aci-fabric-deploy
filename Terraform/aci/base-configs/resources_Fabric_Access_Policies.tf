@@ -18,12 +18,6 @@ resource "aci_fabric_if_pol" "default" {
 	speed       = each.value.speed
 }
 
-resource "aci_firmware_group" "default" {
-	for_each   			= var.policies_fwg
-	name       			= each.value.name
-	firmware_group_type = each.value.firmware_group_type
-}
-
 resource "aci_interface_fc_policy" "default" {
 	for_each    = var.policies_int_fc
 	name        = each.value.name

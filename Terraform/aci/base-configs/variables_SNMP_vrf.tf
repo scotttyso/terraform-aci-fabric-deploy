@@ -1,4 +1,4 @@
-variable "vrf_snmp" {
+variable "snmp_vrf" {
 	default = {
 		"inb" = {
 			name        = "inb"

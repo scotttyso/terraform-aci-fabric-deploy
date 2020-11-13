@@ -31,7 +31,7 @@ resource "aci_rest" "snmp_cg" {
 # Assign the Default SNMP Monitoring Policy to the VRF's
 # In the variables_vrf_snmp.tf File
 resource "aci_rest" "vrf_snmp" {
-	for_each   = var.vrf_snmp
+	for_each   = var.snmp_vrf
 	path       = "/api/node/mo/uni/tn-mgmt/ctx-${each.value.name}/rsCtxMonPol.json"
 	class_name = "fvRsCtxMonPol"
 	payload    = <<EOF

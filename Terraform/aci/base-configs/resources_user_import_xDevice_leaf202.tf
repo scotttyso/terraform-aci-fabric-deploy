@@ -28,12 +28,12 @@ resource "aci_rest" "oob_mgmt_leaf202" {
 {
 	"mgmtRsOoBStNode": {
 		"attributes": {
-			"addr":"192.168.85.12/24",
-			"dn":"uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-1/node-202]",
-			"gw":"192.168.85.254",
-			"tDn":"topology/pod-1/node-202",
-			"v6Addr":"::",
-			"v6Gw":"::"
+			"addr": "192.168.85.12/24",
+			"dn": "uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-1/node-202]",
+			"gw": "192.168.85.254",
+			"tDn": "topology/pod-1/node-202",
+			"v6Addr": "::",
+			"v6Gw": "::"
 		}
 	}
 }
@@ -47,10 +47,37 @@ resource "aci_rest" "inb_mgmt_leaf202" {
 {
 	"mgmtRsInBStNode": {
 		"attributes": {
-			"addr":"192.168.87.12/24",
-			"dn":"uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-1/node-202]",
-			"gw":"192.168.87.254",
-			"tDn":"topology/pod-1/node-202",
+			"addr": "192.168.87.12/24",
+			"dn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-1/node-202]",
+			"gw": "192.168.87.254",
+			"tDn": "topology/pod-1/node-202",
+		}
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "maint_grp_leaf202" {
+	path       = "/api/node/mo/uni/fabric/maintgrp-switch_MgB.json"
+	class_name = "maintMaintGrp"
+	payload    = <<EOF
+{
+	"maintMaintGrp": {
+		"attributes": {
+			"dn": "uni/fabric/maintgrp-switch_MgB"		},
+		"children": [
+			{
+				"fabricNodeBlk": {
+					"attributes": {
+						"dn": "uni/fabric/maintgrp-switch_MgB/nodeblk-blk202-202",
+						"name": "blk202-202",
+						"from_": "202",
+						"to_": "202",
+						"rn": "nodeblk-blk202-202"
+					}
+				}
+			}
+		]
 		}
 	}
 }

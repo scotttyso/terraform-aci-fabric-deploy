@@ -28,8 +28,8 @@ resource "aci_application_epg" "inb_epg" {
 
 resource "aci_ranges" "inb_vlan" {
 	vlan_pool_dn	= "uni/infra/vlanns-[inband_vl-pool]-static"
-	_from		= "vlan-100"
-	to		= "vlan-100"
+	_from		    = "vlan-100"
+	to		        = "vlan-100"
 }
 
 resource "aci_rest" "inb_mgmt_default_epg" {
