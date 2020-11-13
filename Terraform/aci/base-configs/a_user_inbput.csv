@@ -41,6 +41,10 @@ Type,SNMP_Community_String,Description
 snmp_comm,read_access,is it needed
 snmp_comm,will-this-work,
 
+Type,trap_server_IPv4,Destination_Port
+snmp_trap,10.0.0.1,162
+snmp_trap,10.0.0.2,163
+
 Type,SNMP_User,Privacy_Type [aes-128,des|none],Privacy_Key [min 8 char],Authorization_Type [md5|sha1],Authorization_Key [min 8 char]
 snmp_user,cisco_user1,aes-128,cisco123,sha1,cisco123
 snmp_user,cisco_user2,des,cisco123,md5,cisco123

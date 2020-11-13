@@ -551,6 +551,38 @@ def resource_snmp_info(contact, location):
     wr_base_info.write('}\n')
     wr_base_info.write('\n')
 
+def resource_snmp_trap(snmp_ipv4, snmp_port):
+    
+    # Validate SNMP Trap Server IPv4 Address
+    try:
+        validate_ipv4(line_count, snmp_ipv4)
+    except Exception as err:
+        print('\r\r----------------\r')
+        print(f'   {SystemExit(err)}')
+        print(f'   Error on Row {line_count}, Please verify {snmp_ipv4} input information.')
+        print('----------------\r\r')
+        exit()
+
+    snmp_ipv4_ = snmp_ipv4.replace('.', '_')
+    wr_base_info.write('resource "aci_rest" "snmp_trap_%s" {\n' % (snmp_ipv4_))
+    wr_base_info.write('\tpath       = "api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[%s].json"\n' % (snmp_ipv4))
+    wr_base_info.write('\tclass_name = "snmpTrapFwdServerP"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"snmpTrapFwdServerP": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"addr": "%s",\n' % (snmp_ipv4))
+    if not snmp_port == '':
+        wr_base_info.write('\t\t\t"port": "%s",\n' % (snmp_port))
+    wr_base_info.write('\t\t},\n')
+    wr_base_info.write('\t\t"children": []\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+
+
 def resource_snmp_user(snmp_user, priv_type, priv_key, auth_type, auth_key):
     if not (priv_type == 'none' or priv_type == 'aes-128' or priv_type == 'des'):
         print(f"----------------\r")
@@ -952,6 +984,12 @@ with open(csv_input) as csv_file:
                 location = column[2]
                 # Create Resource Record for SNMP Default Policy
                 resource_snmp_info(contact, location)
+                line_count += 1
+            elif type == 'snmp_trap':
+                snmp_ipv4 = column[1]
+                snmp_port = column[2]
+                # Create Resource Record for SNMP Traps
+                resource_snmp_trap(snmp_ipv4, snmp_port)
                 line_count += 1
             elif type == 'snmp_user':
                 snmp_user = column[1]

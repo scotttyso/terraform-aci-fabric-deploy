@@ -242,6 +242,38 @@ resource "aci_rest" "snmp_comm_will-this-work" {
 	EOF
 }
 
+resource "aci_rest" "snmp_trap_10_0_0_1" {
+	path       = "api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[10.0.0.1].json"
+	class_name = "snmpTrapFwdServerP"
+	payload    = <<EOF
+{
+	"snmpTrapFwdServerP": {
+		"attributes": {
+			"addr": "10.0.0.1",
+			"port": "162",
+		},
+		"children": []
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "snmp_trap_10_0_0_2" {
+	path       = "api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[10.0.0.2].json"
+	class_name = "snmpTrapFwdServerP"
+	payload    = <<EOF
+{
+	"snmpTrapFwdServerP": {
+		"attributes": {
+			"addr": "10.0.0.2",
+			"port": "163",
+		},
+		"children": []
+	}
+}
+	EOF
+}
+
 resource "aci_rest" "snmp_user_cisco_user1" {
 	path       = "/api/node/mo/uni/fabric/snmppol-default/user-cisco_user1.json"
 	class_name = "snmpUserP"
