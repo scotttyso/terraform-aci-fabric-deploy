@@ -518,10 +518,10 @@ def resource_snmp_comm(community, description):
     wr_base_info.write('{\n')
     wr_base_info.write('\t"snmpCommunityP": {\n')
     wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"dn": "uni/fabric/snmppol-default/community%s",\n' % (community))
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/snmppol-default/community-%s",\n' % (community))
     wr_base_info.write('\t\t\t"descr": "%s",\n' % (description))
     wr_base_info.write('\t\t\t"name": "%s",\n' % (community))
-    wr_base_info.write('\t\t\t"rn": "community%s"\n' % (community))
+    wr_base_info.write('\t\t\t"rn": "community-%s"\n' % (community))
     wr_base_info.write('\t\t},\n')
     wr_base_info.write('\t\t"children": []\n')
     wr_base_info.write('\t}\n')
@@ -551,18 +551,48 @@ def resource_snmp_info(contact, location):
     wr_base_info.write('}\n')
     wr_base_info.write('\n')
 
-def resource_snmp_user(community, description):
-    wr_base_info.write('resource "aci_rest" "snmp_comm_%s" {\n' % (community))
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/snmppol-default/community-%s.json"\n' % (community))
-    wr_base_info.write('\tclass_name = "snmpCommunityP"\n')
+def resource_snmp_user(snmp_user, priv_type, priv_key, auth_type, auth_key):
+    if not (priv_type == 'none' or priv_type == 'aes-128' or priv_type == 'des'):
+        print(f"----------------\r")
+        print(f"  Error on Row {line_count}. priv_type {priv_type} is not ")
+        print(f"  'none', 'des', or 'aes-128'.  Exiting....")
+        print("----------------")
+        exit()
+    if not priv_type == 'none':
+        if not validators.length(priv_key, min=8):
+            print(f"----------------\r")
+            print(f"  Error on Row {line_count}. priv_key does not ")
+            print(f"  meet the minimum character count of 8.  Exiting....")
+            print("----------------")
+            exit()
+
+    if not validators.length(auth_key, min=8):
+        print(f"----------------\r")
+        print(f"  Error on Row {line_count}. auth_key does not ")
+        print(f"  meet the minimum character count of 8.  Exiting....")
+        print("----------------")
+        exit()
+
+    if priv_type == 'none':
+        priv_type = ''
+    if auth_type == 'md5':
+        auth_type = ''
+    if auth_type == 'sha1':
+        auth_type = 'hmac-sha1-96'
+    wr_base_info.write('resource "aci_rest" "snmp_user_%s" {\n' % (snmp_user))
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/snmppol-default/user-%s.json"\n' % (snmp_user))
+    wr_base_info.write('\tclass_name = "snmpUserP"\n')
     wr_base_info.write('\tpayload    = <<EOF\n')
     wr_base_info.write('{\n')
-    wr_base_info.write('\t"snmpCommunityP": {\n')
+    wr_base_info.write('\t"snmpUserP": {\n')
     wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"dn": "uni/fabric/snmppol-default/community%s",\n' % (community))
-    wr_base_info.write('\t\t\t"descr": "%s",\n' % (description))
-    wr_base_info.write('\t\t\t"name": "%s",\n' % (community))
-    wr_base_info.write('\t\t\t"rn": "community%s"\n' % (community))
+    if not priv_type == '':
+        wr_base_info.write('\t\t\t"privType": "%s",\n' % (priv_type))
+        wr_base_info.write('\t\t\t"privKey": "%s",\n' % (priv_key))
+    wr_base_info.write('\t\t\t"authKey": "%s",\n' % (auth_key))
+    if not auth_type == '':
+        wr_base_info.write('\t\t\t"authType": "%s",\n' % (auth_type))
+    wr_base_info.write('\t\t\t"name": "%s",\n' % (snmp_user))
     wr_base_info.write('\t\t},\n')
     wr_base_info.write('\t\t"children": []\n')
     wr_base_info.write('\t}\n')
@@ -911,11 +941,26 @@ with open(csv_input) as csv_file:
                 # Create Resource Record for SNMP Client
                 resource_snmp_client(client_name, client_ipv4, mgmt_domain)
                 line_count += 1
+            elif type == 'snmp_comm':
+                community = column[1]
+                description = column[2]
+                # Create Resource Record for SNMP Communities
+                resource_snmp_comm(community, description)
+                line_count += 1
             elif type == 'snmp_info':
                 contact = column[1]
                 location = column[2]
                 # Create Resource Record for SNMP Default Policy
                 resource_snmp_info(contact, location)
+                line_count += 1
+            elif type == 'snmp_user':
+                snmp_user = column[1]
+                priv_type = column[2]
+                priv_key = column[3]
+                auth_type = column[4]
+                auth_key = column[5]
+                # Create Resource Record for SNMP Users
+                resource_snmp_user(snmp_user, priv_type, priv_key, auth_type, auth_key)
                 line_count += 1
             elif type == 'switch':
                 serial = column[1]

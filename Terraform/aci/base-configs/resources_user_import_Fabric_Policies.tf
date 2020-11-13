@@ -206,3 +206,93 @@ resource "aci_rest" "snmp_info" {
 	EOF
 }
 
+resource "aci_rest" "snmp_comm_read_access" {
+	path       = "/api/node/mo/uni/fabric/snmppol-default/community-read_access.json"
+	class_name = "snmpCommunityP"
+	payload    = <<EOF
+{
+	"snmpCommunityP": {
+		"attributes": {
+			"dn": "uni/fabric/snmppol-default/community-read_access",
+			"descr": "is it needed",
+			"name": "read_access",
+			"rn": "community-read_access"
+		},
+		"children": []
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "snmp_comm_will-this-work" {
+	path       = "/api/node/mo/uni/fabric/snmppol-default/community-will-this-work.json"
+	class_name = "snmpCommunityP"
+	payload    = <<EOF
+{
+	"snmpCommunityP": {
+		"attributes": {
+			"dn": "uni/fabric/snmppol-default/community-will-this-work",
+			"descr": "",
+			"name": "will-this-work",
+			"rn": "community-will-this-work"
+		},
+		"children": []
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "snmp_user_cisco_user1" {
+	path       = "/api/node/mo/uni/fabric/snmppol-default/user-cisco_user1.json"
+	class_name = "snmpUserP"
+	payload    = <<EOF
+{
+	"snmpUserP": {
+		"attributes": {
+			"privType": "aes-128",
+			"privKey": "cisco123",
+			"authKey": "cisco123",
+			"authType": "hmac-sha1-96",
+			"name": "cisco_user1",
+		},
+		"children": []
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "snmp_user_cisco_user2" {
+	path       = "/api/node/mo/uni/fabric/snmppol-default/user-cisco_user2.json"
+	class_name = "snmpUserP"
+	payload    = <<EOF
+{
+	"snmpUserP": {
+		"attributes": {
+			"privType": "des",
+			"privKey": "cisco123",
+			"authKey": "cisco123",
+			"name": "cisco_user2",
+		},
+		"children": []
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "snmp_user_cisco_user3" {
+	path       = "/api/node/mo/uni/fabric/snmppol-default/user-cisco_user3.json"
+	class_name = "snmpUserP"
+	payload    = <<EOF
+{
+	"snmpUserP": {
+		"attributes": {
+			"authKey": "cisco123",
+			"authType": "hmac-sha1-96",
+			"name": "cisco_user3",
+		},
+		"children": []
+	}
+}
+	EOF
+}
+
