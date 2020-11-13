@@ -1,6 +1,6 @@
 import csv
 import ipaddress
-import re, sys, traceback, validators
+import os, re, sys, traceback, validators
 
 if len(sys.argv) == 2:
     csv_input = sys.argv[1]
@@ -10,7 +10,10 @@ elif len(sys.argv) == 1:
     append = 'no'
 
 file_base_pod_info = 'resources_user_import_Fabric_Policies.tf'
-
+file_vrfs = 'vrfs.txt'
+file_comm = 'snmp_comms.txt'
+wr_comm = open(file_comm, 'a')
+wr_vrfs = open(file_vrfs, 'a')
 if append == 'yes':
     wr_base_info = open(file_base_pod_info, 'a')
 else:
@@ -527,6 +530,8 @@ def resource_snmp_comm(community, description):
     wr_base_info.write('\tEOF\n')
     wr_base_info.write('}\n')
     wr_base_info.write('\n')
+
+    wr_comm.write('%s\n' % (community))
 
 def resource_snmp_info(contact, location):
     wr_base_info.write('resource "aci_rest" "snmp_info" {\n')
@@ -1090,9 +1095,96 @@ with open(csv_input) as csv_file:
         else:
             line_count += 1
 
-#Close out the Open Files
+# Close out the Open Files
 csv_file.close()
 wr_base_info.close()
+wr_vrfs.close()
+wr_comm.close()
+
+comm_uniq = 'cp snmp_comms.txt snmp_comms1.txt ; cat snmp_comms1.txt | sort | uniq > snmp_comms.txt ; rm snmp_comms1.txt'
+vrfs_cmds = 'cp vrfs.txt vrfs1.txt ; cat vrfs1.txt | sort | uniq > vrfs.txt ; rm vrfs1.txt'
+os.system(comm_uniq)
+os.system(vrfs_cmds)
+
+file_comm = open(file_comm, 'r')
+file_vrfs = open(file_vrfs, 'r')
+
+if not os.stat('snmp_comms.txt').st_size == 0:
+    file_snmp_ctx_cmds = 'resources_user_Tenant_SNMP_Ctx.tf'
+    file_snmp_ctx_vars = 'variables_user_Tenant_SNMP_Ctx.tf'
+    file_snmp_ctx_comm = 'variables_user_Tenant_SNMP_Communities.tf'
+    wr_snmp_ctx = open(file_snmp_ctx_cmds, 'w')
+    wr_snmp_vars = open(file_snmp_ctx_vars, 'w')
+    wr_snmp_comm = open(file_snmp_ctx_comm, 'w')
+    wr_snmp_ctx.write('resource "aci_rest" "snmp_ctx" {\n')
+    wr_snmp_ctx.write('\tfor_each        = var.snmp_ctx\n')
+    wr_snmp_ctx.write('\tpath            = "/api/node/mo/uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx.json"\n')
+    wr_snmp_ctx.write('\tclass_name      = "vzOOBBrCP"\n')
+    wr_snmp_ctx.write('\tpayload         = <<EOF\n')
+    wr_snmp_ctx.write('{\n')
+    wr_snmp_ctx.write('\t"snmpCtxP": {\n')
+    wr_snmp_ctx.write('\t\t"attributes": {\n')
+    wr_snmp_ctx.write('\t\t\t"dn": "uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx",\n')
+    wr_snmp_ctx.write('\t\t\t"name": "${each.value.name}",\n')
+    wr_snmp_ctx.write('\t\t\t"rn": "snmpctx",\n')
+    wr_snmp_ctx.write('\t\t},\n')
+    wr_snmp_ctx.write('\t\t"children": []\n')
+    wr_snmp_ctx.write('\t}\n')
+    wr_snmp_ctx.write('}\n')
+    wr_snmp_ctx.write('\tEOF\n')
+    wr_snmp_ctx.write('}\n')
+    wr_snmp_ctx.write('\n')
+    wr_snmp_ctx.write('resource "aci_rest" "snmp_ctx_community" {\n')
+    wr_snmp_ctx.write('\tfor_each        = var.snmp_ctx_community\n')
+    wr_snmp_ctx.write('\tpath            = "/api/node/mo/uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx/community-${each.value.name}.json"\n')
+    wr_snmp_ctx.write('\tclass_name      = "vzOOBBrCP"\n')
+    wr_snmp_ctx.write('\tpayload         = <<EOF\n')
+    wr_snmp_ctx.write('{\n')
+    wr_snmp_ctx.write('\t"snmpCommunityP": {\n')
+    wr_snmp_ctx.write('\t\t"attributes": {\n')
+    wr_snmp_ctx.write('\t\t\t"dn": "uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx/community-${each.value.name}",\n')
+    wr_snmp_ctx.write('\t\t\t"name": "${each.value.name}",\n')
+    wr_snmp_ctx.write('\t\t\t"descr": "Adding Community ${each.value.name} to Ctx",\n')
+    wr_snmp_ctx.write('\t\t\t"rn": "community-${each.value.name}",\n')
+    wr_snmp_ctx.write('\t\t},\n')
+    wr_snmp_ctx.write('\t\t"children": []\n')
+    wr_snmp_ctx.write('\t}\n')
+    wr_snmp_ctx.write('}\n')
+    wr_snmp_ctx.write('	EOF\n')
+    wr_snmp_ctx.write('}\n')
+    wr_snmp_ctx.close()
+
+    wr_snmp_vars.write('variable "snmp_ctx" {\n')
+    wr_snmp_vars.write('\tdefault = {\n')
+    wr_snmp_comm.write('variable "snmp_ctx_community" {\n')
+    wr_snmp_comm.write('\tdefault = {\n')
+
+    re_comm = file_comm.readlines()
+    re_vrfs = file_vrfs.readlines()
+    for xa in re_vrfs:
+        a,b = xa.split(',')
+        a = a.strip()
+        b = b.strip()
+        wr_snmp_vars.write('\t\t"%s_%s_ctx" = {\n' % (a, b))
+        wr_snmp_vars.write('\t\t\tname        = "%s_%s_ctx"\n' % (a, b))
+        wr_snmp_vars.write('\t\t\ttenant      = "%s"\n' % (a))
+        wr_snmp_vars.write('\t\t\tctx         = "%s"\n' % (b))
+        wr_snmp_vars.write('\t\t},\n')
+
+        for xb in re_comm:
+            xb = xb.strip()
+            wr_snmp_comm.write('\t\t"%s_%s_%s" = {\n' % (a, b, xb))
+            wr_snmp_comm.write('\t\t\tname        = "%s"\n' % (xb))
+            wr_snmp_comm.write('\t\t\ttenant      = "%s"\n' % (a))
+            wr_snmp_comm.write('\t\t\tctx         = "%s"\n' % (b))
+            wr_snmp_comm.write('\t\t},\n')
+
+    wr_snmp_vars.write('\t}\n')
+    wr_snmp_vars.write('}\n')
+    wr_snmp_comm.write('\t}\n')
+    wr_snmp_comm.write('}\n')
+    wr_snmp_vars.close()
+    wr_snmp_comm.close()
 
 #End Script
 print('\r\r----------------\r')

@@ -303,18 +303,10 @@ bg_list4.close()
 
 dhcp_relay_uniq = 'cat dhcp.csv | sort | uniq > dhcp_sort.csv'
 dhcp_relay_add_header = 'echo "Type,Relay Address,vrf" | cat - dhcp_sort.csv > dhcp_relay.csv'
-remove_extra_dhcp_file1 = 'rm dhcp.csv'
-remove_extra_dhcp_file2 = 'rm dhcp_sort.csv'
-remove_extra_vlan_file1 = 'rm vlan_comb.csv'
-remove_extra_vlan_file2 = 'rm vlan_list.csv'
-remove_extra_vlan_file3 = 'rm vlan_name.csv'
+remove_extra_files = 'rm dhcp.csv dhcp_sort.csv vlan_comb.csv vlan_list.csv vlan_name.csv'
 os.system(dhcp_relay_uniq)
 os.system(dhcp_relay_add_header)
-os.system(remove_extra_dhcp_file1)
-os.system(remove_extra_dhcp_file2)
-os.system(remove_extra_vlan_file1)
-os.system(remove_extra_vlan_file2)
-os.system(remove_extra_vlan_file3)
+os.system(remove_extra_files)
 
 
 print('end script')
