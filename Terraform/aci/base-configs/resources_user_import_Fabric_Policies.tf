@@ -83,7 +83,7 @@ resource "aci_rest" "dns_10_101_128_16" {
 
 resource "aci_rest" "sched_CallHome" {
 	path       = "/api/node/mo/uni/fabric/schedp-CallHome_scheduler.json"
-	class_name = "snmpTrapFwdServerP"
+	class_name = "trigSchedP"
 	payload    = <<EOF
 {
 	"trigSchedP": {
@@ -100,7 +100,7 @@ resource "aci_rest" "sched_CallHome" {
 					"attributes": {
 						"dn": "uni/fabric/schedp-CallHome_scheduler/abswinp-CallHome_onetime",
 						"name": "CallHome_onetime",
-						"date": "2020-11-14T13:47:20.728Z",
+						"date": "2020-11-14T16:06:32.855Z",
 						"concurCap": "20",
 						"rn": "abswinp-CallHome_onetime",
 					},
@@ -127,7 +127,7 @@ resource "aci_rest" "sched_CallHome" {
 
 resource "aci_rest" "CallHome_query" {
 	path       = "/api/node/mo/uni/fabric/chquerygroup-CallHome_query.json"
-	class_name = "snmpTrapFwdServerP"
+	class_name = "callhomeQueryGroup"
 	payload    = <<EOF
 {
 	"callhomeQueryGroup": {
@@ -156,9 +156,78 @@ resource "aci_rest" "CallHome_query" {
 	EOF
 }
 
+resource "aci_rest" "SmartCallHome_dg" {
+	path       = "/api/node/mo/uni/fabric/smartgroup-SmartCallHome_dg.json"
+	class_name = "callhomeSmartGroup"
+	payload    = <<EOF
+{
+	"callhomeSmartGroup": {
+		"attributes": {
+			"dn": "uni/fabric/smartgroup-SmartCallHome_dg",
+			"name": "SmartCallHome_dg",
+			"rn": "smartgroup-SmartCallHome_dg"
+		},
+		"children": [
+			{
+				"callhomeProf": {
+					"attributes": {
+						"dn": "uni/fabric/smartgroup-SmartCallHome_dg/prof",
+						"port": "25",
+						"from": "asgard-aci@rich.ciscolabs.com",
+						"replyTo": "rich-lab@cisco.com",
+						"email": "rich-lab@cisco.com",
+						"phone": "+1-408-525-5300",
+						"contact": "Richfield Labs",
+						"addr": "4125 Highlander Pkwy_Richfield_OH 44286",
+						"contract": "5555555",
+						"customer": "5555555",
+						"site": "555555",
+						"rn": "prof"
+					},
+					"children": [
+						{
+							"callhomeSmtpServer": {
+								"attributes": {
+									"dn": "uni/fabric/smartgroup-SmartCallHome_dg/prof/smtp",
+									"host": "cisco-ext.cisco.com",
+									"rn": "smtp"
+								},
+								"children": [
+									{
+										"fileRsARemoteHostToEpg": {
+											"attributes": {
+												"tDn": "uni/tn-mgmt/mgmtp-default/oob-default",
+											},
+											"children": []
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			},
+			{
+				"callhomeSmartDest": {
+					"attributes": {
+						"dn": "uni/fabric/smartgroup-SmartCallHome_dg/smartdest-SCH_Receiver",
+						"name": "SCH_Receiver",
+						"email": "rich-lab@cisco.com",
+						"format": "short-txt",
+						"rn": "smartdest-SCH_Receiver"
+					},
+					"children": []
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
 resource "aci_rest" "CallHome_dg" {
 	path       = "/api/node/mo/uni/fabric/chgroup-CallHome_dg.json"
-	class_name = "snmpTrapFwdServerP"
+	class_name = "callhomeGroup"
 	payload    = <<EOF
 {
 	"callhomeGroup": {
@@ -228,7 +297,7 @@ resource "aci_rest" "CallHome_dg" {
 
 resource "aci_rest" "default_inventory" {
 	path       = "/api/node/mo/uni/fabric/chinvp-default.json"
-	class_name = "snmpTrapFwdServerP"
+	class_name = "callhomeInvP"
 	payload    = <<EOF
 {
 	"callhomeInvP": {
@@ -263,7 +332,7 @@ resource "aci_rest" "default_inventory" {
 
 resource "aci_rest" "monfab_CallHome_src" {
 	path       = "/api/node/mo/uni/fabric/monfab-default/chsrc-CallHome_src.json"
-	class_name = "snmpTrapFwdServerP"
+	class_name = "callhomeSrc"
 	payload    = <<EOF
 {
 	"callhomeSrc": {
@@ -298,7 +367,7 @@ resource "aci_rest" "monfab_CallHome_src" {
 
 resource "aci_rest" "moncommon_CallHome_src" {
 	path       = "/api/node/mo/uni/fabric/moncommon/chsrc-CallHome_src.json"
-	class_name = "snmpTrapFwdServerP"
+	class_name = "callhomeSrc"
 	payload    = <<EOF
 {
 	"callhomeSrc": {
@@ -333,7 +402,7 @@ resource "aci_rest" "moncommon_CallHome_src" {
 
 resource "aci_rest" "moninfra_CallHome_src" {
 	path       = "/api/node/mo/uni/infra/moninfra-default/chsrc-CallHome_src.json"
-	class_name = "snmpTrapFwdServerP"
+	class_name = "callhomeSrc"
 	payload    = <<EOF
 {
 	"callhomeSrc": {
