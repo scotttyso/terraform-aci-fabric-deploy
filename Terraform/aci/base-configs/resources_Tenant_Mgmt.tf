@@ -254,7 +254,6 @@ resource "aci_rest" "inb_epg_consumed" {
 	EOF
 }
 
-# url: https://brahma-apic1/api/node/mo/uni/tn-mgmt/extmgmt-default/instp-oob_access.json
 resource "aci_rest" "oob-default_Ext_Inst" {
 	path       = "/api/node/mo/uni/tn-mgmt/extmgmt-default/instp-oob_ExtEpg.json"
 	class_name = "mgmtInstP"

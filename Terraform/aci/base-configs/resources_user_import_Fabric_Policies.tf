@@ -46,7 +46,7 @@ resource "aci_rest" "dns_mgmt" {
 }
 
 resource "aci_rest" "dns_10_101_128_15" {
-	path       = "api/node/mo/uni/fabric/dnsp-default/prov-[10.101.128.15].json"
+	path       = "/api/node/mo/uni/fabric/dnsp-default/prov-[10.101.128.15].json"
 	class_name = "dnsProv"
 	payload    = <<EOF
 {
@@ -64,7 +64,7 @@ resource "aci_rest" "dns_10_101_128_15" {
 }
 
 resource "aci_rest" "dns_10_101_128_16" {
-	path       = "api/node/mo/uni/fabric/dnsp-default/prov-[10.101.128.16].json"
+	path       = "/api/node/mo/uni/fabric/dnsp-default/prov-[10.101.128.16].json"
 	class_name = "dnsProv"
 	payload    = <<EOF
 {
@@ -76,6 +76,291 @@ resource "aci_rest" "dns_10_101_128_16" {
 			"rn": "prov-[10.101.128.16]"
 		},
 		"children": []
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "sched_CallHome" {
+	path       = "/api/node/mo/uni/fabric/schedp-CallHome_scheduler.json"
+	class_name = "snmpTrapFwdServerP"
+	payload    = <<EOF
+{
+	"trigSchedP": {
+		"attributes": {
+			"dn": "uni/fabric/schedp-CallHome_scheduler",
+			"name": "CallHome_scheduler",
+			"descr": "CallHome_scheduler added by Brahma Startup Wizard",
+			"rn": "schedp-CallHome_scheduler",
+			"status": "created"
+		},
+		"children": [
+			{
+				"trigAbsWindowP": {
+					"attributes": {
+						"dn": "uni/fabric/schedp-CallHome_scheduler/abswinp-CallHome_onetime",
+						"name": "CallHome_onetime",
+						"date": "2020-11-14T13:47:20.728Z",
+						"concurCap": "20",
+						"rn": "abswinp-CallHome_onetime",
+					},
+					"children": []
+				}
+			},
+			{
+				"trigRecurrWindowP": {
+					"attributes": {
+						"dn": "uni/fabric/schedp-CallHome_scheduler/recurrwinp-CallHome_trigger",
+						"name": "CallHome_trigger",
+						"hour": "1",
+						"concurCap": "20",
+						"rn": "recurrwinp-CallHome_trigger",
+					},
+					"children": []
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "CallHome_query" {
+	path       = "/api/node/mo/uni/fabric/chquerygroup-CallHome_query.json"
+	class_name = "snmpTrapFwdServerP"
+	payload    = <<EOF
+{
+	"callhomeQueryGroup": {
+		"attributes": {
+			"dn": "uni/fabric/chquerygroup-CallHome_query",
+			"name": "CallHome_query",
+			"rn": "chquerygroup-CallHome_query",
+		},
+		"children": [
+			{
+				"callhomeQuery": {
+					"attributes": {
+						"dn": "uni/fabric/chquerygroup-CallHome_query/chquery-CallHome_query",
+						"name": "CallHome_query",
+						"target": "subtree",
+						"rspSubtree": "full",
+						"rspSubtreeInclude": "event-logs,count,stats,state,port-deployment,tasks,relations-with-parent,health,fault-count,local-prefix,config-only,record-subtree,no-scoped,relations,health-records,audit-logs,deployment,required,faults,fault-records",
+						"rn": "chquery-CallHome_query",
+					},
+					"children": []
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "CallHome_dg" {
+	path       = "/api/node/mo/uni/fabric/chgroup-CallHome_dg.json"
+	class_name = "snmpTrapFwdServerP"
+	payload    = <<EOF
+{
+	"callhomeGroup": {
+		"attributes": {
+			"dn": "uni/fabric/chgroup-CallHome_dg",
+			"name": "CallHome_dg",
+			"descr": "CallHome_dg added by Brahma Startup Wizard",
+			"rn": "chgroup-CallHome_dg",
+		},
+		"children": [
+			{
+				"callhomeDest": {
+					"attributes": {
+						"dn": "uni/fabric/chgroup-CallHome_dg/dest-CallHome_dest",
+						"name": "CallHome_dest",
+						"email": "rich-lab@cisco.com",
+						"format": "short-txt",
+						"rn": "dest-CallHome_dest",
+					},
+					"children": []
+				}
+			},
+			{
+				"callhomeProf": {
+					"attributes": {
+						"dn": "uni/fabric/chgroup-CallHome_dg/prof",
+						"port": "25",
+						"from": "asgard-aci@rich.ciscolabs.com",
+						"replyTo": "rich-lab@cisco.com",
+						"email": "rich-lab@cisco.com",
+						"phone": "+1-408-525-5300",
+						"contact": "Richfield Labs",
+						"addr": "4125 Highlander Pkwy_Richfield_OH 44286",
+						"contract": "5555555",
+						"customer": "5555555",
+						"site": "555555",
+						"rn": "prof",
+					},
+					"children": [
+						{
+							"callhomeSmtpServer": {
+								"attributes": {
+									"dn": "uni/fabric/chgroup-CallHome_dg/prof/smtp",
+									"host": "cisco-ext.cisco.com",
+									"rn": "smtp",
+								},
+								"children": [
+									{
+										"fileRsARemoteHostToEpg": {
+											"attributes": {
+												"tDn": "uni/tn-mgmt/mgmtp-default/oob-default",
+											},
+											"children": []
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "default_inventory" {
+	path       = "/api/node/mo/uni/fabric/chinvp-default.json"
+	class_name = "snmpTrapFwdServerP"
+	payload    = <<EOF
+{
+	"callhomeInvP": {
+		"attributes": {
+			"dn": "uni/fabric/chinvp-default",
+			"name": "default",
+			"maximumRetryCount": "3",
+			"rn": "chinvp-default",
+		},
+		"children": [
+			{
+				"callhomeRsDestGroupRel": {
+					"attributes": {
+						"tDn": "uni/fabric/chgroup-CallHome_dg",
+					},
+					"children": []
+				}
+			},
+			{
+				"callhomeRsInvScheduler": {
+					"attributes": {
+						"tnTrigSchedPName": "CallHome_scheduler",
+					},
+					"children": []
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "monfab_CallHome_src" {
+	path       = "/api/node/mo/uni/fabric/monfab-default/chsrc-CallHome_src.json"
+	class_name = "snmpTrapFwdServerP"
+	payload    = <<EOF
+{
+	"callhomeSrc": {
+		"attributes": {
+			"dn": "uni/fabric/monfab-default/chsrc-CallHome_src",
+			"name": "CallHome_src",
+			"incl": "events,audit,faults",
+			"rn": "chsrc-CallHome_src",
+		},
+		"children": [
+			{
+				"callhomeRsDestGroup": {
+					"attributes": {
+						"tDn": "uni/fabric/chgroup-CallHome_dg",
+					},
+					"children": []
+				}
+			},
+			{
+				"callhomeRsQueryGroupRel": {
+					"attributes": {
+						"tDn": "uni/fabric/chquerygroup-CallHome_query",
+					},
+					"children": []
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "moncommon_CallHome_src" {
+	path       = "/api/node/mo/uni/fabric/moncommon/chsrc-CallHome_src.json"
+	class_name = "snmpTrapFwdServerP"
+	payload    = <<EOF
+{
+	"callhomeSrc": {
+		"attributes": {
+			"dn": "uni/fabric/moncommon/chsrc-CallHome_src",
+			"name": "CallHome_src",
+			"incl": "events,audit,faults",
+			"rn": "chsrc-CallHome_src",
+		},
+		"children": [
+			{
+				"callhomeRsDestGroup": {
+					"attributes": {
+						"tDn": "uni/fabric/chgroup-CallHome_dg",
+					},
+					"children": []
+				}
+			},
+			{
+				"callhomeRsQueryGroupRel": {
+					"attributes": {
+						"tDn": "uni/fabric/chquerygroup-CallHome_query",
+					},
+					"children": []
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "moninfra_CallHome_src" {
+	path       = "/api/node/mo/uni/infra/moninfra-default/chsrc-CallHome_src.json"
+	class_name = "snmpTrapFwdServerP"
+	payload    = <<EOF
+{
+	"callhomeSrc": {
+		"attributes": {
+			"dn": "uni/infra/moninfra-default/chsrc-CallHome_src",
+			"name": "CallHome_src",
+			"incl": "events,audit,faults",
+			"rn": "chsrc-CallHome_src",
+		},
+		"children": [
+			{
+				"callhomeRsDestGroup": {
+					"attributes": {
+						"tDn": "uni/fabric/chgroup-CallHome_dg",
+					},
+					"children": []
+				}
+			},
+			{
+				"callhomeRsQueryGroupRel": {
+					"attributes": {
+						"tDn": "uni/fabric/chquerygroup-CallHome_query",
+					},
+					"children": []
+				}
+			}
+		]
 	}
 }
 	EOF
@@ -134,7 +419,7 @@ resource "aci_rest" "ntp_10_101_128_15" {
 }
 
 resource "aci_rest" "domain_rich_ciscolabs_com" {
-	path       = "api/node/mo/uni/fabric/dnsp-default/dom-[rich.ciscolabs.com].json"
+	path       = "/api/node/mo/uni/fabric/dnsp-default/dom-[rich.ciscolabs.com].json"
 	class_name = "dnsDomain"
 	payload    = <<EOF
 {
@@ -242,8 +527,8 @@ resource "aci_rest" "snmp_comm_will-this-work" {
 	EOF
 }
 
-resource "aci_rest" "snmp_trap_10_0_0_1" {
-	path       = "api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[10.0.0.1].json"
+resource "aci_rest" "snmp_trap_default_10_0_0_1" {
+	path       = "/api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[10.0.0.1].json"
 	class_name = "snmpTrapFwdServerP"
 	payload    = <<EOF
 {
@@ -258,15 +543,15 @@ resource "aci_rest" "snmp_trap_10_0_0_1" {
 	EOF
 }
 
-resource "aci_rest" "snmp_trap_10_0_0_2" {
-	path       = "api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[10.0.0.2].json"
+resource "aci_rest" "snmp_trap_common_10_0_0_1" {
+	path       = "/api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[10.0.0.1].json"
 	class_name = "snmpTrapFwdServerP"
 	payload    = <<EOF
 {
 	"snmpTrapFwdServerP": {
 		"attributes": {
-			"addr": "10.0.0.2",
-			"port": "163",
+			"addr": "10.0.0.1",
+			"port": "162",
 		},
 		"children": []
 	}

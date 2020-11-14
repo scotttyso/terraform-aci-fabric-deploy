@@ -22,6 +22,9 @@ Type,DNS_IP,Preferred
 dns,10.101.128.15,no
 dns,10.101.128.16,yes
 
+Type,smtp_port,smtp_relay, management_epg,From_email,Reply_email,To_email,Phone_Number,Contact_Info,Street_Address,Contract_ID,Customer_Identifier,Site_Identifier
+callhome,25,cisco-ext.cisco.com,oob,asgard-aci@rich.ciscolabs.com,rich-lab@cisco.com,rich-lab@cisco.com,+1-408-525-5300,Richfield Labs,4125 Highlander Pkwy_Richfield_OH 44286,5555555,5555555,555555
+
 Type,NTP_Server,Preferred,Management Domain [inband|oob]
 ntp,192.168.64.39,true,oob
 ntp,10.101.128.15,false,oob
@@ -41,9 +44,9 @@ Type,SNMP_Community_String,Description
 snmp_comm,read_access,is it needed
 snmp_comm,will-this-work,
 
-Type,trap_server_IPv4,Destination_Port
-snmp_trap,10.0.0.1,162
-snmp_trap,10.0.0.2,163
+Type,trap_server_IPv4,Destination_Port,community or SNMP_User,Privacy_Type [aes-128,des|none],Privacy_Key [min 8 char],Authorization_Type [md5|sha1],Authorization_Key [min 8 char]
+snmp_trap_comm,10.0.0.1,162,read_access,,,,,
+snmp_trap_user,10.0.0.2,163,cisco_user1,aes-128,cisco123,sha1,cisco123
 
 Type,SNMP_User,Privacy_Type [aes-128,des|none],Privacy_Key [min 8 char],Authorization_Type [md5|sha1],Authorization_Key [min 8 char]
 snmp_user,cisco_user1,aes-128,cisco123,sha1,cisco123

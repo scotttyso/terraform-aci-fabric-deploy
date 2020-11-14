@@ -1,6 +1,8 @@
 import csv
 import ipaddress
+import phonenumbers
 import os, re, sys, traceback, validators
+from datetime import datetime, timedelta
 
 if len(sys.argv) == 2:
     csv_input = sys.argv[1]
@@ -26,6 +28,14 @@ def validate_bgp_as(line_count, bgp_as):
         print(f"----------------\r")
         print(f"  Error on Row {line_count}. BGP AS {bgp_as} is invalid.")
         print(f"  A valid BGP AS is between 1 and 4294967295.  Exiting....")
+        print("----------------")
+        exit()
+
+def validate_email(line_count, email):
+    if not validators.email(email, whitelist=None):
+        print(f"----------------\r")
+        print(f"  Error on Row {line_count}. Email address {email} is invalid.")
+        print(f"  Please Validate the email and retry.  Exiting....")
         print("----------------")
         exit()
 
@@ -71,6 +81,15 @@ def validate_node_type(line_count, name, node_type):
         print(f"----------------\r")
         print(f"  Error on Row {line_count}. {name} node_type {node_type} is not valid.")
         print(f"  Valid node_types are remote-leaf-wan or unspecified.  Exiting....")
+        print("----------------")
+        exit()
+
+def validate_phone(line_count, phone_numbr):
+    phone_number = phonenumbers.parse(phone_numbr, None)
+    if not phonenumbers.is_possible_number(phone_number):
+        print(f"----------------\r")
+        print(f"  Error on Row {line_count}. Phone Number {phone_number} is invalid.")
+        print(f"  Make sure you are including the country code and the full phone number.  Exiting....")
         print("----------------")
         exit()
 
@@ -285,6 +304,319 @@ def resource_bgp_rr(node_id):
     wr_base_info.write('}\n')
     wr_base_info.write('\n')
 
+def resource_callhome(smtp___port, smtp__relay, mangmnt_epg, ch_fr_email, ch_rp_email, ch_to_email, phone_numbr, contact_inf,
+                      str_address, contract_id, customer_id, site_identi):
+    
+    # date_time = '2014-06-05T13:57:12.000Z'
+    date_time = datetime.now()
+    # print(date_time)
+    now_plus_10 = date_time + timedelta(minutes = 10)
+    now_p10_stp = str(now_plus_10).replace(' ', 'T')[:-3] + 'Z'
+    # print(now_p10_stp)
+
+    # Translate recieved import for mgpt_epg format
+    mgmt_epg = validate_mgmt_domain(line_count, mgmt_domain)
+
+    # Validate All the Email Addresses
+    validate_email(line_count, ch_fr_email)
+    validate_email(line_count, ch_rp_email)
+    validate_email(line_count, ch_to_email)
+
+    # Validate Phone Number
+    validate_phone(line_count, phone_numbr)
+
+    wr_base_info.write('resource "aci_rest" "sched_CallHome" {\n')
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/schedp-CallHome_scheduler.json"\n')
+    wr_base_info.write('\tclass_name = "snmpTrapFwdServerP"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"trigSchedP": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/schedp-CallHome_scheduler",\n')
+    wr_base_info.write('\t\t\t"name": "CallHome_scheduler",\n')
+    wr_base_info.write('\t\t\t"descr": "CallHome_scheduler added by Brahma Startup Wizard",\n')
+    wr_base_info.write('\t\t\t"rn": "schedp-CallHome_scheduler",\n')
+    wr_base_info.write('\t\t\t"status": "created"\n')
+    wr_base_info.write('\t\t},\n')
+    wr_base_info.write('\t\t"children": [\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"trigAbsWindowP": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/schedp-CallHome_scheduler/abswinp-CallHome_onetime",\n')
+    wr_base_info.write('\t\t\t\t\t\t"name": "CallHome_onetime",\n')
+    wr_base_info.write('\t\t\t\t\t\t"date": "%s",\n' % (now_p10_stp))
+    wr_base_info.write('\t\t\t\t\t\t"concurCap": "20",\n')
+    wr_base_info.write('\t\t\t\t\t\t"rn": "abswinp-CallHome_onetime",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t},\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"trigRecurrWindowP": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/schedp-CallHome_scheduler/recurrwinp-CallHome_trigger",\n')
+    wr_base_info.write('\t\t\t\t\t\t"name": "CallHome_trigger",\n')
+    wr_base_info.write('\t\t\t\t\t\t"hour": "1",\n')
+    wr_base_info.write('\t\t\t\t\t\t"concurCap": "20",\n')
+    wr_base_info.write('\t\t\t\t\t\t"rn": "recurrwinp-CallHome_trigger",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t}\n')
+    wr_base_info.write('\t\t]\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+
+    wr_base_info.write('resource "aci_rest" "CallHome_query" {\n')
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/chquerygroup-CallHome_query.json"\n')
+    wr_base_info.write('\tclass_name = "snmpTrapFwdServerP"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"callhomeQueryGroup": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/chquerygroup-CallHome_query",\n')
+    wr_base_info.write('\t\t\t"name": "CallHome_query",\n')
+    wr_base_info.write('\t\t\t"rn": "chquerygroup-CallHome_query",\n')
+    wr_base_info.write('\t\t},\n')
+    wr_base_info.write('\t\t"children": [\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"callhomeQuery": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/chquerygroup-CallHome_query/chquery-CallHome_query",\n')
+    wr_base_info.write('\t\t\t\t\t\t"name": "CallHome_query",\n')
+    wr_base_info.write('\t\t\t\t\t\t"target": "subtree",\n')
+    wr_base_info.write('\t\t\t\t\t\t"rspSubtree": "full",\n')
+    wr_base_info.write('\t\t\t\t\t\t"rspSubtreeInclude": "event-logs,count,stats,state,port-deployment,tasks,relations-with-parent,health,fault-count,local-prefix,config-only,record-subtree,no-scoped,relations,health-records,audit-logs,deployment,required,faults,fault-records",\n')
+    wr_base_info.write('\t\t\t\t\t\t"rn": "chquery-CallHome_query",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t}\n')
+    wr_base_info.write('\t\t]\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+
+    wr_base_info.write('resource "aci_rest" "CallHome_dg" {\n')
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/chgroup-CallHome_dg.json"\n')
+    wr_base_info.write('\tclass_name = "snmpTrapFwdServerP"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"callhomeGroup": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/chgroup-CallHome_dg",\n')
+    wr_base_info.write('\t\t\t"name": "CallHome_dg",\n')
+    wr_base_info.write('\t\t\t"descr": "CallHome_dg added by Brahma Startup Wizard",\n')
+    wr_base_info.write('\t\t\t"rn": "chgroup-CallHome_dg",\n')
+    wr_base_info.write('\t\t},\n')
+    wr_base_info.write('\t\t"children": [\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"callhomeDest": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/chgroup-CallHome_dg/dest-CallHome_dest",\n')
+    wr_base_info.write('\t\t\t\t\t\t"name": "CallHome_dest",\n')
+    wr_base_info.write('\t\t\t\t\t\t"email": "%s",\n' % (ch_to_email))
+    wr_base_info.write('\t\t\t\t\t\t"format": "short-txt",\n')
+    wr_base_info.write('\t\t\t\t\t\t"rn": "dest-CallHome_dest",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t},\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"callhomeProf": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/chgroup-CallHome_dg/prof",\n')
+    wr_base_info.write('\t\t\t\t\t\t"port": "%s",\n' % (smtp___port))
+    wr_base_info.write('\t\t\t\t\t\t"from": "%s",\n' % (ch_fr_email))
+    wr_base_info.write('\t\t\t\t\t\t"replyTo": "%s",\n' % (ch_rp_email))
+    wr_base_info.write('\t\t\t\t\t\t"email": "%s",\n' % (ch_to_email))
+    wr_base_info.write('\t\t\t\t\t\t"phone": "%s",\n' % (phone_numbr))
+    wr_base_info.write('\t\t\t\t\t\t"contact": "%s",\n' % (contact_inf))
+    wr_base_info.write('\t\t\t\t\t\t"addr": "%s",\n' % (str_address))
+    wr_base_info.write('\t\t\t\t\t\t"contract": "%s",\n' % (contract_id))
+    wr_base_info.write('\t\t\t\t\t\t"customer": "%s",\n' % (customer_id))
+    wr_base_info.write('\t\t\t\t\t\t"site": "%s",\n' % (site_identi))
+    wr_base_info.write('\t\t\t\t\t\t"rn": "prof",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": [\n')
+    wr_base_info.write('\t\t\t\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t\t\t\t"callhomeSmtpServer": {\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t\t"dn": "uni/fabric/chgroup-CallHome_dg/prof/smtp",\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t\t"host": "%s",\n' % (smtp__relay))
+    wr_base_info.write('\t\t\t\t\t\t\t\t\t"rn": "smtp",\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t"children": [\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t\t\t"fileRsARemoteHostToEpg": {\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t\t\t\t\t"tDn": "uni/tn-mgmt/mgmtp-default/%s",\n' % (mgmt_epg))
+    wr_base_info.write('\t\t\t\t\t\t\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t]\n')
+    wr_base_info.write('\t\t\t\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t\t\t]\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t}\n')
+    wr_base_info.write('\t\t]\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+
+    wr_base_info.write('resource "aci_rest" "default_inventory" {\n')
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/chinvp-default.json"\n')
+    wr_base_info.write('\tclass_name = "snmpTrapFwdServerP"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"callhomeInvP": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/chinvp-default",\n')
+    wr_base_info.write('\t\t\t"name": "default",\n')
+    wr_base_info.write('\t\t\t"maximumRetryCount": "3",\n')
+    wr_base_info.write('\t\t\t"rn": "chinvp-default",\n')
+    wr_base_info.write('\t\t},\n')
+    wr_base_info.write('\t\t"children": [\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"callhomeRsDestGroupRel": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"tDn": "uni/fabric/chgroup-CallHome_dg",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t},\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"callhomeRsInvScheduler": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"tnTrigSchedPName": "CallHome_scheduler",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t}\n')
+    wr_base_info.write('\t\t]\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+
+    wr_base_info.write('resource "aci_rest" "monfab_CallHome_src" {\n')
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/monfab-default/chsrc-CallHome_src.json"\n')
+    wr_base_info.write('\tclass_name = "snmpTrapFwdServerP"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"callhomeSrc": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/monfab-default/chsrc-CallHome_src",\n')
+    wr_base_info.write('\t\t\t"name": "CallHome_src",\n')
+    wr_base_info.write('\t\t\t"incl": "events,audit,faults",\n')
+    wr_base_info.write('\t\t\t"rn": "chsrc-CallHome_src",\n')
+    wr_base_info.write('\t\t},\n')
+    wr_base_info.write('\t\t"children": [\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"callhomeRsDestGroup": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"tDn": "uni/fabric/chgroup-CallHome_dg",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t},\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"callhomeRsQueryGroupRel": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"tDn": "uni/fabric/chquerygroup-CallHome_query",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t}\n')
+    wr_base_info.write('\t\t]\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+
+    wr_base_info.write('resource "aci_rest" "moncommon_CallHome_src" {\n')
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/moncommon/chsrc-CallHome_src.json"\n')
+    wr_base_info.write('\tclass_name = "snmpTrapFwdServerP"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"callhomeSrc": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/moncommon/chsrc-CallHome_src",\n')
+    wr_base_info.write('\t\t\t"name": "CallHome_src",\n')
+    wr_base_info.write('\t\t\t"incl": "events,audit,faults",\n')
+    wr_base_info.write('\t\t\t"rn": "chsrc-CallHome_src",\n')
+    wr_base_info.write('\t\t},\n')
+    wr_base_info.write('\t\t"children": [\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"callhomeRsDestGroup": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"tDn": "uni/fabric/chgroup-CallHome_dg",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t},\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"callhomeRsQueryGroupRel": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"tDn": "uni/fabric/chquerygroup-CallHome_query",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t}\n')
+    wr_base_info.write('\t\t]\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+
+    wr_base_info.write('resource "aci_rest" "moninfra_CallHome_src" {\n')
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/infra/moninfra-default/chsrc-CallHome_src.json"\n')
+    wr_base_info.write('\tclass_name = "snmpTrapFwdServerP"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"callhomeSrc": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"dn": "uni/infra/moninfra-default/chsrc-CallHome_src",\n')
+    wr_base_info.write('\t\t\t"name": "CallHome_src",\n')
+    wr_base_info.write('\t\t\t"incl": "events,audit,faults",\n')
+    wr_base_info.write('\t\t\t"rn": "chsrc-CallHome_src",\n')
+    wr_base_info.write('\t\t},\n')
+    wr_base_info.write('\t\t"children": [\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"callhomeRsDestGroup": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"tDn": "uni/fabric/chgroup-CallHome_dg",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t},\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"callhomeRsQueryGroupRel": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"tDn": "uni/fabric/chquerygroup-CallHome_query",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t}\n')
+    wr_base_info.write('\t\t]\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+
 def resource_dns(dns_ipv4, prefer):
     # Validate DNS IPv4 Address
     try:
@@ -298,7 +630,7 @@ def resource_dns(dns_ipv4, prefer):
     
     dns_ipv4_ = dns_ipv4.replace('.', '_')
     wr_base_info.write('resource "aci_rest" "dns_%s" {\n' % (dns_ipv4_))
-    wr_base_info.write('\tpath       = "api/node/mo/uni/fabric/dnsp-default/prov-[%s].json"\n' % (dns_ipv4))
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/dnsp-default/prov-[%s].json"\n' % (dns_ipv4))
     wr_base_info.write('\tclass_name = "dnsProv"\n')
     wr_base_info.write('\tpayload    = <<EOF\n')
     wr_base_info.write('{\n')
@@ -339,7 +671,7 @@ def resource_domain(domain, prefer):
 
     domain_ = domain.replace('.', '_')
     wr_base_info.write('resource "aci_rest" "domain_%s" {\n' % (domain_))
-    wr_base_info.write('\tpath       = "api/node/mo/uni/fabric/dnsp-default/dom-[%s].json"\n' % (domain))
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/dnsp-default/dom-[%s].json"\n' % (domain))
     wr_base_info.write('\tclass_name = "dnsDomain"\n')
     wr_base_info.write('\tpayload    = <<EOF\n')
     wr_base_info.write('{\n')
@@ -534,7 +866,7 @@ def resource_snmp_info(contact, location):
     wr_base_info.write('}\n')
     wr_base_info.write('\n')
 
-def resource_snmp_trap(snmp_ipv4, snmp_port):
+def resource_snmp_trap_comm(snmp_ipv4, snmp_port, community):
     
     # Validate SNMP Trap Server IPv4 Address
     try:
@@ -547,8 +879,25 @@ def resource_snmp_trap(snmp_ipv4, snmp_port):
         exit()
 
     snmp_ipv4_ = snmp_ipv4.replace('.', '_')
-    wr_base_info.write('resource "aci_rest" "snmp_trap_%s" {\n' % (snmp_ipv4_))
-    wr_base_info.write('\tpath       = "api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[%s].json"\n' % (snmp_ipv4))
+    wr_base_info.write('resource "aci_rest" "snmp_trap_default_%s" {\n' % (snmp_ipv4_))
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[%s].json"\n' % (snmp_ipv4))
+    wr_base_info.write('\tclass_name = "snmpTrapFwdServerP"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"snmpTrapFwdServerP": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"addr": "%s",\n' % (snmp_ipv4))
+    if not snmp_port == '':
+        wr_base_info.write('\t\t\t"port": "%s",\n' % (snmp_port))
+    wr_base_info.write('\t\t},\n')
+    wr_base_info.write('\t\t"children": []\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
+    wr_base_info.write('resource "aci_rest" "snmp_trap_common_%s" {\n' % (snmp_ipv4_))
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[%s].json"\n' % (snmp_ipv4))
     wr_base_info.write('\tclass_name = "snmpTrapFwdServerP"\n')
     wr_base_info.write('\tpayload    = <<EOF\n')
     wr_base_info.write('{\n')
@@ -951,7 +1300,22 @@ with open(csv_input) as csv_file:
                 # Configure the Default BGP Route Reflector
                 resource_bgp_rr(node_id)
                 line_count += 1
-            elif type == 'Company':
+            elif type == 'callhome':
+                smtp___port = column[1]
+                smtp__relay = column[2]
+                mangmnt_epg = column[3]
+                ch_fr_email = column[4]
+                ch_rp_email = column[5]
+                ch_to_email = column[6]
+                phone_numbr = column[7]
+                contact_inf = column[8]
+                str_address = column[9]
+                contract_id = column[10]
+                customer_id = column[11]
+                site_identi = column[12]
+                # Configure the Default CallHome Policy
+                resource_callhome(smtp___port, smtp__relay, mangmnt_epg, ch_fr_email, ch_rp_email, ch_to_email, phone_numbr, 
+                                  contact_inf, str_address, contract_id, customer_id, site_identi)
                 line_count += 1
             elif type == 'dns':
                 dns_ipv4 = column[1]
@@ -1007,11 +1371,12 @@ with open(csv_input) as csv_file:
                 # Create Resource Record for SNMP Default Policy
                 resource_snmp_info(contact, location)
                 line_count += 1
-            elif type == 'snmp_trap':
+            elif type == 'snmp_trap_comm':
                 snmp_ipv4 = column[1]
                 snmp_port = column[2]
+                snmp_comm = column[3]
                 # Create Resource Record for SNMP Traps
-                resource_snmp_trap(snmp_ipv4, snmp_port)
+                resource_snmp_trap_comm(snmp_ipv4, snmp_port, snmp_comm)
                 line_count += 1
             elif type == 'snmp_user':
                 snmp_user = column[1]
