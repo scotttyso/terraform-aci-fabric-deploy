@@ -186,6 +186,26 @@ def validate_oob(line_count, name, oob_ipv4, oob_gwv4):
         print("----------------")
         exit()
 
+def validate_port(line_count, port):
+    port=int(port)
+    if not validators.between(port, min=1, max=65535):
+        print(f"----------------\r")
+        print(f"  Error on Row {line_count}. Port {port} is invalid.")
+        print(f"  A valid Port Number is between 1 and 65535.  Exiting....")
+        print("----------------")
+        exit()
+
+def validate_snmp_string(line_count, snmp_name):
+    if not (validators.length(community, min=1, max=32) and re.fullmatch('^([a-zA-Z0-9\\-\\_\\.]+)$', community)):
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'  Error on Row {line_count}. Community {snmp_name} is not valid.')
+        print(f'  The community/username policy name can be a maximum of 32 characters in length.')
+        print(f'  The name can contain only letters, numbers and the special characters of')
+        print(f'  underscore (_), hyphen (-), or period (.). The name cannot contain')
+        print(f'  the @ symbol.  Exiting....\n')
+        print(f'------------------------------------------------------------------------------\n')
+        exit()
+
 def validate_snmp_mgmt(line_count, mgmt_domain):
     if mgmt_domain == 'oob':
         mgmt_domain = 'Out-of-Band'
@@ -198,6 +218,24 @@ def validate_snmp_mgmt(line_count, mgmt_domain):
         print('----------------\r')
         exit()
     return mgmt_domain
+
+def validate_log_level(line_count, log_loc, log_level):
+    if log_loc == 'remote' or log_loc == 'local':
+        if not re.match('(emergencies|alerts|critical|errors|warnings|notifications|information|debugging)', log_level):
+            print(f"----------------\r")
+            print(f"  Error on Row {line_count}. Logging Level for {log_loc}  with {log_level} is not valid.")
+            print(f"  Logging Levels can be [emergencies|alerts|critical|errors|warnings|notifications|information|debugging].")
+            print(f"  Exiting....")
+            print("----------------")
+            exit()
+    elif log_loc == 'console':
+        if not re.match('(emergencies|alerts|critical)', log_level):
+            print(f"----------------\r")
+            print(f"  Error on Row {line_count}. Logging Level for {log_loc}  with {log_level} is not valid.")
+            print(f"  Logging Levels can be [emergencies|alerts|critical|errors|warnings|notifications|information|debugging].")
+            print(f"  Exiting....")
+            print("----------------")
+            exit()
 
 def resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_leaf, p1_swpt, p2_leaf, p2_swpt):
     try:
@@ -304,16 +342,9 @@ def resource_bgp_rr(node_id):
     wr_base_info.write('}\n')
     wr_base_info.write('\n')
 
-def resource_callhome(smtp___port, smtp__relay, mangmnt_epg, ch_fr_email, ch_rp_email, ch_to_email, phone_numbr, contact_inf,
-                      str_address, contract_id, customer_id, site_identi):
+def resource_SmarthCallHome(smtp___port, smtp__relay, mgmt_domain, ch_fr_email, ch_rp_email, ch_to_email, phone_numbr, contact_inf,
+                            str_address, contract_id, customer_id, site_identi):
     
-    # date_time = '2014-06-05T13:57:12.000Z'
-    date_time = datetime.now()
-    # print(date_time)
-    now_plus_10 = date_time + timedelta(minutes = 10)
-    now_p10_stp = str(now_plus_10).replace(' ', 'T')[:-3] + 'Z'
-    # print(now_p10_stp)
-
     # Translate recieved import for mgpt_epg format
     mgmt_epg = validate_mgmt_domain(line_count, mgmt_domain)
 
@@ -454,7 +485,7 @@ def resource_dns(dns_ipv4, prefer):
 
 def resource_dns_mgmt(mgmt_domain):
     # Validate Management Domain
-    mgmt_domain = validate_mgmt_domain(line_count, mgmt_domain)
+    mgmt_epg = validate_mgmt_domain(line_count, mgmt_domain)
         
     wr_base_info.write('resource "aci_rest" "dns_mgmt" {\n')
     wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/dnsp-default.json"\n')
@@ -463,7 +494,7 @@ def resource_dns_mgmt(mgmt_domain):
     wr_base_info.write('{\n')
     wr_base_info.write('\t"dnsRsProfileToEpg": {\n')
     wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"tDn": "uni/tn-mgmt/mgmtp-default/%s",\n' % (mgmt_domain))
+    wr_base_info.write('\t\t\t"tDn": "uni/tn-mgmt/mgmtp-default/%s",\n' % (mgmt_epg))
     wr_base_info.write('\t\t}\n')
     wr_base_info.write('\t}\n')
     wr_base_info.write('}\n')
@@ -553,7 +584,7 @@ def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
 
 def resource_ntp(ntp_ipv4, prefer, mgmt_domain):
     # Validate Management Domain
-    mgmt_domain = validate_mgmt_domain(line_count, mgmt_domain)
+    mgmt_epg = validate_mgmt_domain(line_count, mgmt_domain)
     
     # Validate NTP IPv4 Address
     try:
@@ -582,7 +613,7 @@ def resource_ntp(ntp_ipv4, prefer, mgmt_domain):
     wr_base_info.write('\t\t\t{\n')
     wr_base_info.write('\t\t\t\t"datetimeRsNtpProvToEpg": {\n')
     wr_base_info.write('\t\t\t\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t\t\t\t"tDn": "uni/tn-mgmt/mgmtp-default/%s",\n' % (mgmt_domain))
+    wr_base_info.write('\t\t\t\t\t\t"tDn": "uni/tn-mgmt/mgmtp-default/%s",\n' % (mgmt_epg))
     wr_base_info.write('\t\t\t\t\t}\n')
     wr_base_info.write('\t\t\t\t}\n')
     wr_base_info.write('\t\t\t}\n')
@@ -628,6 +659,9 @@ def resource_snmp_client(client_name, client_ipv4, mgmt_domain):
     wr_base_info.write('\n')
 
 def resource_snmp_comm(community, description):
+    # Validate SNMP Community
+    validate_snmp_string(line_count, community)
+
     wr_base_info.write('resource "aci_rest" "snmp_comm_%s" {\n' % (community))
     wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/snmppol-default/community-%s.json"\n' % (community))
     wr_base_info.write('\tclass_name = "snmpCommunityP"\n')
@@ -670,17 +704,38 @@ def resource_snmp_info(contact, location):
     wr_base_info.write('}\n')
     wr_base_info.write('\n')
 
-def resource_snmp_trap_comm(snmp_ipv4, snmp_port, community):
+def resource_snmp_trap(snmp_ipv4, snmp_port, snmp_vers, snmp_string, snmp_auth, mgmt_domain):
     
     # Validate SNMP Trap Server IPv4 Address
     try:
         validate_ipv4(line_count, snmp_ipv4)
     except Exception as err:
-        print('\r\r----------------\r')
+        print(f'\n-----------------------------------------------------------------------------\n')
         print(f'   {SystemExit(err)}')
-        print(f'   Error on Row {line_count}, Please verify {snmp_ipv4} input information.')
-        print('----------------\r\r')
+        print(f'   Error on Row {line_count}, Please verify {snmp_ipv4} input information.\n')
+        print(f'-----------------------------------------------------------------------------\n')
         exit()
+
+    # Validate SNMP Port
+    validate_port(line_count, snmp_port)
+
+    # Check SNMP Version
+    if not re.search('(v1|v2c|v3)', snmp_vers):
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'  Error on Row {line_count}. SNMP Version {snmp_vers} is not valid.')
+        print(f'  Valid SNMP versions are [v1|v2c|v3].  Exiting....\n')
+        print(f'------------------------------------------------------------------------------\n')
+        exit()
+
+    # Set noauth if v1 or v2c
+    if re.search('(v1|v2c)', snmp_vers):
+        snmp_auth = 'noauth'
+    
+    # Validate SNMP Community or Username
+    validate_snmp_string(line_count, snmp_string)
+
+    # Validate Management Domain
+    mgmt_epg = validate_mgmt_domain(line_count, mgmt_domain)
 
     snmp_ipv4_ = snmp_ipv4.replace('.', '_')
     wr_base_info.write('resource "aci_rest" "snmp_trap_default_%s" {\n' % (snmp_ipv4_))
@@ -700,23 +755,50 @@ def resource_snmp_trap_comm(snmp_ipv4, snmp_port, community):
     wr_base_info.write('\tEOF\n')
     wr_base_info.write('}\n')
     wr_base_info.write('\n')
-    wr_base_info.write('resource "aci_rest" "snmp_trap_common_%s" {\n' % (snmp_ipv4_))
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[%s].json"\n' % (snmp_ipv4))
-    wr_base_info.write('\tclass_name = "snmpTrapFwdServerP"\n')
+    
+    wr_base_info.write('resource "aci_rest" "snmp_trap_dest_%s" {\n' % (snmp_ipv4_))
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/snmpgroup-SNMP-TRAP_dg.json"\n')
+    wr_base_info.write('\tclass_name = "snmpGroup"\n')
     wr_base_info.write('\tpayload    = <<EOF\n')
     wr_base_info.write('{\n')
-    wr_base_info.write('\t"snmpTrapFwdServerP": {\n')
+    wr_base_info.write('\t"snmpGroup": {\n')
     wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"addr": "%s",\n' % (snmp_ipv4))
-    if not snmp_port == '':
-        wr_base_info.write('\t\t\t"port": "%s",\n' % (snmp_port))
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/snmpgroup-SNMP-TRAP_dg",\n')
+    wr_base_info.write('\t\t\t"name": "SNMP-TRAP_dg",\n')
+    wr_base_info.write('\t\t\t"descr": "SNMP Trap Destination Group - Created by Brahma Startup Script",\n')
+    wr_base_info.write('\t\t\t"rn": "snmpgroup-SNMP-TRAP_dg",\n')
     wr_base_info.write('\t\t},\n')
-    wr_base_info.write('\t\t"children": []\n')
+    wr_base_info.write('\t\t"children": [\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"snmpTrapDest": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/snmpgroup-SNMP-TRAP_dg/trapdest-%s-port-%s",\n' % (snmp_ipv4, snmp_port))
+    wr_base_info.write('\t\t\t\t\t\t"ver": "%s",\n' % (snmp_vers))
+    wr_base_info.write('\t\t\t\t\t\t"host": "%s",\n' % (snmp_ipv4))
+    wr_base_info.write('\t\t\t\t\t\t"port": "%s",\n' % (snmp_port))
+    wr_base_info.write('\t\t\t\t\t\t"secName": "%s",\n' % (snmp_string))
+    wr_base_info.write('\t\t\t\t\t\t"v3SecLvl": "%s",\n' % (snmp_auth))
+    wr_base_info.write('\t\t\t\t\t\t"rn": "trapdest-%s-port-%s",\n' % (snmp_ipv4, snmp_port))
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": [\n')
+    wr_base_info.write('\t\t\t\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t\t\t\t"fileRsARemoteHostToEpg": {\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t\t"tDn": "uni/tn-mgmt/mgmtp-default/%s",\n' % (mgmt_epg))
+    wr_base_info.write('\t\t\t\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t\t\t]\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t}\n')
+    wr_base_info.write('\t\t]\n')
     wr_base_info.write('\t}\n')
     wr_base_info.write('}\n')
     wr_base_info.write('\tEOF\n')
     wr_base_info.write('}\n')
     wr_base_info.write('\n')
+
 
 def resource_snmp_user(snmp_user, priv_type, priv_key, auth_type, auth_key):
     if not (priv_type == 'none' or priv_type == 'aes-128' or priv_type == 'des'):
@@ -1037,6 +1119,113 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modul
             wr_file_sw.write('\n')
     wr_file_sw.close()
 
+def resource_syslog(syslog_ipv4, syslog_port, mgmt_domain, severity, facility, local_state, local_level, console_state, console_level):
+    # Validate Syslog Server IPv4 Address
+    try:
+        validate_ipv4(line_count, syslog_ipv4)
+    except Exception as err:
+        print('\r\r----------------\r')
+        print(f'   {SystemExit(err)}')
+        print(f'   Error on Row {line_count}, Please verify Syslog IP {syslog_ipv4} information.')
+        print('----------------\r\r')
+        exit()
+
+    # Validate Syslog Port
+    validate_port(line_count, syslog_port)
+
+    # Validate Management Domain
+    mgmt_epg = validate_mgmt_domain(line_count, mgmt_domain)
+
+    # Validate Syslog Facility
+    if not re.match("local[0-7]", facility):
+        print('\n----------------\n')
+        print(f'   Error on Row {line_count}, Please verify Syslog Facility {facility}.\n')
+        print('----------------\n')
+        exit()
+
+    # Validate Syslog Levels
+    validate_log_level(line_count, 'remote', severity)
+    validate_log_level(line_count, 'local', local_level)
+    validate_log_level(line_count, 'console', console_level)
+
+    syslog_ipv4_ = syslog_ipv4.replace('.', '_')
+    wr_base_info.write('resource "aci_rest" "syslog_%s" {\n' % (syslog_ipv4_))
+    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/slgroup-Syslog-dg_%s.json"\n' % (syslog_ipv4))
+    wr_base_info.write('\tclass_name = "syslogGroup"\n')
+    wr_base_info.write('\tpayload    = <<EOF\n')
+    wr_base_info.write('{\n')
+    wr_base_info.write('\t"syslogGroup": {\n')
+    wr_base_info.write('\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t"dn": "uni/fabric/slgroup-Syslog-dg_%s",\n' % (syslog_ipv4))
+    wr_base_info.write('\t\t\t"includeMilliSeconds": "true",\n')
+    wr_base_info.write('\t\t\t"includeTimeZone": "true",\n')
+    wr_base_info.write('\t\t\t"name": "Syslog-dg_%s",\n' % (syslog_ipv4))
+    wr_base_info.write('\t\t\t"descr": "Syslog Destination Group %s - Created by Brahma Startup Wizard",\n' % (syslog_ipv4))
+    wr_base_info.write('\t\t\t"rn": "slgroup-Syslog-dg_%s",\n' % (syslog_ipv4))
+    wr_base_info.write('\t\t},\n')
+    wr_base_info.write('\t\t"children": [\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"syslogConsole": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/slgroup-Syslog-dg_%s/console",\n' % (syslog_ipv4))
+    wr_base_info.write('\t\t\t\t\t\t"adminState": "%s",\n' % (console_state))
+    wr_base_info.write('\t\t\t\t\t\t"severity": "%s",\n' % (console_level))
+    wr_base_info.write('\t\t\t\t\t\t"rn": "console",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t},\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"syslogFile": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/slgroup-Syslog-dg_%s/file",\n' % (syslog_ipv4))
+    wr_base_info.write('\t\t\t\t\t\t"adminState": "%s",\n' % (local_state))
+    wr_base_info.write('\t\t\t\t\t\t"severity": "%s",\n' % (local_level))
+    wr_base_info.write('\t\t\t\t\t\t"rn": "file",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t},\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"syslogProf": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/slgroup-Syslog-dg_%s/prof",\n' % (syslog_ipv4))
+    wr_base_info.write('\t\t\t\t\t\t"adminState": "enabled",\n')
+    wr_base_info.write('\t\t\t\t\t\t"rn": "prof",\n')
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t},\n')
+    wr_base_info.write('\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t"syslogRemoteDest": {\n')
+    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/slgroup-Syslog-dg_%s/rdst-%s",\n' % (syslog_ipv4, syslog_ipv4))
+    wr_base_info.write('\t\t\t\t\t\t"host": "%s",\n' % (syslog_ipv4))
+    wr_base_info.write('\t\t\t\t\t\t"name": "RmtDst-%s",\n' % (syslog_port))
+    wr_base_info.write('\t\t\t\t\t\t"adminState": "enabled",\n')
+    wr_base_info.write('\t\t\t\t\t\t"forwardingFacility": "%s",\n' % (facility))
+    wr_base_info.write('\t\t\t\t\t\t"port": "%s",\n' % (syslog_port))
+    wr_base_info.write('\t\t\t\t\t\t"severity": "%s",\n' % (severity))
+    wr_base_info.write('\t\t\t\t\t\t"rn": "rdst-%s",\n' % (syslog_ipv4))
+    wr_base_info.write('\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t"children": [\n')
+    wr_base_info.write('\t\t\t\t\t\t{\n')
+    wr_base_info.write('\t\t\t\t\t\t\t"fileRsARemoteHostToEpg": {\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t"attributes": {\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t\t"tDn": "uni/tn-mgmt/mgmtp-default/%s",\n' % (mgmt_epg))
+    wr_base_info.write('\t\t\t\t\t\t\t\t},\n')
+    wr_base_info.write('\t\t\t\t\t\t\t\t"children": []\n')
+    wr_base_info.write('\t\t\t\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t\t\t]\n')
+    wr_base_info.write('\t\t\t\t}\n')
+    wr_base_info.write('\t\t\t}\n')
+    wr_base_info.write('\t\t]\n')
+    wr_base_info.write('\t}\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\tEOF\n')
+    wr_base_info.write('}\n')
+    wr_base_info.write('\n')
 
 
 try:
@@ -1104,23 +1293,6 @@ with open(csv_input) as csv_file:
                 # Configure the Default BGP Route Reflector
                 resource_bgp_rr(node_id)
                 line_count += 1
-            elif type == 'callhome':
-                smtp___port = column[1]
-                smtp__relay = column[2]
-                mangmnt_epg = column[3]
-                ch_fr_email = column[4]
-                ch_rp_email = column[5]
-                ch_to_email = column[6]
-                phone_numbr = column[7]
-                contact_inf = column[8]
-                str_address = column[9]
-                contract_id = column[10]
-                customer_id = column[11]
-                site_identi = column[12]
-                # Configure the Default CallHome Policy
-                resource_callhome(smtp___port, smtp__relay, mangmnt_epg, ch_fr_email, ch_rp_email, ch_to_email, phone_numbr, 
-                                  contact_inf, str_address, contract_id, customer_id, site_identi)
-                line_count += 1
             elif type == 'dns':
                 dns_ipv4 = column[1]
                 prefer = column[2]
@@ -1156,6 +1328,23 @@ with open(csv_input) as csv_file:
                 # Create Resource Record for NTP Servers
                 resource_ntp(ntp_ipv4, prefer, mgmt_domain)
                 line_count += 1
+            elif type == 'smartcallhome':
+                smtp___port = column[1]
+                smtp__relay = column[2]
+                mgmt_domain = column[3]
+                ch_fr_email = column[4]
+                ch_rp_email = column[5]
+                ch_to_email = column[6]
+                phone_numbr = column[7]
+                contact_inf = column[8]
+                str_address = column[9]
+                contract_id = column[10]
+                customer_id = column[11]
+                site_identi = column[12]
+                # Configure the Default SmartCallHome Policy
+                resource_SmarthCallHome(smtp___port, smtp__relay, mgmt_domain, ch_fr_email, ch_rp_email, ch_to_email, phone_numbr, 
+                                        contact_inf, str_address, contract_id, customer_id, site_identi)
+                line_count += 1
             elif type == 'snmp_client':
                 client_name = column[1]
                 client_ipv4 = column[2]
@@ -1175,12 +1364,15 @@ with open(csv_input) as csv_file:
                 # Create Resource Record for SNMP Default Policy
                 resource_snmp_info(contact, location)
                 line_count += 1
-            elif type == 'snmp_trap_comm':
+            elif type == 'snmp_trap':
                 snmp_ipv4 = column[1]
                 snmp_port = column[2]
-                snmp_comm = column[3]
+                snmp_vers = column[3]
+                snmp_string = column[4]
+                snmp_auth = column[5]
+                mgmt_domain = column[6]
                 # Create Resource Record for SNMP Traps
-                resource_snmp_trap_comm(snmp_ipv4, snmp_port, snmp_comm)
+                resource_snmp_trap(snmp_ipv4, snmp_port, snmp_vers, snmp_string, snmp_auth, mgmt_domain)
                 line_count += 1
             elif type == 'snmp_user':
                 snmp_user = column[1]
@@ -1235,7 +1427,17 @@ with open(csv_input) as csv_file:
 
                 # Increment Line Count
                 line_count += 1
-            elif type == 'time':
+            elif type == 'syslog':
+                syslog_ipv4 = column[1]
+                syslog_port = column[2]
+                mgmt_domain = column[3]
+                severity = column[4]
+                facility = column[5]
+                local_state = column[6]
+                local_level = column[7]
+                console_state = column[8]
+                console_level = column[9]
+                resource_syslog(syslog_ipv4, syslog_port, mgmt_domain, severity, facility, local_state, local_level, console_state, console_level)
                 line_count += 1
             elif type == 'tenants':
                 line_count += 1

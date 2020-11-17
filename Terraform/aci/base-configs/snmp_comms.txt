@@ -1,4 +1,2 @@
-cisco123
 read_access
-redrum
 will-this-work

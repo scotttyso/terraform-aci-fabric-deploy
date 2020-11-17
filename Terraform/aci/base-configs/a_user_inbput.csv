@@ -15,17 +15,17 @@ bgp_as,65535
 Type,BGP Route_Reflector Spine Name,Node_ID
 bgp_rr,spine101,101
 
-Type,Management Domain [inband|oob]
+Type,Management_Domain [inband|oob]
 dns_mgmt,oob
 
 Type,DNS_IP,Preferred
 dns,10.101.128.15,no
 dns,10.101.128.16,yes
 
-Type,smtp_port,smtp_relay, management_epg,From_email,Reply_email,To_email,Phone_Number,Contact_Info,Street_Address,Contract_ID,Customer_Identifier,Site_Identifier
-callhome,25,cisco-ext.cisco.com,oob,asgard-aci@rich.ciscolabs.com,rich-lab@cisco.com,rich-lab@cisco.com,+1-408-525-5300,Richfield Labs,4125 Highlander Pkwy_Richfield_OH 44286,5555555,5555555,555555
+Type,SMTP_Port,SMTP_Relay,Management_Domain [inband|oob],From_Email,Reply_Email,To_Email,Phone_Number,Contact_Info,Street_Address,Contract_ID,Customer_Identifier,Site_Identifier
+smartcallhome,25,cisco-ext.cisco.com,oob,asgard-aci@rich.ciscolabs.com,rich-lab@cisco.com,rich-lab@cisco.com,+1-408-525-5300,Richfield Labs,4125 Highlander Pkwy_Richfield_OH 44286,5555555,5555555,555555
 
-Type,NTP_Server,Preferred,Management Domain [inband|oob]
+Type,NTP_Server,Preferred,Management EPG [inband|oob]
 ntp,192.168.64.39,true,oob
 ntp,10.101.128.15,false,oob
 
@@ -33,25 +33,44 @@ ntp,10.101.128.15,false,oob
 Type,Domain,is_Default_domain [yes or no]
 search_domain,rich.ciscolabs.com,yes
 
-Type,SNMP_Client_Name,SNMP_Client_IPv4,Management Domain [inband|oob]
+Type,SNMP_Client_Name,SNMP_Client_IPv4,Management_Domain [inband|oob]
 snmp_client,snmp-server1,10.0.0.1,oob
 snmp_client,snmp-server2,10.0.0.2,inband
 
 Type,SNMP_Contact,SNMP_Location
 snmp_info,rich-lab@cisco.com,Richfield Ohio
 
+# SNMP Community can be 1 to 32 characters and contain letters, numbers, and [.\-]. No other special characters
 Type,SNMP_Community_String,Description
 snmp_comm,read_access,is it needed
 snmp_comm,will-this-work,
 
-Type,trap_server_IPv4,Destination_Port,community or SNMP_User,Privacy_Type [aes-128,des|none],Privacy_Key [min 8 char],Authorization_Type [md5|sha1],Authorization_Key [min 8 char]
-snmp_trap_comm,10.0.0.1,162,read_access,,,,,
-snmp_trap_user,10.0.0.2,163,cisco_user1,aes-128,cisco123,sha1,cisco123
+# Security Levels are:
+#  a. Authentication and no privacy = auth [v3 only]
+#  b. No authentication and no privacy = noauth [v1|v2c|v3]
+#  c. Authentication and privacy = priv [v3 only]
+Type,trap_server_IPv4,Dest_Port,Version [v1|v2c|v3],community or username,Security_Level,Management_Domain [inband|oob]
+snmp_trap,10.0.0.1,162,v2c,read_access,noauth,inband
+snmp_trap,10.0.0.2,162,v3,cisco_user1,priv,oob
 
-Type,SNMP_User,Privacy_Type [aes-128,des|none],Privacy_Key [min 8 char],Authorization_Type [md5|sha1],Authorization_Key [min 8 char]
+# SNMP Privacy Type: [aes-128,des|none]
+# SNMP Privacy Key: [min 8 char]
+# SNMP Authorization Type: [md5|sha1]
+# SNMP Authorization Key: [min 8 char]
+Type,SNMP_User,Privacy_Type,Privacy_Key,Authorization_Type,Authorization_Key
 snmp_user,cisco_user1,aes-128,cisco123,sha1,cisco123
 snmp_user,cisco_user2,des,cisco123,md5,cisco123
 snmp_user,cisco_user3,none,,sha1,cisco123
+
+# Logging Severity [emergencies|alerts|critical|errors|warnings|notifications|information|debugging] - default is warnings
+# The Logging severities above correlate to log level 0 thru 7 in order as shown above in relation to traditional Levels
+# Facility levels are [local0|local1|local2|local3|local4|local5|local6|local7| - default is local7
+# local_logging [enabled|disabled]
+# Local logging Level is Severity level, same values as Logging Severity - default is information
+# Console Logging [enabled|disabled]
+# Console Logging Level is Severity level, [emergencies|alerts|critical] - default is alerts
+Type,Syslog_Server_IPv4,Port,mgmt_epg,Severity,Faciility,local_logging,local_logging_level,Console_Logging,Console_Level
+syslog,1.1.1.1,514,inband,warnings,local7,enabled,information,enabled,alerts
 
 Type,Company Name
 Company,Cisco Labs,

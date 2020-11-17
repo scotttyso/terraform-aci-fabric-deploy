@@ -1,3 +1,10 @@
+    date_time = '2014-06-05T13:57:12.000Z'
+    date_time = datetime.now()
+    print(date_time)
+    now_plus_10 = date_time + timedelta(minutes = 10)
+    now_p10_stp = str(now_plus_10).replace(' ', 'T')[:-3] + 'Z'
+    print(now_p10_stp)
+
     wr_base_info.write('resource "aci_rest" "sched_SmartCallHome_Sched" {\n')
     wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/schedp-SmartCallHome_Sched.json"\n')
     wr_base_info.write('\tclass_name = "trigSchedP"\n')

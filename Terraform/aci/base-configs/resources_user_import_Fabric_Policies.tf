@@ -352,17 +352,101 @@ resource "aci_rest" "snmp_trap_default_10_0_0_1" {
 	EOF
 }
 
-resource "aci_rest" "snmp_trap_common_10_0_0_1" {
-	path       = "/api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[10.0.0.1].json"
+resource "aci_rest" "snmp_trap_dest_10_0_0_1" {
+	path       = "/api/node/mo/uni/fabric/snmpgroup-SNMP-TRAP_dg.json"
+	class_name = "snmpGroup"
+	payload    = <<EOF
+{
+	"snmpGroup": {
+		"attributes": {
+			"dn": "uni/fabric/snmpgroup-SNMP-TRAP_dg",
+			"name": "SNMP-TRAP_dg",
+			"descr": "SNMP Trap Destination Group - Created by Brahma Startup Script",
+			"rn": "snmpgroup-SNMP-TRAP_dg",
+		},
+		"children": [
+			{
+				"snmpTrapDest": {
+					"attributes": {
+						"dn": "uni/fabric/snmpgroup-SNMP-TRAP_dg/trapdest-10.0.0.1-port-162",
+						"ver": "v2c",
+						"host": "10.0.0.1",
+						"port": "162",
+						"secName": "read_access",
+						"v3SecLvl": "noauth",
+						"rn": "trapdest-10.0.0.1-port-162",
+					},
+					"children": [
+						{
+							"fileRsARemoteHostToEpg": {
+								"attributes": {
+									"tDn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg",
+								},
+								"children": []
+							}
+						}
+					]
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "snmp_trap_default_10_0_0_2" {
+	path       = "/api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[10.0.0.2].json"
 	class_name = "snmpTrapFwdServerP"
 	payload    = <<EOF
 {
 	"snmpTrapFwdServerP": {
 		"attributes": {
-			"addr": "10.0.0.1",
+			"addr": "10.0.0.2",
 			"port": "162",
 		},
 		"children": []
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "snmp_trap_dest_10_0_0_2" {
+	path       = "/api/node/mo/uni/fabric/snmpgroup-SNMP-TRAP_dg.json"
+	class_name = "snmpGroup"
+	payload    = <<EOF
+{
+	"snmpGroup": {
+		"attributes": {
+			"dn": "uni/fabric/snmpgroup-SNMP-TRAP_dg",
+			"name": "SNMP-TRAP_dg",
+			"descr": "SNMP Trap Destination Group - Created by Brahma Startup Script",
+			"rn": "snmpgroup-SNMP-TRAP_dg",
+		},
+		"children": [
+			{
+				"snmpTrapDest": {
+					"attributes": {
+						"dn": "uni/fabric/snmpgroup-SNMP-TRAP_dg/trapdest-10.0.0.2-port-162",
+						"ver": "v3",
+						"host": "10.0.0.2",
+						"port": "162",
+						"secName": "cisco_user1",
+						"v3SecLvl": "priv",
+						"rn": "trapdest-10.0.0.2-port-162",
+					},
+					"children": [
+						{
+							"fileRsARemoteHostToEpg": {
+								"attributes": {
+									"tDn": "uni/tn-mgmt/mgmtp-default/oob-default",
+								},
+								"children": []
+							}
+						}
+					]
+				}
+			}
+		]
 	}
 }
 	EOF
@@ -417,6 +501,83 @@ resource "aci_rest" "snmp_user_cisco_user3" {
 			"name": "cisco_user3",
 		},
 		"children": []
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "syslog_1_1_1_1" {
+	path       = "/api/node/mo/uni/fabric/slgroup-Syslog-dg_1.1.1.1.json"
+	class_name = "syslogGroup"
+	payload    = <<EOF
+{
+	"syslogGroup": {
+		"attributes": {
+			"dn": "uni/fabric/slgroup-Syslog-dg_1.1.1.1",
+			"includeMilliSeconds": "true",
+			"includeTimeZone": "true",
+			"name": "Syslog-dg_1.1.1.1",
+			"descr": "Syslog Destination Group 1.1.1.1 - Created by Brahma Startup Wizard",
+			"rn": "slgroup-Syslog-dg_1.1.1.1",
+		},
+		"children": [
+			{
+				"syslogConsole": {
+					"attributes": {
+						"dn": "uni/fabric/slgroup-Syslog-dg_1.1.1.1/console",
+						"adminState": "enabled",
+						"severity": "alerts",
+						"rn": "console",
+					},
+					"children": []
+				}
+			},
+			{
+				"syslogFile": {
+					"attributes": {
+						"dn": "uni/fabric/slgroup-Syslog-dg_1.1.1.1/file",
+						"adminState": "enabled",
+						"severity": "information",
+						"rn": "file",
+					},
+					"children": []
+				}
+			},
+			{
+				"syslogProf": {
+					"attributes": {
+						"dn": "uni/fabric/slgroup-Syslog-dg_1.1.1.1/prof",
+						"adminState": "enabled",
+						"rn": "prof",
+					},
+					"children": []
+				}
+			},
+			{
+				"syslogRemoteDest": {
+					"attributes": {
+						"dn": "uni/fabric/slgroup-Syslog-dg_1.1.1.1/rdst-1.1.1.1",
+						"host": "1.1.1.1",
+						"name": "RmtDst-514",
+						"adminState": "enabled",
+						"forwardingFacility": "local7",
+						"port": "514",
+						"severity": "warnings",
+						"rn": "rdst-1.1.1.1",
+					},
+					"children": [
+						{
+							"fileRsARemoteHostToEpg": {
+								"attributes": {
+									"tDn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg",
+								},
+								"children": []
+							}
+						}
+					]
+				}
+			}
+		]
 	}
 }
 	EOF

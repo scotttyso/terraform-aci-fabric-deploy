@@ -45,3 +45,31 @@ resource "aci_rest" "vrf_snmp" {
 }
 	EOF
 }
+
+resource "aci_rest" "snmp_trap_Src" {
+	path       = "/api/node/mo/uni/fabric/moncommon/snmpsrc-SNMP_Src.json"
+	class_name = "snmpSrc"
+	payload    = <<EOF
+{
+	"snmpSrc": {
+		"attributes": {
+			"dn": "uni/fabric/moncommon/snmpsrc-SNMP_Src",
+			"incl": "audits,events,faults",
+			"name": "SNMP_Src",
+			"rn": "snmpsrc-SNMP_Src",
+		},
+		"children": [
+			{
+				"snmpRsDestGroup": {
+					"attributes": {
+						"tDn": "uni/fabric/snmpgroup-SNMP-TRAP_dg",
+					},
+					"children": []
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
