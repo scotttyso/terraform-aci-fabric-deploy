@@ -25,7 +25,7 @@ dns,10.101.128.16,yes
 Type,SMTP_Port,SMTP_Relay,Management_Domain [inband|oob],From_Email,Reply_Email,To_Email,Phone_Number,Contact_Info,Street_Address,Contract_ID,Customer_Identifier,Site_Identifier
 smartcallhome,25,cisco-ext.cisco.com,oob,asgard-aci@rich.ciscolabs.com,rich-lab@cisco.com,rich-lab@cisco.com,+1-408-525-5300,Richfield Labs,4125 Highlander Pkwy_Richfield_OH 44286,5555555,5555555,555555
 
-Type,NTP_Server,Preferred,Management EPG [inband|oob]
+Type,NTP_Server,Preferred,Management_Domain [inband|oob]
 ntp,192.168.64.39,true,oob
 ntp,10.101.128.15,false,oob
 
