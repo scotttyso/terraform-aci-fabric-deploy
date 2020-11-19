@@ -4,6 +4,8 @@ import re, sys, traceback, validators
 import json
 import os
 import testvalidator
+import terraformresources
+
 
 template_m = '{0} {1}\n\tpath\t\t= {2}\n\tclass_name\t= {3}\n\tpayload\t\t= <<EOF\n{4}\n\tEOF\n{5}\n\n'
 append = ""
@@ -26,7 +28,7 @@ except IOError:
     print(f"----------------")
     exit()
 
-file_base_pod_info = 'resources_user_import_Fabric_Policies.tf'
+file_base_pod_info = '../resources_user_import_Fabric_Policies.tf'
 
 if append == 'yes':
     wr_base_info = open(file_base_pod_info, 'a')
