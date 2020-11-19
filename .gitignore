@@ -138,5 +138,8 @@ cython_debug/
 
 # temporary dirs
 chet
+chet-wrk
 chet/
+chet-wrk/
 /chet
+/chet-wrk
