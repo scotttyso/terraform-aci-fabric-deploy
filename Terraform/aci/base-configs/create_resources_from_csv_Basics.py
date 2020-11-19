@@ -1,9 +1,7 @@
+#!/usr/bin/env python3
+
 import csv
-#import ipaddress
-import re, sys, traceback, validators
-#import json
-#import os
-#import testvalidator
+import sys
 import terraformresources
 
 

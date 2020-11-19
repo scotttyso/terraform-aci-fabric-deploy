@@ -1,8 +1,7 @@
-import csv
-import ipaddress
-import re, sys, traceback, validators
+#!/usr/bin/env python3
+
+import validators
 import json
-import os
 import testvalidator
 
 template_m = '{0} {1}\n\tpath\t\t= {2}\n\tclass_name\t= {3}\n\tpayload\t\t= <<EOF\n{4}\n\tEOF\n{5}\n\n'
