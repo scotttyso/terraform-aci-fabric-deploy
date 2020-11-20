@@ -1,7 +1,11 @@
+#!/usr/bin/env python3
+
 import csv
 import ipaddress
+import json
 import phonenumbers
 import os, re, sys, traceback, validators
+import validating
 from datetime import datetime, timedelta
 
 if len(sys.argv) == 2:
@@ -11,269 +15,90 @@ elif len(sys.argv) == 1:
     csv_input = sys.argv[1]
     append = 'no'
 
+try:
+    open(csv_input)
+except IOError:
+    print(f"----------------")
+    print(f"  {csv_input} does not exist")
+    print(f"  Exiting...")
+    print(f"----------------")
+    exit()
+
+# Creating User Input Fabric Policies File to attached policies for
+# DNS, Domain, NTP, SmartCallHome, SNMP, Syslog, TACACS Accounting etc.
 file_base_pod_info = 'resources_user_import_Fabric_Policies.tf'
-file_vrfs = 'vrfs.txt'
-file_comm = 'snmp_comms.txt'
-wr_comm = open(file_comm, 'a')
-wr_vrfs = open(file_vrfs, 'a')
 if append == 'yes':
     wr_base_info = open(file_base_pod_info, 'a')
 else:
     wr_base_info = open(file_base_pod_info, 'w')
-    wr_base_info.write('# This File will include DNS, Domain, NTP, Timezone and other base configuration parameters\n')
+    wr_base_info.write('# This File will include DNS, Domain, NTP, SmartCallHome\n# SNMP, Syslog and other base configuration parameters\n')
 
-def validate_bgp_as(line_count, bgp_as):
-    bgp_as=int(bgp_as)
-    if not validators.between(bgp_as, min=1, max=4294967295):
-        print(f"----------------\r")
-        print(f"  Error on Row {line_count}. BGP AS {bgp_as} is invalid.")
-        print(f"  A valid BGP AS is between 1 and 4294967295.  Exiting....")
-        print("----------------")
-        exit()
+# SNMP requires assigning Communities to Tenant VRF's.
+# These files are used to capture Communities Defined
+# At the Fabric Level to then Assign to the Mgmt Tenant VRF's
+file_comm = 'snmp_comms.txt'
+wr_comm = open(file_comm, 'a')
+file_vrfs = 'vrfs.txt'
+wr_vrfs = open(file_vrfs, 'a')
 
-def validate_email(line_count, email):
-    if not validators.email(email, whitelist=None):
-        print(f"----------------\r")
-        print(f"  Error on Row {line_count}. Email address {email} is invalid.")
-        print(f"  Please Validate the email and retry.  Exiting....")
-        print("----------------")
-        exit()
+def template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file):
+    template_payload = '{0} {1}\n\tpath\t\t= {2}\n\tclass_name\t= "{3}"\n\tpayload\t\t= <<EOF\n{4}\n\tEOF\n{5}\n\n'
 
-def validate_hostname(line_count, name):
-    pattern = re.compile('^[a-zA-Z0-9\\-]+$')
-    if not re.search(pattern, name) and validators.length(name, min=1, max=63):
-        print(f"----------------\r")
-        print(f"  Error on Row {line_count}. {name} is not a valid Hostname.")
-        print(f"  Be sure you are not using the FQDN.  Exiting....")
-        print("----------------")
-        exit()
+    resource_line = 'resource "aci_rest" "{}"'.format(resrc_desc)
 
-def validate_inb_vlan(line_count, inb_vlan):
-    inb_vlan=int(inb_vlan)
-    if not validators.between(inb_vlan, min=2, max=4094):
-        print(f"----------------\r")
-        print(f"  Error on Row {line_count}. Inband Vlan {inb_vlan} is invalid.")
-        print(f"  A valid Inband Vlan is between 2 and 4094.  Exiting....")
-        print("----------------")
-        exit()
+    # Attached Data to template
+    wr_to_file = template_payload.format(resource_line, "{", path_attrs, class_name, json.dumps(data_out, indent=4), "}")
 
-def validate_node_id(line_count, name, node_id):
-    node_id=int(node_id)
-    if not validators.between(node_id, min=101, max=4001):
-        print(f"----------------\r")
-        print(f"  Error on Row {line_count}. {name} node_id {node_id} is invalid.")
-        print(f"  A valid Node ID is between 101 and 4000.  Exiting....")
-        print("----------------")
-        exit()
+    # Write Data to Template
+    wr_file.write(wr_to_file)
 
-def validate_node_id_apic(line_count, name, node_id):
-    node_id=int(node_id)
-    if not validators.between(node_id, min=1, max=7):
-        print(f"----------------\r")
-        print(f"  Error on Row {line_count}. APIC node_id {node_id} is invalid.")
-        print(f"  A valid Node ID is between 1 and 7.  Exiting....")
-        print("----------------")
-        exit()
+def template_aci_terraform(resrc_type, resrc_desc, attr_1st, attr_2nd, attr_3rd, wr_file):
+    template_payload = '{0} {1}\n\t{2}\n\t{3}\n\t{4}\n{5}\n\n'
 
-def validate_node_type(line_count, name, node_type):
-    pattern = re.compile('^(remote-leaf-wan|unspecified)$')
-    if not re.search(pattern, node_type):
-        print(f"----------------\r")
-        print(f"  Error on Row {line_count}. {name} node_type {node_type} is not valid.")
-        print(f"  Valid node_types are remote-leaf-wan or unspecified.  Exiting....")
-        print("----------------")
-        exit()
+    resource_line = 'resource "{}" "{}"'.format(resrc_type, resrc_desc)
 
-def validate_phone(line_count, phone_numbr):
-    phone_number = phonenumbers.parse(phone_numbr, None)
-    if not phonenumbers.is_possible_number(phone_number):
-        print(f"----------------\r")
-        print(f"  Error on Row {line_count}. Phone Number {phone_number} is invalid.")
-        print(f"  Make sure you are including the country code and the full phone number.  Exiting....")
-        print("----------------")
-        exit()
-
-def validate_pod_id(line_count, name, pod_id):
-    pod_id=int(pod_id)
-    if not validators.between(pod_id, min=1, max=12):
-        print(f"----------------\r")
-        print(f"  Error on Row {line_count}. {name} pod_id {pod_id} is invalid.")
-        print(f"  A valid Pod ID is between 1 and 12.  Exiting....")
-        print("----------------")
-        exit()
-
-def validate_role(line_count, name, switch_role):
-    pattern = re.compile('^(leaf|spine)$')
-    if not re.search(pattern, switch_role):
-        print(f"----------------\r")
-        print(f"  Error on Row {line_count}. {name} role {switch_role} is not valid.")
-        print(f"  Valid switch_roles are leaf or spine, which are required by the")
-        print(f"  script to determine resources to build.  Exiting....")
-        print("----------------")
-        exit()
-
-def validate_modules(line_count, name, switch_role, modules):
-    modules = int(modules)
-    module_count = 0
-    if switch_role == 'leaf' and modules == 1:
-        module_count += 1
-    elif switch_role == 'leaf':
-        print(f"----------------\r")
-        print(f"  Error on Row {line_count}. {name} module count is not valid.")
-        print(f"  A Leaf can only have one module.  Exiting....")
-        print("----------------")
-        exit()
-    elif switch_role == 'spine' and modules < 17:
-        module_count += 1
-    elif switch_role == 'spine':
-        print(f"----------------\r")
-        print(f"  Error on Row {line_count}. {name} module count is not valid.")
-        print(f"  A Spine needs between 1 and 16 modules.  Exiting....")
-        print("----------------")
-        exit()
-
-def validate_port_count(line_count, name, switch_role, port_count):
-    pattern = re.compile('^(32|36|48|64|96)$')
-    if not re.search(pattern, port_count):
-        print(f"----------------\r")
-        print(f"  Error on Row {line_count}. {name} port count of {port_count} is not valid.")
-        print(f"  Valid port counts are 32, 36, 48, 64, 96.  Exiting....")
-        print("----------------")
-        exit()
-
-def validate_inband(line_count, name, inb_ipv4, inb_gwv4):
-    inb_check_ipv4 = ipaddress.IPv4Interface(inb_ipv4)
-    inb_network_v4 = inb_check_ipv4.network
-    if not ipaddress.IPv4Address(inb_gwv4) in ipaddress.IPv4Network(inb_network_v4):
-        print(f"\r\r----------------\r")
-        print(f"  Error on Row {line_count}. {name} InBand Network doesn't Match Gateway Network.")
-        print(f"  IPv4 Address {inb_ipv4}")
-        print(f"  IPv4 Gateway {inb_gwv4}")
-        print(f"  Exiting...")
-        print('----------------\r\r')
-        exit()
-
-def validate_ipv4(line_count, ipv4):
-    if not ipaddress.IPv4Address(ipv4):
-        print(f"----------------")
-        print(f"  Error on Row {line_count}. {ipv4} is not a valid IPv4 Address.")
-        print(f"  Exiting...")
-        print("----------------")
-        exit()
-
-def validate_mgmt_domain(line_count, mgmt_domain):
-    if mgmt_domain == 'oob':
-        mgmt_domain = 'oob-default'
-    elif mgmt_domain == 'inband':
-        mgmt_domain = 'inb-inb_epg'
-    else:
-        print('\r----------------\r')
-        print(f'   Error, the Management Domain Should be inband or oob')
-        print(f'   Error on Row {line_count}, Please verify input information.')
-        print('----------------\r')
-        exit()
-    return mgmt_domain
-
-def validate_oob(line_count, name, oob_ipv4, oob_gwv4):
-    oob_check_ipv4 = ipaddress.IPv4Interface(oob_ipv4)
-    oob_network_v4 = oob_check_ipv4.network
-    if not ipaddress.IPv4Address(oob_gwv4) in ipaddress.IPv4Network(oob_network_v4):
-        print(f"----------------")
-        print(f"  Error on Row {line_count}. {name} Out-of-Band Network doesn't Match Gateway Network.")
-        print(f"  IPv4 Address {oob_ipv4}")
-        print(f"  IPv4 Gateway {oob_gwv4}")
-        print(f"  Exiting...")
-        print("----------------")
-        exit()
-
-def validate_port(line_count, port):
-    port=int(port)
-    if not validators.between(port, min=1, max=65535):
-        print(f"----------------\r")
-        print(f"  Error on Row {line_count}. Port {port} is invalid.")
-        print(f"  A valid Port Number is between 1 and 65535.  Exiting....")
-        print("----------------")
-        exit()
-
-def validate_snmp_string(line_count, snmp_name):
-    if not (validators.length(community, min=1, max=32) and re.fullmatch('^([a-zA-Z0-9\\-\\_\\.]+)$', community)):
-        print(f'\n-----------------------------------------------------------------------------\n')
-        print(f'  Error on Row {line_count}. Community {snmp_name} is not valid.')
-        print(f'  The community/username policy name can be a maximum of 32 characters in length.')
-        print(f'  The name can contain only letters, numbers and the special characters of')
-        print(f'  underscore (_), hyphen (-), or period (.). The name cannot contain')
-        print(f'  the @ symbol.  Exiting....\n')
-        print(f'------------------------------------------------------------------------------\n')
-        exit()
-
-def validate_snmp_mgmt(line_count, mgmt_domain):
-    if mgmt_domain == 'oob':
-        mgmt_domain = 'Out-of-Band'
-    elif mgmt_domain == 'inband':
-        mgmt_domain = 'Inband'
-    else:
-        print('\r----------------\r')
-        print(f'   Error, the Management Domain Should be inband or oob')
-        print(f'   Error on Row {line_count}, Please verify input information.')
-        print('----------------\r')
-        exit()
-    return mgmt_domain
-
-def validate_log_level(line_count, log_loc, log_level):
-    if log_loc == 'remote' or log_loc == 'local':
-        if not re.match('(emergencies|alerts|critical|errors|warnings|notifications|information|debugging)', log_level):
-            print(f"----------------\r")
-            print(f"  Error on Row {line_count}. Logging Level for {log_loc}  with {log_level} is not valid.")
-            print(f"  Logging Levels can be [emergencies|alerts|critical|errors|warnings|notifications|information|debugging].")
-            print(f"  Exiting....")
-            print("----------------")
-            exit()
-    elif log_loc == 'console':
-        if not re.match('(emergencies|alerts|critical)', log_level):
-            print(f"----------------\r")
-            print(f"  Error on Row {line_count}. Logging Level for {log_loc}  with {log_level} is not valid.")
-            print(f"  Logging Levels can be [emergencies|alerts|critical|errors|warnings|notifications|information|debugging].")
-            print(f"  Exiting....")
-            print("----------------")
-            exit()
+    wr_to_file = template_payload.format(resource_line, "{", attr_1st, attr_2nd, attr_3rd, "}")
+    # Write Data to Template
+    wr_file.write(wr_to_file)
 
 def resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_leaf, p1_swpt, p2_leaf, p2_swpt):
     try:
         # Validate APIC Node_ID
-        validate_node_id_apic(line_count, name, node_id)
+        validating.node_id_apic(line_count, name, node_id)
 
         # Validate Pod_ID
-        validate_pod_id(line_count, name, pod_id)
+        validating.pod_id(line_count, name, pod_id)
 
         # Validate InBand Network
-        validate_inband(line_count, name, inb_ipv4, inb_gwv4)
+        validating.inband(line_count, name, inb_ipv4, inb_gwv4)
     except Exception as err:
         print('\r\r----------------\r')
         print(f'   {SystemExit(err)}')
         print(f'   Error on Row {line_count}, Please verify input information.')
         print('----------------\r\r')
         exit()
+    
+    # Convert pod_id from integer to String
     pod_id = str(pod_id)
-    file_apic = ('resources_user_import_xDevice_%s.tf' % (name))
-    wr_apic = open(file_apic, 'w')
-    wr_apic.write('resource "aci_rest" "inb_mgmt_apic_%s" {\n' % (name))
-    wr_apic.write('\tpath       = "/api/node/mo/uni/tn-mgmt.json"\n')
-    wr_apic.write('\tclass_name = "mgmtRsInBStNode"\n')
-    wr_apic.write('\tpayload    = <<EOF\n')
-    wr_apic.write('{\n')
-    wr_apic.write('\t"mgmtRsInBStNode": {\n')
-    wr_apic.write('\t\t"attributes": {\n')
-    wr_apic.write('\t\t\t"addr": "%s",\n' % (inb_ipv4))
-    wr_apic.write('\t\t\t"dn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-%s/node-%s]",\n' % (pod_id, node_id))
-    wr_apic.write('\t\t\t"gw": "%s",\n' % (inb_gwv4))
-    wr_apic.write('\t\t\t"tDn": "topology/pod-%s/node-%s",\n' % (pod_id, node_id))
-    wr_apic.write('\t\t}\n')
-    wr_apic.write('\t}\n')
-    wr_apic.write('}\n')
-    wr_apic.write('\tEOF\n')
-    wr_apic.write('}\n')
-    wr_apic.write('\n')
-    # resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_leaf, p1_swpt, p2_leaf, p2_swpt):
+
+    # Which File to Write Data to
+    apic_file = 'resources_user_import_xDevice_{}.tf'.format(name)
+    wr_file = open(apic_file, 'w')
+
+    # Define Variables for Template Creation
+    resrc_desc = 'inb_mgmt_apic_{}'.format(name)
+    class_name = 'mgmtRsInBStNode'
+    tDn_string = "topology/pod-{}/node-{}".format(pod_id, node_id)
+    dn_strings = "uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-{}/node-{}]".format(pod_id, node_id)
+    path_attrs = '"/api/node/mo/uni/tn-mgmt.json"'
+
+    base_atts = {'dn': dn_strings, 'addr': inb_ipv4, 'gw': inb_gwv4, 'tDn': tDn_string}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
+    # Combine Input Port Information to read as List
     list_ports = [p1_leaf + ',' + p1_swpt,p2_leaf + ',' + p2_swpt]
     port_list_count = 0
     for x in list_ports:
@@ -284,178 +109,66 @@ def resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_le
         port_split = port_x.split('/')
         module = port_split[0]
         port = port_split[1]
-        wr_apic.write('resource "aci_rest" "%s_port_2_%s" {\n' % (name, port_list_count))
-        wr_apic.write('\tpath       = "/api/node/mo/uni/infra/accportprof-%s_IntProf/hports-Eth%s-%s-typ-range/rsaccBaseGrp.json"\n'% (leaf, module, port))
-        wr_apic.write('\tclass_name = "infraRsAccBaseGrp"\n')
-        wr_apic.write('\tpayload    = <<EOF\n')
-        wr_apic.write('{\n')
-        wr_apic.write('\t"infraRsAccBaseGrp": {\n')
-        wr_apic.write('\t\t"attributes": {\n')
-        wr_apic.write('\t\t\t"tDn": "uni/infra/funcprof/accportgrp-inband_ap",\n')
-        wr_apic.write('\t\t}\n')
-        wr_apic.write('\t}\n')
-        wr_apic.write('}\n')
-        wr_apic.write('\tEOF\n')
-        wr_apic.write('}\n')
-        wr_apic.write('\n')
-    wr_apic.close()
+
+        # Define Variables for Template Creation
+        resrc_desc = '{}_port_2_{}'.format(name, port_list_count)
+        class_name = 'infraRsAccBaseGrp'
+        tDn_string = "uni/infra/funcprof/accportgrp-inband_ap"
+        path_attrs = '"/api/node/mo/uni/infra/accportprof-{}_IntProf/hports-Eth{}-{}-typ-range/rsaccBaseGrp.json"'.format(leaf, module, port)
+
+        base_atts = {'tDn': tDn_string}
+        data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+        # Write Output to Resource Files using Template
+        template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
+    # Close the File created for this resource
+    wr_file.close()
 
 def resource_bgp_as(bgp_as):
     # Validate BGP AS Number
-    validate_bgp_as(line_count, bgp_as)
+    validating.bgp_as(line_count, bgp_as)
         
-    wr_base_info.write('resource "aci_rest" "bgp_as" {\n')
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/bgpInstP-default/as.json"\n')
-    wr_base_info.write('\tclass_name = "bgpAsP"\n')
-    wr_base_info.write('\tpayload    = <<EOF\n')
-    wr_base_info.write('{\n')
-    wr_base_info.write('\t"bgpAsP": {\n')
-    wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"dn": "uni/fabric/bgpInstP-default/as",\n')
-    wr_base_info.write('\t\t\t"asn": "%s",\n' % (bgp_as))
-    wr_base_info.write('\t\t\t"rn": "as"\n')
-    wr_base_info.write('\t\t}\n')
-    wr_base_info.write('\t}\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\tEOF\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\n')
+    # Which File to Write Data to
+    wr_file = wr_base_info
 
-def resource_bgp_rr(node_id):
-    # Validate BGP AS Number
-    validate_bgp_as(line_count, bgp_as)
-        
-    wr_base_info.write('resource "aci_rest" "bgp_rr_%s" {\n' % (node_id))
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/bgpInstP-default/rr/node-%s.json"\n' % (node_id))
-    wr_base_info.write('\tclass_name = "bgpRRNodePEp"\n')
-    wr_base_info.write('\tpayload    = <<EOF\n')
-    wr_base_info.write('{\n')
-    wr_base_info.write('\t"bgpRRNodePEp": {\n')
-    wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"dn": "uni/fabric/bgpInstP-default/rr/node-%s",\n' % (node_id))
-    wr_base_info.write('\t\t\t"id": "%s",\n' % (node_id))
-    wr_base_info.write('\t\t\t"rn": "node-%s"\n' % (node_id))
-    wr_base_info.write('\t\t}\n')
-    wr_base_info.write('\t}\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\tEOF\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\n')
+    # Define Variables for Template Creation
+    resrc_desc = 'bgp_as_{}'.format(bgp_as)
+    class_name = "bgpAsP"
+    rn_strings = "as"
+    dn_strings = "uni/fabric/bgpInstP-default/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
 
-def resource_SmarthCallHome(smtp___port, smtp__relay, mgmt_domain, ch_fr_email, ch_rp_email, ch_to_email, phone_numbr, contact_inf,
-                            str_address, contract_id, customer_id, site_identi):
+    base_atts = {'dn': dn_strings, 'asn': bgp_as, 'rn': rn_strings}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
     
-    # Translate recieved import for mgpt_epg format
-    mgmt_epg = validate_mgmt_domain(line_count, mgmt_domain)
+def resource_bgp_rr(node_id):
+    # Validate Node ID
+    validating.node_id(line_count, node_id)
+        
+    # Which File to Write Data to
+    wr_file = wr_base_info
 
-    # Validate All the Email Addresses
-    validate_email(line_count, ch_fr_email)
-    validate_email(line_count, ch_rp_email)
-    validate_email(line_count, ch_to_email)
+    # Define Variables for Template Creation
+    resrc_desc = 'bgp_rr_{}'.format(node_id)
+    class_name = 'bgpRRNodePEp'
+    rn_strings = "node-{}".format(node_id)
+    dn_strings = "uni/fabric/bgpInstP-default/rr/node-{}".format(node_id)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
 
-    # Validate Phone Number
-    validate_phone(line_count, phone_numbr)
+    base_atts = {'dn': dn_strings, 'id': node_id, 'rn': rn_strings}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
 
-    wr_base_info.write('resource "aci_rest" "SmartCallHome_dg" {\n')
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/smartgroup-SmartCallHome_dg.json"\n')
-    wr_base_info.write('\tclass_name = "callhomeSmartGroup"\n')
-    wr_base_info.write('\tpayload    = <<EOF\n')
-    wr_base_info.write('{\n')
-    wr_base_info.write('\t"callhomeSmartGroup": {\n')
-    wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"dn": "uni/fabric/smartgroup-SmartCallHome_dg",\n')
-    wr_base_info.write('\t\t\t"name": "SmartCallHome_dg",\n')
-    wr_base_info.write('\t\t\t"rn": "smartgroup-SmartCallHome_dg"\n')
-    wr_base_info.write('\t\t},\n')
-    wr_base_info.write('\t\t"children": [\n')
-    wr_base_info.write('\t\t\t{\n')
-    wr_base_info.write('\t\t\t\t"callhomeProf": {\n')
-    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/smartgroup-SmartCallHome_dg/prof",\n')
-    wr_base_info.write('\t\t\t\t\t\t"port": "%s",\n' % (smtp___port))
-    wr_base_info.write('\t\t\t\t\t\t"from": "%s",\n' % (ch_fr_email))
-    wr_base_info.write('\t\t\t\t\t\t"replyTo": "%s",\n' % (ch_rp_email))
-    wr_base_info.write('\t\t\t\t\t\t"email": "%s",\n' % (ch_to_email))
-    wr_base_info.write('\t\t\t\t\t\t"phone": "%s",\n' % (phone_numbr))
-    wr_base_info.write('\t\t\t\t\t\t"contact": "%s",\n' % (contact_inf))
-    wr_base_info.write('\t\t\t\t\t\t"addr": "%s",\n' % (str_address))
-    wr_base_info.write('\t\t\t\t\t\t"contract": "%s",\n' % (contract_id))
-    wr_base_info.write('\t\t\t\t\t\t"customer": "%s",\n' % (customer_id))
-    wr_base_info.write('\t\t\t\t\t\t"site": "%s",\n' % (site_identi))
-    wr_base_info.write('\t\t\t\t\t\t"rn": "prof"\n')
-    wr_base_info.write('\t\t\t\t\t},\n')
-    wr_base_info.write('\t\t\t\t\t"children": [\n')
-    wr_base_info.write('\t\t\t\t\t\t{\n')
-    wr_base_info.write('\t\t\t\t\t\t\t"callhomeSmtpServer": {\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t\t"dn": "uni/fabric/smartgroup-SmartCallHome_dg/prof/smtp",\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t\t"host": "%s",\n' % (smtp__relay))
-    wr_base_info.write('\t\t\t\t\t\t\t\t\t"rn": "smtp"\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t},\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t"children": [\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t\t{\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t\t\t"fileRsARemoteHostToEpg": {\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t\t\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t\t\t\t\t"tDn": "uni/tn-mgmt/mgmtp-default/%s",\n' % (mgmt_epg))
-    wr_base_info.write('\t\t\t\t\t\t\t\t\t\t\t},\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t\t\t\t"children": []\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t]\n')
-    wr_base_info.write('\t\t\t\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t\t\t]\n')
-    wr_base_info.write('\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t},\n')
-    wr_base_info.write('\t\t\t{\n')
-    wr_base_info.write('\t\t\t\t"callhomeSmartDest": {\n')
-    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/smartgroup-SmartCallHome_dg/smartdest-SCH_Receiver",\n')
-    wr_base_info.write('\t\t\t\t\t\t"name": "SCH_Receiver",\n')
-    wr_base_info.write('\t\t\t\t\t\t"email": "%s",\n' % (ch_to_email))
-    wr_base_info.write('\t\t\t\t\t\t"format": "short-txt",\n')
-    wr_base_info.write('\t\t\t\t\t\t"rn": "smartdest-SCH_Receiver"\n')
-    wr_base_info.write('\t\t\t\t\t},\n')
-    wr_base_info.write('\t\t\t\t\t"children": []\n')
-    wr_base_info.write('\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t}\n')
-    wr_base_info.write('\t\t]\n')
-    wr_base_info.write('\t}\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\tEOF\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\n')
-
-    wr_base_info.write('resource "aci_rest" "callhomeSmartSrc" {\n')
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/infra/moninfra-default/smartchsrc.json"\n')
-    wr_base_info.write('\tclass_name = "callhomeSmartSrc"\n')
-    wr_base_info.write('\tpayload    = <<EOF\n')
-    wr_base_info.write('{\n')
-    wr_base_info.write('\t"callhomeSmartSrc": {\n')
-    wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"dn": "uni/infra/moninfra-default/smartchsrc",\n')
-    wr_base_info.write('\t\t\t"rn": "smartchsrc",\n')
-    wr_base_info.write('\t\t},\n')
-    wr_base_info.write('\t\t"children": [\n')
-    wr_base_info.write('\t\t\t{\n')
-    wr_base_info.write('\t\t\t\t"callhomeRsSmartdestGroup": {\n')
-    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t\t\t\t"tDn": "uni/fabric/smartgroup-SmartCallHome_dg",\n')
-    wr_base_info.write('\t\t\t\t\t},\n')
-    wr_base_info.write('\t\t\t\t\t"children": []\n')
-    wr_base_info.write('\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t}\n')
-    wr_base_info.write('\t\t]\n')
-    wr_base_info.write('\t}\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\tEOF\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\n')
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
 def resource_dns(dns_ipv4, prefer):
     # Validate DNS IPv4 Address
     try:
-        validate_ipv4(line_count, dns_ipv4)
+        validating.ipv4(line_count, dns_ipv4)
     except Exception as err:
         print('\r\r----------------\r')
         print(f'   {SystemExit(err)}')
@@ -463,72 +176,66 @@ def resource_dns(dns_ipv4, prefer):
         print('----------------\r\r')
         exit()
     
+    # Which File to Write Data to
+    wr_file = wr_base_info
+
+    # Define Variables for Template Creation
     dns_ipv4_ = dns_ipv4.replace('.', '_')
-    wr_base_info.write('resource "aci_rest" "dns_%s" {\n' % (dns_ipv4_))
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/dnsp-default/prov-[%s].json"\n' % (dns_ipv4))
-    wr_base_info.write('\tclass_name = "dnsProv"\n')
-    wr_base_info.write('\tpayload    = <<EOF\n')
-    wr_base_info.write('{\n')
-    wr_base_info.write('\t"dnsProv": {\n')
-    wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"dn": "uni/fabric/dnsp-default/prov-[%s]",\n' % (dns_ipv4))
-    wr_base_info.write('\t\t\t"addr": "%s",\n' % (dns_ipv4))
-    wr_base_info.write('\t\t\t"preferred": "%s",\n' % (prefer))
-    wr_base_info.write('\t\t\t"rn": "prov-[%s]"\n' % (dns_ipv4))
-    wr_base_info.write('\t\t},\n')
-    wr_base_info.write('\t\t"children": []\n')
-    wr_base_info.write('\t}\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\tEOF\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\n')
+    resrc_desc = 'dns_{}'.format(dns_ipv4_)
+    class_name = 'dnsProv'
+    rn_strings = "prov-[{}]".format(dns_ipv4)
+    dn_strings = "uni/fabric/dnsp-default/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+
+    base_atts = {'dn': dn_strings, 'addr': dns_ipv4, 'preferred': prefer, 'rn': rn_strings}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
 def resource_dns_mgmt(mgmt_domain):
     # Validate Management Domain
-    mgmt_epg = validate_mgmt_domain(line_count, mgmt_domain)
+    mgmt_epg = validating.mgmt_domain(line_count, mgmt_domain)
         
-    wr_base_info.write('resource "aci_rest" "dns_mgmt" {\n')
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/dnsp-default.json"\n')
-    wr_base_info.write('\tclass_name = "dnsRsProfileToEpg"\n')
-    wr_base_info.write('\tpayload    = <<EOF\n')
-    wr_base_info.write('{\n')
-    wr_base_info.write('\t"dnsRsProfileToEpg": {\n')
-    wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"tDn": "uni/tn-mgmt/mgmtp-default/%s",\n' % (mgmt_epg))
-    wr_base_info.write('\t\t}\n')
-    wr_base_info.write('\t}\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\tEOF\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\n')
+    # Which File to Write Data to
+    wr_file = wr_base_info
+
+    # Define Variables for Template Creation
+    resrc_desc = 'dns_epg_{}'.format(mgmt_epg)
+    class_name = 'dnsRsProfileToEpg'
+    tDn_string = "uni/tn-mgmt/mgmtp-default/{}".format(mgmt_epg)
+    path_attrs = '"/api/node/mo/uni/fabric/dnsp-default.json"'
+
+    base_atts = {'tDn': tDn_string}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
 def resource_domain(domain, prefer):
 
+    # Which File to Write Data to
+    wr_file = wr_base_info
+
+    # Define Variables for Template Creation
     domain_ = domain.replace('.', '_')
-    wr_base_info.write('resource "aci_rest" "domain_%s" {\n' % (domain_))
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/dnsp-default/dom-[%s].json"\n' % (domain))
-    wr_base_info.write('\tclass_name = "dnsDomain"\n')
-    wr_base_info.write('\tpayload    = <<EOF\n')
-    wr_base_info.write('{\n')
-    wr_base_info.write('\t"dnsDomain": {\n')
-    wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"dn": "uni/fabric/dnsp-default/dom-[%s]",\n' % (domain))
-    wr_base_info.write('\t\t\t"name": "%s",\n' % (domain))
-    wr_base_info.write('\t\t\t"isDefault": "%s",\n' % (prefer))
-    wr_base_info.write('\t\t\t"rn": "dom-[%s]"\n' % (domain))
-    wr_base_info.write('\t\t},\n')
-    wr_base_info.write('\t\t"children": []\n')
-    wr_base_info.write('\t}\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\tEOF\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\n')
+    resrc_desc = 'domain_{}'.format(domain_)
+    class_name = 'dnsDomain'
+    rn_strings = "dom-[{}]".format(domain)
+    dn_strings = "uni/fabric/dnsp-default/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+
+    base_atts = {'dn': dn_strings, 'name': domain, 'isDefault': prefer, 'rn': rn_strings}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
 def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
     
     # Validate Inband VLAN
     try:
-        validate_inb_vlan(line_count, inb_vlan)
+        validating.inb_vlan(line_count, inb_vlan)
     except Exception as err:
         print('\r\r----------------\r')
         print(f'   {SystemExit(err)}')
@@ -536,59 +243,63 @@ def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
         print('----------------\r\r')
         exit()
 
-    pfx = inb_ipv4.split('/', 2)
-    gwv4 = str(inb_gwv4) + '/' + str(pfx[1])
+    # Which File to Write Data to
     file_inb = ('resources_user_import_Tenant_Mgmt.tf')
-    wr_file_inb = open(file_inb, 'w')
-    wr_file_inb.write('# Use this Resource File to Register the inband management network for the Fabric\n')
-    wr_file_inb.write('\n')
-    wr_file_inb.write('resource "aci_subnet" "inb_subnet" {\n' )
-    wr_file_inb.write('\tparent_dn              = aci_bridge_domain.inb.id\n' )
-    wr_file_inb.write('\tip                   = "%s"\n' % (gwv4))
-    wr_file_inb.write('\tscope                  = ["public"]\n')
-    wr_file_inb.write('}\n')
-    wr_file_inb.write('\n')
-    wr_file_inb.write('resource "aci_ranges" "inb_vlan" {\n')
-    wr_file_inb.write('\tvlan_pool_dn	= "uni/infra/vlanns-[inband_vl-pool]-static"\n')
-    wr_file_inb.write('\t_from		    = "vlan-%s"\n' % (inb_vlan))
-    wr_file_inb.write('\tto		        = "vlan-%s"\n' % (inb_vlan))
-    wr_file_inb.write('}\n')
-    wr_file_inb.write('\n')
-    wr_file_inb.write('resource "aci_rest" "inb_mgmt_default_epg" {\n')
-    wr_file_inb.write('\tpath       = "/api/node/mo/uni/tn-mgmt/mgmtp-default/inb-inb_epg.json"\n')
-    wr_file_inb.write('\tclass_name = "mgmtInB"\n')
-    wr_file_inb.write('\tpayload    = <<EOF\n')
-    wr_file_inb.write('{\n')
-    wr_file_inb.write('\t"mgmtInB": {\n')
-    wr_file_inb.write('\t\t"attributes": {\n')
-    wr_file_inb.write('\t\t\t"descr": "",\n')
-    wr_file_inb.write('\t\t\t"dn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg",\n')
-    wr_file_inb.write('\t\t\t"encap": "vlan-%s",\n' % (inb_vlan))
-    wr_file_inb.write('\t\t\t"name": "inb_epg",\n')
-    wr_file_inb.write('\t\t},\n')
-    wr_file_inb.write('\t\t"children": [\n')
-    wr_file_inb.write('\t\t\t{\n')
-    wr_file_inb.write('\t\t\t\t"mgmtRsMgmtBD": {\n')
-    wr_file_inb.write('\t\t\t\t\t"attributes": {\n')
-    wr_file_inb.write('\t\t\t\t\t\t"tnFvBDName": "inb"\n')
-    wr_file_inb.write('\t\t\t\t\t}\n')
-    wr_file_inb.write('\t\t\t\t}\n')
-    wr_file_inb.write('\t\t\t}\n')
-    wr_file_inb.write('\t\t]\n')
-    wr_file_inb.write('\t}\n')
-    wr_file_inb.write('}\n')
-    wr_file_inb.write('\tEOF\n')
-    wr_file_inb.write('}\n')
-    wr_file_inb.write('\n')
-    wr_file_inb.close()
+    wr_file = open(file_inb, 'w')
+    wr_file.write('# Use this Resource File to Register the inband management network for the Fabric\n\n')
+
+    
+    # Define Variables for Template Creation
+    gwy_prefix = inb_ipv4.split('/', 2)
+    gateway_v4 = str(inb_gwv4) + '/' + str(gwy_prefix[1])
+
+    # Resource for Inband Subnet
+    resrc_type = 'aci_subnet'
+    resrc_desc = 'inb_subnet'
+    attr_1st = 'parent_dn\t= aci_bridge_domain.inb.id'
+    attr_2nd = 'ip\t\t\t= "{}"'.format(gateway_v4)
+    attr_3rd = 'scope\t\t= ["public"]'
+
+    # Write Output to Resource Files using Template
+    template_aci_terraform(resrc_type, resrc_desc, attr_1st, attr_2nd, attr_3rd, wr_file)
+
+    # Resource for Inband VLAN
+    resrc_type = 'aci_ranges'
+    resrc_desc = 'inb_vlan'
+    attr_1st = 'vlan_pool_dn	= "uni/infra/vlanns-[inband_vl-pool]-static"'
+    attr_2nd = '_from		    = "vlan-{}"'.format(inb_vlan)
+    attr_3rd = 'to		        = "vlan-{}"'.format(inb_vlan)
+
+    # Write Output to Resource Files using Template
+    template_aci_terraform(resrc_type, resrc_desc, attr_1st, attr_2nd, attr_3rd, wr_file)
+
+    # Define Variables for Template Creation
+    resrc_desc = 'inb_mgmt_default_epg'
+    class_name = 'mgmtInB'
+    dn_strings = 'uni/tn-mgmt/mgmtp-default/inb-inb_epg'
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    descrption = 'Default Inband Mmgmt EPG Used by Brahma Startup Wizard.'
+    encapsulat = 'vlan-{}'.format(inb_vlan)
+    childclass = 'mgmtRsMgmtBD'
+    child_Brdg = 'inb'
+
+    base_atts = {'dn': dn_strings, 'descr': descrption, 'encap': encapsulat, 'name': 'inb_epg'}
+    child_atts = {'tnFvBDName': child_Brdg}
+    data_out = {class_name: {'attributes': base_atts, 'children': [{childclass: {'attributes': child_atts}}]}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
+    # Close the File created for this resource
+    wr_file.close()
 
 def resource_ntp(ntp_ipv4, prefer, mgmt_domain):
     # Validate Management Domain
-    mgmt_epg = validate_mgmt_domain(line_count, mgmt_domain)
+    mgmt_epg = validating.mgmt_domain(line_count, mgmt_domain)
     
     # Validate NTP IPv4 Address
     try:
-        validate_ipv4(line_count, ntp_ipv4)
+        validating.ipv4(line_count, ntp_ipv4)
     except Exception as err:
         print('\r\r----------------\r')
         print(f'   {SystemExit(err)}')
@@ -596,41 +307,110 @@ def resource_ntp(ntp_ipv4, prefer, mgmt_domain):
         print('----------------\r\r')
         exit()
 
+    # Which File to Write Data to
+    wr_file = wr_base_info
+
+    # Define Variables for Template Creation
     ntp_ipv4_ = ntp_ipv4.replace('.', '_')
-    wr_base_info.write('resource "aci_rest" "ntp_%s" {\n' % (ntp_ipv4_))
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/time-default/ntpprov-%s.json"\n' % (ntp_ipv4))
-    wr_base_info.write('\tclass_name = "datetimeNtpProv"\n')
-    wr_base_info.write('\tpayload    = <<EOF\n')
-    wr_base_info.write('{\n')
-    wr_base_info.write('\t"datetimeNtpProv": {\n')
-    wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"dn": "uni/fabric/time-default/ntpprov-%s",\n' % (ntp_ipv4))
-    wr_base_info.write('\t\t\t"name": "%s",\n' % (ntp_ipv4))
-    wr_base_info.write('\t\t\t"preferred": "%s",\n' % (prefer))
-    wr_base_info.write('\t\t\t"rn": "ntpprov-%s",\n' % (ntp_ipv4))
-    wr_base_info.write('\t\t},\n')
-    wr_base_info.write('\t\t"children": [\n')
-    wr_base_info.write('\t\t\t{\n')
-    wr_base_info.write('\t\t\t\t"datetimeRsNtpProvToEpg": {\n')
-    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t\t\t\t"tDn": "uni/tn-mgmt/mgmtp-default/%s",\n' % (mgmt_epg))
-    wr_base_info.write('\t\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t}\n')
-    wr_base_info.write('\t\t]\n')
-    wr_base_info.write('\t}\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\tEOF\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\n')
+    resrc_desc = 'ntp_{}'.format(ntp_ipv4_)
+    class_name = 'datetimeNtpProv'
+    rn_strings = "ntpprov-{}".format(ntp_ipv4)
+    dn_strings = "uni/fabric/time-default/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    childclass = 'datetimeRsNtpProvToEpg'
+    child_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
+
+    base_atts = {'dn': dn_strings, 'name': ntp_ipv4, 'preferred': prefer, 'rn': rn_strings}
+    child_atts = {'tDn': child_tDn}
+    data_out = {class_name: {'attributes': base_atts, 'children': [{childclass: {'attributes': child_atts}}]}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
+def resource_SmarthCallHome(smtp_port, smtp_relay, mgmt_domain, ch_fr_email, ch_rp_email, ch_to_email, phone_numbr, contact_inf,
+                            str_address, contract_id, customer_id, site_identi):
+    
+    # Translate recieved import for mgpt_epg format
+    mgmt_epg = validating.mgmt_domain(line_count, mgmt_domain)
+
+    # Validate All the Email Addresses
+    validating.email(line_count, ch_fr_email)
+    validating.email(line_count, ch_rp_email)
+    validating.email(line_count, ch_to_email)
+
+    # Validate Phone Number
+    validating.phone(line_count, phone_numbr)
+
+    # Which File to Write Data to
+    wr_file = wr_base_info
+
+    # Define Variables for Template Creation
+    resrc_desc = 'SmartCallHome_dg'
+    class_name = 'callhomeSmartGroup'
+    rn_strings = "smartgroup-SmartCallHome_dg"
+    dn_strings = "uni/fabric/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    name = 'SmartCallHome_dg'
+    
+    child_1_class = 'callhomeProf'
+    child_1_Rn = 'prof'
+    child_1_Dn = 'uni/fabric/smartgroup-SmartCallHome_dg/{}'.format(child_1_Rn)
+
+    sub_child_class = 'callhomeSmtpServer'
+    sub_child_Rn = 'smtp'
+    sub_child_Dn = 'uni/fabric/smartgroup-SmartCallHome_dg/prof/{}'.format(sub_child_Rn)
+
+    basement_class = 'fileRsARemoteHostToEpg'
+    basement_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
+
+
+    child_2_class = 'callhomeSmartDest'
+    child_2_Rn = 'smartdest-SCH_Receiver'
+    child_2_Dn = 'uni/fabric/smartgroup-SmartCallHome_dg/{}'.format(child_2_Rn)
+
+    base_atts = {'dn': dn_strings, 'name': name, 'rn': rn_strings}
+    basement_child = {basement_class: {'attributes': {'tDn': basement_tDn}, 'children': []}}
+    sub_child = {sub_child_class: {'attributes': {'dn': sub_child_Dn, 'host': smtp_relay, 'rn': sub_child_Rn}, 'children': [basement_child]}}
+    child_1_atts = {child_1_class: {'attributes': {'dn': child_1_Dn, 'port': smtp_port, 'from': ch_fr_email, 'replyTo': ch_rp_email,
+                    'email': ch_to_email, 'phone': phone_numbr, 'contact': contact_inf, 'addr': str_address, 'contract': contract_id,
+                    'customer': customer_id, 'site': site_identi, 'rn': child_1_Rn}, 'children': [sub_child]}}
+    child_2_atts = {child_2_class: {'attributes': {'dn': child_2_Dn, 'name': 'SCH_Receiver', 'email': ch_to_email,
+                    'format': 'short-txt', 'rn': child_2_Rn}, 'children': []}}
+
+    child_combined = [child_1_atts, child_2_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
+
+    # Define Variables for Template Creation
+    resrc_desc = 'callhomeSmartSrc'
+    class_name = 'callhomeSmartSrc'
+    rn_strings = "smartchsrc"
+    dn_strings = "uni/infra/moninfra-default/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    name = 'SmartCallHome_dg'
+    
+    child_1_class = 'callhomeRsSmartdestGroup'
+    child_1_tDn = 'uni/fabric/smartgroup-SmartCallHome_dg'
+
+    base_atts = {'dn': dn_strings, 'rn': rn_strings}
+    child_1_atts = {child_1_class: {'attributes': {'tDn': child_1_tDn}, 'children': []}}
+
+    child_combined = [child_1_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
 def resource_snmp_client(client_name, client_ipv4, mgmt_domain):
     # Validate Management Domain
-    snmp_mgmt = validate_snmp_mgmt(line_count, mgmt_domain)
+    snmp_mgmt = validating.snmp_mgmt(line_count, mgmt_domain)
     
     # Validate SNMP IPv4 Client Address
     try:
-        validate_ipv4(line_count, client_ipv4)
+        validating.ipv4(line_count, client_ipv4)
     except Exception as err:
         print('\r\r----------------\r')
         print(f'   {SystemExit(err)}')
@@ -638,77 +418,67 @@ def resource_snmp_client(client_name, client_ipv4, mgmt_domain):
         print('----------------\r\r')
         exit()
 
+    # Which File to Write Data to
+    wr_file = wr_base_info
+
+    # Define Variables for Template Creation
     client_ipv4_ = client_ipv4.replace('.', '_')
-    wr_base_info.write('resource "aci_rest" "snmp_client_%s" {\n' % (client_ipv4_))
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/snmppol-default/clgrp-%s_Clients/client-[%s].json"\n' % (snmp_mgmt, client_ipv4))
-    wr_base_info.write('\tclass_name = "snmpClientP"\n')
-    wr_base_info.write('\tpayload    = <<EOF\n')
-    wr_base_info.write('{\n')
-    wr_base_info.write('\t"snmpClientP": {\n')
-    wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"dn": "uni/fabric/snmppol-default/clgrp-%s_Clients/client-[%s]",\n' % (snmp_mgmt, client_ipv4))
-    wr_base_info.write('\t\t\t"name": "%s",\n' % (client_name))
-    wr_base_info.write('\t\t\t"addr": "%s",\n' % (client_ipv4))
-    wr_base_info.write('\t\t\t"rn": "client-%s",\n' % (client_ipv4))
-    wr_base_info.write('\t\t},\n')
-    wr_base_info.write('\t\t"children": []\n')
-    wr_base_info.write('\t}\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\tEOF\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\n')
+    resrc_desc = 'snmp_client_{}'.format(client_ipv4_)
+    class_name = 'snmpClientP'
+    rn_strings = "client-{}".format(client_ipv4)
+    dn_strings = "uni/fabric/snmppol-default/clgrp-{}_Clients/client-[{}]".format(snmp_mgmt, client_ipv4)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+
+    base_atts = {'dn': dn_strings, 'name': client_name, 'addr': client_ipv4, 'rn': rn_strings}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
 def resource_snmp_comm(community, description):
     # Validate SNMP Community
-    validate_snmp_string(line_count, community)
+    validating.snmp_string(line_count, community)
 
-    wr_base_info.write('resource "aci_rest" "snmp_comm_%s" {\n' % (community))
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/snmppol-default/community-%s.json"\n' % (community))
-    wr_base_info.write('\tclass_name = "snmpCommunityP"\n')
-    wr_base_info.write('\tpayload    = <<EOF\n')
-    wr_base_info.write('{\n')
-    wr_base_info.write('\t"snmpCommunityP": {\n')
-    wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"dn": "uni/fabric/snmppol-default/community-%s",\n' % (community))
-    wr_base_info.write('\t\t\t"descr": "%s",\n' % (description))
-    wr_base_info.write('\t\t\t"name": "%s",\n' % (community))
-    wr_base_info.write('\t\t\t"rn": "community-%s"\n' % (community))
-    wr_base_info.write('\t\t},\n')
-    wr_base_info.write('\t\t"children": []\n')
-    wr_base_info.write('\t}\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\tEOF\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\n')
+    # Which File to Write Data to
+    wr_file = wr_base_info
+
+    # Define Variables for Template Creation
+    resrc_desc = 'snmp_comm_{}'.format(community)
+    class_name = 'snmpCommunityP'
+    rn_strings = "community-{}".format(community)
+    dn_strings = "uni/fabric/snmppol-default/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+
+    base_atts = {'dn': dn_strings, 'descr': description, 'name': community, 'rn': rn_strings}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
     wr_comm.write('%s\n' % (community))
 
 def resource_snmp_info(contact, location):
-    wr_base_info.write('resource "aci_rest" "snmp_info" {\n')
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/snmppol-default.json"\n')
-    wr_base_info.write('\tclass_name = "snmpPol"\n')
-    wr_base_info.write('\tpayload    = <<EOF\n')
-    wr_base_info.write('{\n')
-    wr_base_info.write('\t"snmpPol": {\n')
-    wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"dn": "uni/fabric/snmppol-default",\n')
-    wr_base_info.write('\t\t\t"descr": "This is the default SNMP Policy",\n')
-    wr_base_info.write('\t\t\t"adminSt": "enabled",\n')
-    wr_base_info.write('\t\t\t"contact": "%s",\n' % (contact))
-    wr_base_info.write('\t\t\t"loc": "%s",\n' % (location))
-    wr_base_info.write('\t\t},\n')
-    wr_base_info.write('\t\t"children": []\n')
-    wr_base_info.write('\t}\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\tEOF\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\n')
+    # Which File to Write Data to
+    wr_file = wr_base_info
+
+    # Define Variables for Template Creation
+    resrc_desc = 'snmp_info'
+    class_name = 'snmpPol'
+    dn_strings = "uni/fabric/snmppol-default"
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    descrption = 'This is the default SNMP Policy'
+
+    base_atts = {'dn': dn_strings, 'descr': descrption, 'adminSt': 'enabled', 'contact': contact, 'loc': location}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
 def resource_snmp_trap(snmp_ipv4, snmp_port, snmp_vers, snmp_string, snmp_auth, mgmt_domain):
     
     # Validate SNMP Trap Server IPv4 Address
     try:
-        validate_ipv4(line_count, snmp_ipv4)
+        validating.ipv4(line_count, snmp_ipv4)
     except Exception as err:
         print(f'\n-----------------------------------------------------------------------------\n')
         print(f'   {SystemExit(err)}')
@@ -717,7 +487,7 @@ def resource_snmp_trap(snmp_ipv4, snmp_port, snmp_vers, snmp_string, snmp_auth, 
         exit()
 
     # Validate SNMP Port
-    validate_port(line_count, snmp_port)
+    validating.port(line_count, snmp_port)
 
     # Check SNMP Version
     if not re.search('(v1|v2c|v3)', snmp_vers):
@@ -732,73 +502,55 @@ def resource_snmp_trap(snmp_ipv4, snmp_port, snmp_vers, snmp_string, snmp_auth, 
         snmp_auth = 'noauth'
     
     # Validate SNMP Community or Username
-    validate_snmp_string(line_count, snmp_string)
+    validating.snmp_string(line_count, snmp_string)
 
     # Validate Management Domain
-    mgmt_epg = validate_mgmt_domain(line_count, mgmt_domain)
+    mgmt_epg = validating.mgmt_domain(line_count, mgmt_domain)
 
+    # Which File to Write Data to
+    wr_file = wr_base_info
+
+    # Define Variables for Template Creation
     snmp_ipv4_ = snmp_ipv4.replace('.', '_')
-    wr_base_info.write('resource "aci_rest" "snmp_trap_default_%s" {\n' % (snmp_ipv4_))
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[%s].json"\n' % (snmp_ipv4))
-    wr_base_info.write('\tclass_name = "snmpTrapFwdServerP"\n')
-    wr_base_info.write('\tpayload    = <<EOF\n')
-    wr_base_info.write('{\n')
-    wr_base_info.write('\t"snmpTrapFwdServerP": {\n')
-    wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"addr": "%s",\n' % (snmp_ipv4))
-    if not snmp_port == '':
-        wr_base_info.write('\t\t\t"port": "%s",\n' % (snmp_port))
-    wr_base_info.write('\t\t},\n')
-    wr_base_info.write('\t\t"children": []\n')
-    wr_base_info.write('\t}\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\tEOF\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\n')
+    resrc_desc = 'snmp_trap_default_{}'.format(snmp_ipv4_)
+    class_name = 'snmpTrapFwdServerP'
+    dn_strings = "uni/fabric/snmppol-default/trapfwdserver-[{}]".format(snmp_ipv4)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
     
-    wr_base_info.write('resource "aci_rest" "snmp_trap_dest_%s" {\n' % (snmp_ipv4_))
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/snmpgroup-SNMP-TRAP_dg.json"\n')
-    wr_base_info.write('\tclass_name = "snmpGroup"\n')
-    wr_base_info.write('\tpayload    = <<EOF\n')
-    wr_base_info.write('{\n')
-    wr_base_info.write('\t"snmpGroup": {\n')
-    wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"dn": "uni/fabric/snmpgroup-SNMP-TRAP_dg",\n')
-    wr_base_info.write('\t\t\t"name": "SNMP-TRAP_dg",\n')
-    wr_base_info.write('\t\t\t"descr": "SNMP Trap Destination Group - Created by Brahma Startup Script",\n')
-    wr_base_info.write('\t\t\t"rn": "snmpgroup-SNMP-TRAP_dg",\n')
-    wr_base_info.write('\t\t},\n')
-    wr_base_info.write('\t\t"children": [\n')
-    wr_base_info.write('\t\t\t{\n')
-    wr_base_info.write('\t\t\t\t"snmpTrapDest": {\n')
-    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/snmpgroup-SNMP-TRAP_dg/trapdest-%s-port-%s",\n' % (snmp_ipv4, snmp_port))
-    wr_base_info.write('\t\t\t\t\t\t"ver": "%s",\n' % (snmp_vers))
-    wr_base_info.write('\t\t\t\t\t\t"host": "%s",\n' % (snmp_ipv4))
-    wr_base_info.write('\t\t\t\t\t\t"port": "%s",\n' % (snmp_port))
-    wr_base_info.write('\t\t\t\t\t\t"secName": "%s",\n' % (snmp_string))
-    wr_base_info.write('\t\t\t\t\t\t"v3SecLvl": "%s",\n' % (snmp_auth))
-    wr_base_info.write('\t\t\t\t\t\t"rn": "trapdest-%s-port-%s",\n' % (snmp_ipv4, snmp_port))
-    wr_base_info.write('\t\t\t\t\t},\n')
-    wr_base_info.write('\t\t\t\t\t"children": [\n')
-    wr_base_info.write('\t\t\t\t\t\t{\n')
-    wr_base_info.write('\t\t\t\t\t\t\t"fileRsARemoteHostToEpg": {\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t\t"tDn": "uni/tn-mgmt/mgmtp-default/%s",\n' % (mgmt_epg))
-    wr_base_info.write('\t\t\t\t\t\t\t\t},\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t"children": []\n')
-    wr_base_info.write('\t\t\t\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t\t\t]\n')
-    wr_base_info.write('\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t}\n')
-    wr_base_info.write('\t\t]\n')
-    wr_base_info.write('\t}\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\tEOF\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\n')
+    if snmp_port == '':
+        base_atts = {'dn': dn_strings, 'addr': snmp_ipv4,}
+    else:
+        base_atts = {'dn': dn_strings, 'addr': snmp_ipv4, 'port': snmp_port}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+    
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+    
+    # Define Variables for Template Creation
+    resrc_desc = 'snmp_trap_dest_{}'.format(snmp_ipv4_)
+    class_name = 'snmpGroup'
+    rn_strings = "snmpgroup-SNMP-TRAP_dg"
+    dn_strings = "uni/fabric/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    descrption = 'SNMP Trap Destination Group - Created by Brahma Startup Script'
+    name = 'SNMP-TRAP_dg'
+    
+    childclass = 'snmpTrapDest'
+    child_Rn = 'trapdest-{}-port-{}'.format(snmp_ipv4, snmp_port)
+    child_Dn = 'uni/fabric/snmpgroup-SNMP-TRAP_dg/{}'.format(child_Rn)
+    
+    sub_child_class = 'fileRsARemoteHostToEpg'
+    sub_child_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
+    
+    base_atts = {'dn': dn_strings, 'descr': descrption, 'name': name, 'rn': rn_strings}
+    sub_child = {sub_child_class: {'attributes': {'tDn': sub_child_tDn}}}
+    child_atts = {childclass: {'attributes': {'dn': child_Dn, 'ver': snmp_vers, 'host': snmp_ipv4, 'port': snmp_port,
+                  'secName': snmp_string, 'v3SecLvl': snmp_auth, 'rn': child_Rn}, 'children': [sub_child]}}
+    child_combined = [child_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
 
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
 def resource_snmp_user(snmp_user, priv_type, priv_key, auth_type, auth_key):
     if not (priv_type == 'none' or priv_type == 'aes-128' or priv_type == 'des'):
@@ -828,58 +580,63 @@ def resource_snmp_user(snmp_user, priv_type, priv_key, auth_type, auth_key):
         auth_type = ''
     if auth_type == 'sha1':
         auth_type = 'hmac-sha1-96'
-    wr_base_info.write('resource "aci_rest" "snmp_user_%s" {\n' % (snmp_user))
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/snmppol-default/user-%s.json"\n' % (snmp_user))
-    wr_base_info.write('\tclass_name = "snmpUserP"\n')
-    wr_base_info.write('\tpayload    = <<EOF\n')
-    wr_base_info.write('{\n')
-    wr_base_info.write('\t"snmpUserP": {\n')
-    wr_base_info.write('\t\t"attributes": {\n')
+    
+    # Which File to Write Data to
+    wr_file = wr_base_info
+
+    # Define Variables for Template Creation
+    resrc_desc = 'snmp_user_{}'.format(snmp_user)
+    class_name = 'snmpUserP'
+    dn_strings = "uni/fabric/snmppol-default/user-{}".format(snmp_user)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+
     if not priv_type == '':
-        wr_base_info.write('\t\t\t"privType": "%s",\n' % (priv_type))
-        wr_base_info.write('\t\t\t"privKey": "%s",\n' % (priv_key))
-    wr_base_info.write('\t\t\t"authKey": "%s",\n' % (auth_key))
-    if not auth_type == '':
-        wr_base_info.write('\t\t\t"authType": "%s",\n' % (auth_type))
-    wr_base_info.write('\t\t\t"name": "%s",\n' % (snmp_user))
-    wr_base_info.write('\t\t},\n')
-    wr_base_info.write('\t\t"children": []\n')
-    wr_base_info.write('\t}\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\tEOF\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\n')
+        if not auth_type == '':
+            base_atts = {'dn': dn_strings, 'name': snmp_user, 'privType': priv_type, 'privKey': priv_key, 
+                         'authType': auth_type, 'authKey': auth_key,}
+        else:
+            base_atts = {'dn': dn_strings, 'name': snmp_user, 'privType': priv_type, 'privKey': priv_key, 
+                         'authKey': auth_key,}
+    elif not auth_type == '':
+        base_atts = {'dn': dn_strings, 'name': snmp_user, 'authType': auth_type, 'authKey': auth_key}
+    else:
+        base_atts = {'dn': dn_strings, 'name': snmp_user, 'authKey': auth_key}
+        
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
 def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modules, port_count, oob_ipv4, oob_gwv4, inb_ipv4, inb_gwv4, inb_vlan):
     try:
         # Validate Serial Number
         
         # Validate Hostname
-        validate_hostname(line_count, name)
+        validating.hostname(line_count, name)
         
         # Validate Node_ID
-        validate_node_id(line_count, name, node_id)
+        validating.node_id(line_count, node_id)
 
         # Validate node_type
-        validate_node_type(line_count, name, node_type)
+        validating.node_type(line_count, name, node_type)
 
         # Validate Pod_ID
-        validate_pod_id(line_count, name, pod_id)
+        validating.pod_id(line_count, name, pod_id)
 
         # Validate switch role
-        validate_role(line_count, name, switch_role)
+        validating.role(line_count, name, switch_role)
 
         # Validate Modules
-        validate_modules(line_count, name, switch_role, modules)
+        validating.modules(line_count, name, switch_role, modules)
 
         # Validate port_count
-        validate_port_count(line_count, name, switch_role, port_count)
+        validating.port_count(line_count, name, switch_role, port_count)
 
         # Validate InBand Network
-        validate_inband(line_count, name, inb_ipv4, inb_gwv4)
+        validating.inband(line_count, name, inb_ipv4, inb_gwv4)
 
         # Validate Out-of-Band Network
-        validate_oob(line_count, name, oob_ipv4, oob_gwv4)
+        validating.oob(line_count, name, oob_ipv4, oob_gwv4)
 
     except Exception as err:
         print('\r\r----------------\r')
@@ -1122,7 +879,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modul
 def resource_syslog(syslog_ipv4, syslog_port, mgmt_domain, severity, facility, local_state, local_level, console_state, console_level):
     # Validate Syslog Server IPv4 Address
     try:
-        validate_ipv4(line_count, syslog_ipv4)
+        validating.ipv4(line_count, syslog_ipv4)
     except Exception as err:
         print('\r\r----------------\r')
         print(f'   {SystemExit(err)}')
@@ -1131,10 +888,10 @@ def resource_syslog(syslog_ipv4, syslog_port, mgmt_domain, severity, facility, l
         exit()
 
     # Validate Syslog Port
-    validate_port(line_count, syslog_port)
+    validating.port(line_count, syslog_port)
 
     # Validate Management Domain
-    mgmt_epg = validate_mgmt_domain(line_count, mgmt_domain)
+    mgmt_epg = validating.mgmt_domain(line_count, mgmt_domain)
 
     # Validate Syslog Facility
     if not re.match("local[0-7]", facility):
@@ -1144,98 +901,63 @@ def resource_syslog(syslog_ipv4, syslog_port, mgmt_domain, severity, facility, l
         exit()
 
     # Validate Syslog Levels
-    validate_log_level(line_count, 'remote', severity)
-    validate_log_level(line_count, 'local', local_level)
-    validate_log_level(line_count, 'console', console_level)
+    validating.log_level(line_count, 'remote', severity)
+    validating.log_level(line_count, 'local', local_level)
+    validating.log_level(line_count, 'console', console_level)
 
+    # Which File to Write Data to
+    wr_file = wr_base_info
+
+    # Define Variables for Template Creation
     syslog_ipv4_ = syslog_ipv4.replace('.', '_')
-    wr_base_info.write('resource "aci_rest" "syslog_%s" {\n' % (syslog_ipv4_))
-    wr_base_info.write('\tpath       = "/api/node/mo/uni/fabric/slgroup-Syslog-dg_%s.json"\n' % (syslog_ipv4))
-    wr_base_info.write('\tclass_name = "syslogGroup"\n')
-    wr_base_info.write('\tpayload    = <<EOF\n')
-    wr_base_info.write('{\n')
-    wr_base_info.write('\t"syslogGroup": {\n')
-    wr_base_info.write('\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t"dn": "uni/fabric/slgroup-Syslog-dg_%s",\n' % (syslog_ipv4))
-    wr_base_info.write('\t\t\t"includeMilliSeconds": "true",\n')
-    wr_base_info.write('\t\t\t"includeTimeZone": "true",\n')
-    wr_base_info.write('\t\t\t"name": "Syslog-dg_%s",\n' % (syslog_ipv4))
-    wr_base_info.write('\t\t\t"descr": "Syslog Destination Group %s - Created by Brahma Startup Wizard",\n' % (syslog_ipv4))
-    wr_base_info.write('\t\t\t"rn": "slgroup-Syslog-dg_%s",\n' % (syslog_ipv4))
-    wr_base_info.write('\t\t},\n')
-    wr_base_info.write('\t\t"children": [\n')
-    wr_base_info.write('\t\t\t{\n')
-    wr_base_info.write('\t\t\t\t"syslogConsole": {\n')
-    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/slgroup-Syslog-dg_%s/console",\n' % (syslog_ipv4))
-    wr_base_info.write('\t\t\t\t\t\t"adminState": "%s",\n' % (console_state))
-    wr_base_info.write('\t\t\t\t\t\t"severity": "%s",\n' % (console_level))
-    wr_base_info.write('\t\t\t\t\t\t"rn": "console",\n')
-    wr_base_info.write('\t\t\t\t\t},\n')
-    wr_base_info.write('\t\t\t\t\t"children": []\n')
-    wr_base_info.write('\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t},\n')
-    wr_base_info.write('\t\t\t{\n')
-    wr_base_info.write('\t\t\t\t"syslogFile": {\n')
-    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/slgroup-Syslog-dg_%s/file",\n' % (syslog_ipv4))
-    wr_base_info.write('\t\t\t\t\t\t"adminState": "%s",\n' % (local_state))
-    wr_base_info.write('\t\t\t\t\t\t"severity": "%s",\n' % (local_level))
-    wr_base_info.write('\t\t\t\t\t\t"rn": "file",\n')
-    wr_base_info.write('\t\t\t\t\t},\n')
-    wr_base_info.write('\t\t\t\t\t"children": []\n')
-    wr_base_info.write('\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t},\n')
-    wr_base_info.write('\t\t\t{\n')
-    wr_base_info.write('\t\t\t\t"syslogProf": {\n')
-    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/slgroup-Syslog-dg_%s/prof",\n' % (syslog_ipv4))
-    wr_base_info.write('\t\t\t\t\t\t"adminState": "enabled",\n')
-    wr_base_info.write('\t\t\t\t\t\t"rn": "prof",\n')
-    wr_base_info.write('\t\t\t\t\t},\n')
-    wr_base_info.write('\t\t\t\t\t"children": []\n')
-    wr_base_info.write('\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t},\n')
-    wr_base_info.write('\t\t\t{\n')
-    wr_base_info.write('\t\t\t\t"syslogRemoteDest": {\n')
-    wr_base_info.write('\t\t\t\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t\t\t\t"dn": "uni/fabric/slgroup-Syslog-dg_%s/rdst-%s",\n' % (syslog_ipv4, syslog_ipv4))
-    wr_base_info.write('\t\t\t\t\t\t"host": "%s",\n' % (syslog_ipv4))
-    wr_base_info.write('\t\t\t\t\t\t"name": "RmtDst-%s",\n' % (syslog_port))
-    wr_base_info.write('\t\t\t\t\t\t"adminState": "enabled",\n')
-    wr_base_info.write('\t\t\t\t\t\t"forwardingFacility": "%s",\n' % (facility))
-    wr_base_info.write('\t\t\t\t\t\t"port": "%s",\n' % (syslog_port))
-    wr_base_info.write('\t\t\t\t\t\t"severity": "%s",\n' % (severity))
-    wr_base_info.write('\t\t\t\t\t\t"rn": "rdst-%s",\n' % (syslog_ipv4))
-    wr_base_info.write('\t\t\t\t\t},\n')
-    wr_base_info.write('\t\t\t\t\t"children": [\n')
-    wr_base_info.write('\t\t\t\t\t\t{\n')
-    wr_base_info.write('\t\t\t\t\t\t\t"fileRsARemoteHostToEpg": {\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t"attributes": {\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t\t"tDn": "uni/tn-mgmt/mgmtp-default/%s",\n' % (mgmt_epg))
-    wr_base_info.write('\t\t\t\t\t\t\t\t},\n')
-    wr_base_info.write('\t\t\t\t\t\t\t\t"children": []\n')
-    wr_base_info.write('\t\t\t\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t\t\t]\n')
-    wr_base_info.write('\t\t\t\t}\n')
-    wr_base_info.write('\t\t\t}\n')
-    wr_base_info.write('\t\t]\n')
-    wr_base_info.write('\t}\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\tEOF\n')
-    wr_base_info.write('}\n')
-    wr_base_info.write('\n')
+    resrc_desc = 'syslog_{}'.format(syslog_ipv4_)
+    class_name = 'syslogGroup'
+    rn_strings = "slgroup-Syslog-dg_{}".format(syslog_ipv4)
+    dn_strings = "uni/fabric/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    descrption = 'Syslog Destination Group {} - Created by Brahma Startup Wizard'.format(syslog_ipv4)
+    name = 'Syslog-dg_{}'.format(syslog_ipv4)
+    
+    child_1_class = 'syslogConsole'
+    child_1_Rn = 'console'
+    child_1_Dn = 'uni/fabric/slgroup-Syslog-dg_{}/{}'.format(syslog_ipv4, child_1_Rn)
+    child_1_sv = '{}'.format(console_level)
+    child_1_state = '{}'.format(console_state)
+    child_2_class = 'syslogFile'
+    child_2_Rn = 'file'
+    child_2_Dn = 'uni/fabric/slgroup-Syslog-dg_{}/{}'.format(syslog_ipv4, child_2_Rn)
+    child_2_sv = '{}'.format(local_level)
+    child_2_state = '{}'.format(local_state)
+    child_3_class = 'syslogProf'
+    child_3_Rn = 'prof'
+    child_3_Dn = 'uni/fabric/slgroup-Syslog-dg_{}/{}'.format(syslog_ipv4, child_3_Rn)
+    child_3_state = '{}'.format(local_state)
+    child_4_class = 'syslogRemoteDest'
+    child_4_Rn = 'rdst-{}'.format(syslog_ipv4)
+    child_4_Dn = 'uni/fabric/slgroup-Syslog-dg_{}/{}'.format(syslog_ipv4, child_4_Rn)
+    child_4_sv = '{}'.format(severity)
+    child_4_fwdf = '{}'.format(facility)
+    child_4_host = '{}'.format(syslog_ipv4)
+    child_4_name = 'RmtDst-{}'.format(syslog_ipv4)
+    child_4_port = '{}'.format(syslog_port)
+    child_4_state = 'enabled'
+    sub_child_class = 'fileRsARemoteHostToEpg'
+    sub_child_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
+    
+    
+    base_atts = {'dn': dn_strings, 'includeMilliSeconds': 'true', 'includeTimeZone': 'true', 'descr': descrption, 'name': name, 'rn': rn_strings}
+    child_1_atts = {child_1_class: {'attributes': {'dn': child_1_Dn, 'adminState': child_1_state, 'severity': child_1_sv, 'rn': child_1_Rn}, 'children': []}}
+    child_2_atts = {child_2_class: {'attributes': {'dn': child_2_Dn, 'adminState': child_2_state, 'severity': child_2_sv, 'rn': child_2_Rn}, 'children': []}}
+    child_3_atts = {child_3_class: {'attributes': {'dn': child_3_Dn, 'adminState': child_3_state, 'rn': child_3_Rn}, 'children': []}}
+    sub_child = {sub_child_class: {'attributes': {'tDn': sub_child_tDn}, 'children': []}}
+    child_4_atts = {child_4_class: {'attributes': {'dn': child_4_Dn, 'host': child_4_host, 'name': child_4_name, 'adminState': child_4_state, 
+                    'forwardingFacility': child_4_fwdf, 'port': child_4_port,'severity': child_4_sv, 'rn': child_4_Rn}, 'children': [sub_child]}}
 
-
-try:
-    open(csv_input)
-except IOError:
-    print(f"----------------")
-    print(f"  {csv_input} does not exist")
-    print(f"  Exiting...")
-    print(f"----------------")
-    exit()
+    child_combined = [child_1_atts, child_2_atts, child_3_atts, child_4_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
 with open(csv_input) as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=',')
