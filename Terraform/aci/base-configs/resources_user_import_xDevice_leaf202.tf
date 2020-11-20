@@ -22,64 +22,66 @@ resource "aci_fabric_node_member" "leaf202" {
 }
 
 resource "aci_rest" "oob_mgmt_leaf202" {
-	path       = "/api/node/mo/uni/tn-mgmt.json"
-	class_name = "mgmtRsOoBStNode"
-	payload    = <<EOF
+	path		= "/api/node/mo/uni/tn-mgmt.json"
+	class_name	= "mgmtRsOoBStNode"
+	payload		= <<EOF
 {
-	"mgmtRsOoBStNode": {
-		"attributes": {
-			"addr": "192.168.85.12/24",
-			"dn": "uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-1/node-202]",
-			"gw": "192.168.85.254",
-			"tDn": "topology/pod-1/node-202",
-			"v6Addr": "::",
-			"v6Gw": "::"
-		}
-	}
+    "mgmtRsOoBStNode": {
+        "attributes": {
+            "dn": "uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-1/node-202]",
+            "addr": "192.168.85.12/24",
+            "gw": "192.168.85.254",
+            "tDn": "topology/pod-1/node-202",
+            "v6Addr": "::",
+            "v6Gw": "::"
+        }
+    }
 }
 	EOF
 }
 
 resource "aci_rest" "inb_mgmt_leaf202" {
-	path       = "/api/node/mo/uni/tn-mgmt.json"
-	class_name = "mgmtRsInBStNode"
-	payload    = <<EOF
+	path		= "/api/node/mo/uni/tn-mgmt.json"
+	class_name	= "mgmtRsInBStNode"
+	payload		= <<EOF
 {
-	"mgmtRsInBStNode": {
-		"attributes": {
-			"addr": "192.168.87.12/24",
-			"dn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-1/node-202]",
-			"gw": "192.168.87.254",
-			"tDn": "topology/pod-1/node-202",
-		}
-	}
+    "mgmtRsInBStNode": {
+        "attributes": {
+            "dn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-1/node-202]",
+            "addr": "192.168.87.12/24",
+            "gw": "192.168.87.254",
+            "tDn": "topology/pod-1/node-202",
+            "v6Addr": "::",
+            "v6Gw": "::"
+        }
+    }
 }
 	EOF
 }
 
 resource "aci_rest" "maint_grp_leaf202" {
-	path       = "/api/node/mo/uni/fabric/maintgrp-switch_MgB.json"
-	class_name = "maintMaintGrp"
-	payload    = <<EOF
+	path		= "/api/node/mo/uni/fabric/maintgrp-switch_MgB.json"
+	class_name	= "maintMaintGrp"
+	payload		= <<EOF
 {
-	"maintMaintGrp": {
-		"attributes": {
-			"dn": "uni/fabric/maintgrp-switch_MgB"		},
-		"children": [
-			{
-				"fabricNodeBlk": {
-					"attributes": {
-						"dn": "uni/fabric/maintgrp-switch_MgB/nodeblk-blk202-202",
-						"name": "blk202-202",
-						"from_": "202",
-						"to_": "202",
-						"rn": "nodeblk-blk202-202"
-					}
-				}
-			}
-		]
-		}
-	}
+    "maintMaintGrp": {
+        "attributes": {
+            "dn": "uni/fabric/maintgrp-switch_MgB"
+        },
+        "children": [
+            {
+                "fabricNodeBlk": {
+                    "attributes": {
+                        "dn": "uni/fabric/maintgrp-switch_MgB/nodeblk-blk202-202",
+                        "name": "blk202-202",
+                        "from_": "202",
+                        "to_": "202",
+                        "rn": "nodeblk-blk202-202"
+                    }
+                }
+            }
+        ]
+    }
 }
 	EOF
 }
@@ -98,19 +100,19 @@ resource "aci_leaf_profile" "leaf202_SwSel" {
 }
 
 resource "aci_leaf_interface_profile" "leaf202_IntProf" {
-	name = "leaf202_IntProf"
+	name	= "leaf202_IntProf"
 }
 
 resource "aci_rest" "leaf_int_selector_leaf202_IntProf" {
-	path       = "/api/node/mo/uni/infra/nprof-leaf202_SwSel.json"
-	class_name = "infraRsAccPortP"
-	payload    = <<EOF
+	path		= "/api/node/mo/uni/infra/nprof-leaf202_SwSel.json"
+	class_name	= "infraRsAccPortP"
+	payload		= <<EOF
 {
-	"infraRsAccPortP": {
-		"attributes": {
-			"tDn": "uni/infra/accportprof-leaf202_IntProf"
-		}
-	}
+    "infraRsAccPortP": {
+        "attributes": {
+            "tDn": "uni/infra/accportprof-leaf202_IntProf"
+        }
+    }
 }
 	EOF
 }
@@ -121,28 +123,28 @@ resource "aci_rest" "leaf202_1_IntProf" {
 	class_name       = "infraHPortS"
 	payload          = <<EOF
 {
-	"infraHPortS": {
-		"attributes": {
-			"dn": "uni/infra/accportprof-leaf202_IntProf/hports-Eth1-${each.value.name}-typ-range",
-			"name": "Eth1-${each.value.name}",
-			"rn": "hports-Eth1-${each.value.name}-typ-range"
-		},
-		"children": [
-			{
-				"infraPortBlk": {
-					"attributes": {
-						"dn": "uni/infra/accportprof-leaf202_IntProf/hports-Eth1-${each.value.name}-typ-range/portblk-block2",
-						"fromCard": "1",
-						"fromPort": "${each.value.name}",
-						"toCard": "1",
-						"toPort": "${each.value.name}",
-						"name": "block2",
-						"rn": "portblk-block2"
-					}
-				}
-			}
-		]
-	}
+    "infraHPortS": {
+        "attributes": {
+            "dn": "uni/infra/accportprof-leaf202_IntProf/hports-Eth1-${each.value.name}-typ-range",
+            "name": "Eth1-${each.value.name}",
+            "rn": "hports-Eth1-${each.value.name}-typ-range"
+        },
+        "children": [
+            {
+                "infraPortBlk": {
+                    "attributes": {
+                        "dn": "uni/infra/accportprof-leaf202_IntProf/hports-Eth1-${each.value.name}-typ-range/portblk-block2",
+                        "fromCard": "1",
+                        "fromPort": "${each.value.name}",
+                        "toCard": "1",
+                        "toPort": "${each.value.name}",
+                        "name": "block2",
+                        "rn": "portblk-block2"
+                    }
+                }
+            }
+        ]
+    }
 }
 	EOF
 }

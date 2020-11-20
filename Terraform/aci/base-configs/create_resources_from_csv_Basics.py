@@ -52,7 +52,25 @@ def template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file):
     # Write Data to Template
     wr_file.write(wr_to_file)
 
-def template_aci_terraform(resrc_type, resrc_desc, attr_1st, attr_2nd, attr_3rd, wr_file):
+def template_aci_terraform_attr1(resrc_type, resrc_desc, attr_1st, wr_file):
+    template_payload = '{0} {1}\n\t{2}\n{3}\n\n'
+
+    resource_line = 'resource "{}" "{}"'.format(resrc_type, resrc_desc)
+
+    wr_to_file = template_payload.format(resource_line, "{", attr_1st, "}")
+    # Write Data to Template
+    wr_file.write(wr_to_file)
+
+def template_aci_terraform_attr2(resrc_type, resrc_desc, attr_1st, attr_2nd, wr_file):
+    template_payload = '{0} {1}\n\t{2}\n\t{3}\n{4}\n\n'
+
+    resource_line = 'resource "{}" "{}"'.format(resrc_type, resrc_desc)
+
+    wr_to_file = template_payload.format(resource_line, "{", attr_1st, attr_2nd, "}")
+    # Write Data to Template
+    wr_file.write(wr_to_file)
+
+def template_aci_terraform_attr3(resrc_type, resrc_desc, attr_1st, attr_2nd, attr_3rd, wr_file):
     template_payload = '{0} {1}\n\t{2}\n\t{3}\n\t{4}\n{5}\n\n'
 
     resource_line = 'resource "{}" "{}"'.format(resrc_type, resrc_desc)
@@ -261,7 +279,7 @@ def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
     attr_3rd = 'scope\t\t= ["public"]'
 
     # Write Output to Resource Files using Template
-    template_aci_terraform(resrc_type, resrc_desc, attr_1st, attr_2nd, attr_3rd, wr_file)
+    template_aci_terraform_attr3(resrc_type, resrc_desc, attr_1st, attr_2nd, attr_3rd, wr_file)
 
     # Resource for Inband VLAN
     resrc_type = 'aci_ranges'
@@ -271,7 +289,7 @@ def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
     attr_3rd = 'to		        = "vlan-{}"'.format(inb_vlan)
 
     # Write Output to Resource Files using Template
-    template_aci_terraform(resrc_type, resrc_desc, attr_1st, attr_2nd, attr_3rd, wr_file)
+    template_aci_terraform_attr3(resrc_type, resrc_desc, attr_1st, attr_2nd, attr_3rd, wr_file)
 
     # Define Variables for Template Creation
     resrc_desc = 'inb_mgmt_default_epg'
@@ -314,15 +332,16 @@ def resource_ntp(ntp_ipv4, prefer, mgmt_domain):
     ntp_ipv4_ = ntp_ipv4.replace('.', '_')
     resrc_desc = 'ntp_{}'.format(ntp_ipv4_)
     class_name = 'datetimeNtpProv'
-    rn_strings = "ntpprov-{}".format(ntp_ipv4)
-    dn_strings = "uni/fabric/time-default/{}".format(rn_strings)
+    rn_strings = 'ntpprov-{}'.format(ntp_ipv4)
+    dn_strings = 'uni/fabric/time-default/{}'.format(rn_strings)
     path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
     childclass = 'datetimeRsNtpProvToEpg'
     child_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
 
     base_atts = {'dn': dn_strings, 'name': ntp_ipv4, 'preferred': prefer, 'rn': rn_strings}
-    child_atts = {'tDn': child_tDn}
-    data_out = {class_name: {'attributes': base_atts, 'children': [{childclass: {'attributes': child_atts}}]}}
+    child_atts = {childclass: {'attributes': {'tDn': child_tDn}}}
+    child_combined = [child_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
 
     # Write Output to Resource Files using Template
     template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
@@ -382,7 +401,6 @@ def resource_SmarthCallHome(smtp_port, smtp_relay, mgmt_domain, ch_fr_email, ch_
     
     # Write Output to Resource Files using Template
     template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
-
 
     # Define Variables for Template Creation
     resrc_desc = 'callhomeSmartSrc'
@@ -645,236 +663,234 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modul
         print('----------------\r\r')
         exit()
     pod_id = str(pod_id)
-    file_sw = ('resources_user_import_xDevice_%s.tf' % (name))
-    wr_file_sw = open(file_sw, 'w')
-    wr_file_sw.write(f'# Use this Resource File to Register {name} with node id {node_id} to the Fabric\n')
-    wr_file_sw.write('# Requirements are:\n')
-    wr_file_sw.write('# serial: Actual Serial Number of the switch.\n')
-    wr_file_sw.write('# name: Hostname you want to assign.\n')
-    wr_file_sw.write('# node_id: unique ID used to identify the switch in the APIC.\n')
-    wr_file_sw.write('#   in the "Cisco ACI Object Naming and Numbering: Best Practice\n')
-    wr_file_sw.write('#   The recommendation is that the Spines should be 101-199\n')
-    wr_file_sw.write('#   and leafs should start at 200+ thru 4000.  As the number of\n')
-    wr_file_sw.write('#   spines should always be less than the number of leafs\n')
-    wr_file_sw.write('#   https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/b-Cisco-ACI-Naming-and-Numbering.html#id_107280\n')
-    wr_file_sw.write('# node_type: uremote-leaf-wan or unspecified.\n')
-    wr_file_sw.write('# role: spine, leaf.\n')
-    wr_file_sw.write('# pod_id: Typically this will be one unless you are running multipod.\n')
-    dummy_number = 0
-    wr_file_sw.write('\n')
-    wr_file_sw.write('resource "aci_fabric_node_member" "%s" {\n' % (name))
-    wr_file_sw.write('\tserial    = "%s"\n' % (serial))
-    wr_file_sw.write('\tname      = "%s"\n' % (name))
-    wr_file_sw.write('\tnode_id   = "%s"\n' % (node_id))
-    wr_file_sw.write('\tnode_type = "%s"\n' % (node_type))
-    wr_file_sw.write('\trole      = "%s"\n' % (switch_role))
-    wr_file_sw.write('\tpod_id    = "%s"\n' % (pod_id))
-    wr_file_sw.write('}\n')
-    wr_file_sw.write('\n')
-    wr_file_sw.write('resource "aci_rest" "oob_mgmt_%s" {\n' % (name))
-    wr_file_sw.write('\tpath       = "/api/node/mo/uni/tn-mgmt.json"\n')
-    wr_file_sw.write('\tclass_name = "mgmtRsOoBStNode"\n')
-    wr_file_sw.write('\tpayload    = <<EOF\n')
-    wr_file_sw.write('{\n')
-    wr_file_sw.write('\t"mgmtRsOoBStNode": {\n')
-    wr_file_sw.write('\t\t"attributes": {\n')
-    wr_file_sw.write('\t\t\t"addr": "%s",\n' % (oob_ipv4))
-    wr_file_sw.write('\t\t\t"dn": "uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-%s/node-%s]",\n' % (pod_id, node_id))
-    wr_file_sw.write('\t\t\t"gw": "%s",\n' % (oob_gwv4))
-    wr_file_sw.write('\t\t\t"tDn": "topology/pod-%s/node-%s",\n' % (pod_id, node_id))
-    wr_file_sw.write('\t\t\t"v6Addr": "::",\n')
-    wr_file_sw.write('\t\t\t"v6Gw": "::"\n')
-    wr_file_sw.write('\t\t}\n')
-    wr_file_sw.write('\t}\n')
-    wr_file_sw.write('}\n')
-    wr_file_sw.write('\tEOF\n')
-    wr_file_sw.write('}\n')
-    wr_file_sw.write('\n')
-    wr_file_sw.write('resource "aci_rest" "inb_mgmt_%s" {\n' % (name))
-    wr_file_sw.write('\tpath       = "/api/node/mo/uni/tn-mgmt.json"\n')
-    wr_file_sw.write('\tclass_name = "mgmtRsInBStNode"\n')
-    wr_file_sw.write('\tpayload    = <<EOF\n')
-    wr_file_sw.write('{\n')
-    wr_file_sw.write('\t"mgmtRsInBStNode": {\n')
-    wr_file_sw.write('\t\t"attributes": {\n')
-    wr_file_sw.write('\t\t\t"addr": "%s",\n' % (inb_ipv4))
-    wr_file_sw.write('\t\t\t"dn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-%s/node-%s]",\n' % (pod_id, node_id))
-    wr_file_sw.write('\t\t\t"gw": "%s",\n' % (inb_gwv4))
-    wr_file_sw.write('\t\t\t"tDn": "topology/pod-%s/node-%s",\n' % (pod_id, node_id))
-    wr_file_sw.write('\t\t}\n')
-    wr_file_sw.write('\t}\n')
-    wr_file_sw.write('}\n')
-    wr_file_sw.write('\tEOF\n')
-    wr_file_sw.write('}\n')
-    wr_file_sw.write('\n')
+
     node_id = int(node_id)
     if node_id % 2 == 0:
-        fwg = 'switch_MgB'
+        Maint_Grp = 'switch_MgB'
     else:
-        fwg = 'switch_MgA'
-    # wr_file_sw.write('resource "aci_node_block_firmware" "%s" {\n' % (name))
-    # wr_file_sw.write('\tfirmware_group_dn = "uni/fabric/fwgrp-%s"\n' % (fwg))
-    # wr_file_sw.write('\tname              = "nodeblk-blk%s-%s"\n' % (node_id, node_id))
-    # wr_file_sw.write('\tfrom_             = "%s"\n' % (node_id))
-    # wr_file_sw.write('\tto_               = "%s"\n' % (node_id))
-    # wr_file_sw.write('}\n')
-    # wr_file_sw.write('\n')
-    wr_file_sw.write('resource "aci_rest" "maint_grp_%s" {\n' % (name))
-    wr_file_sw.write('\tpath       = "/api/node/mo/uni/fabric/maintgrp-%s.json"\n'% (fwg))
-    wr_file_sw.write('\tclass_name = "maintMaintGrp"\n')
-    wr_file_sw.write('\tpayload    = <<EOF\n')
-    wr_file_sw.write('{\n')
-    wr_file_sw.write('\t"maintMaintGrp": {\n')
-    wr_file_sw.write('\t\t"attributes": {\n')
-    wr_file_sw.write('\t\t\t"dn": "uni/fabric/maintgrp-%s"' % (fwg))
-    wr_file_sw.write('\t\t},\n')
-    wr_file_sw.write('\t\t"children": [\n')
-    wr_file_sw.write('\t\t\t{\n')
-    wr_file_sw.write('\t\t\t\t"fabricNodeBlk": {\n')
-    wr_file_sw.write('\t\t\t\t\t"attributes": {\n')
-    wr_file_sw.write('\t\t\t\t\t\t"dn": "uni/fabric/maintgrp-%s/nodeblk-blk%s-%s",\n'% (fwg, node_id, node_id))
-    wr_file_sw.write('\t\t\t\t\t\t"name": "blk%s-%s",\n' % (node_id, node_id))
-    wr_file_sw.write('\t\t\t\t\t\t"from_": "%s",\n' % (node_id))
-    wr_file_sw.write('\t\t\t\t\t\t"to_": "%s",\n' % (node_id))
-    wr_file_sw.write('\t\t\t\t\t\t"rn": "nodeblk-blk%s-%s"\n' % (node_id, node_id))
-    wr_file_sw.write('\t\t\t\t\t}\n')
-    wr_file_sw.write('\t\t\t\t}\n')
-    wr_file_sw.write('\t\t\t}\n')
-    wr_file_sw.write('\t\t]\n')
-    wr_file_sw.write('\t\t}\n')
-    wr_file_sw.write('\t}\n')
-    wr_file_sw.write('}\n')
-    wr_file_sw.write('\tEOF\n')
-    wr_file_sw.write('}\n')
-    wr_file_sw.write('\n')
+        Maint_Grp = 'switch_MgA'
+    node_id = str(node_id)
+    # Which File to Write Data to
+    file_sw = 'resources_user_import_xDevice_{}.tf'.format(name)
+    wr_file = open(file_sw, 'w')
+
+    wr_file.write(f'# Use this Resource File to Register {name} with node id {node_id} to the Fabric\n')
+    wr_file.write('# Requirements are:\n')
+    wr_file.write('# serial: Actual Serial Number of the switch.\n')
+    wr_file.write('# name: Hostname you want to assign.\n')
+    wr_file.write('# node_id: unique ID used to identify the switch in the APIC.\n')
+    wr_file.write('#   in the "Cisco ACI Object Naming and Numbering: Best Practice\n')
+    wr_file.write('#   The recommendation is that the Spines should be 101-199\n')
+    wr_file.write('#   and leafs should start at 200+ thru 4000.  As the number of\n')
+    wr_file.write('#   spines should always be less than the number of leafs\n')
+    wr_file.write('#   https://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/kb/b-Cisco-ACI-Naming-and-Numbering.html#id_107280\n')
+    wr_file.write('# node_type: uremote-leaf-wan or unspecified.\n')
+    wr_file.write('# role: spine, leaf.\n')
+    wr_file.write('# pod_id: Typically this will be one unless you are running multipod.\n\n')
+
+    wr_file.write('resource "aci_fabric_node_member" "%s" {\n' % (name))
+    wr_file.write('\tserial    = "%s"\n' % (serial))
+    wr_file.write('\tname      = "%s"\n' % (name))
+    wr_file.write('\tnode_id   = "%s"\n' % (node_id))
+    wr_file.write('\tnode_type = "%s"\n' % (node_type))
+    wr_file.write('\trole      = "%s"\n' % (switch_role))
+    wr_file.write('\tpod_id    = "%s"\n' % (pod_id))
+    wr_file.write('}\n')
+    wr_file.write('\n')
+
+    # Define Variables for Template Creation
+    resrc_desc = 'oob_mgmt_{}'.format(name)
+    class_name = 'mgmtRsOoBStNode'
+    dn_strings = "uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-{}/node-{}]".format(pod_id, node_id)
+    path_attrs = '"/api/node/mo/uni/tn-mgmt.json"'
+    tDn_string = 'topology/pod-{}/node-{}'.format(pod_id, node_id)
+
+    base_atts = {'dn': dn_strings, 'addr': oob_ipv4, 'gw': oob_gwv4, 'tDn': tDn_string, 'v6Addr': '::', 'v6Gw': '::'}
+    data_out = {class_name: {'attributes': base_atts}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
+    # Define Variables for Template Creation
+    resrc_desc = 'inb_mgmt_{}'.format(name)
+    class_name = 'mgmtRsInBStNode'
+    dn_strings = "uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-{}/node-{}]".format(pod_id, node_id)
+    path_attrs = '"/api/node/mo/uni/tn-mgmt.json"'
+    tDn_string = 'topology/pod-{}/node-{}'.format(pod_id, node_id)
+
+    base_atts = {'dn': dn_strings, 'addr': inb_ipv4, 'gw': inb_gwv4, 'tDn': tDn_string, 'v6Addr': '::', 'v6Gw': '::'}
+    data_out = {class_name: {'attributes': base_atts}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
+    # Define Variables for Template Creation
+    resrc_desc = 'maint_grp_{}'.format(name)
+    class_name = 'maintMaintGrp'
+    dn_strings = 'uni/fabric/maintgrp-{}'.format(Maint_Grp)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    childclass = 'fabricNodeBlk'
+    child_name = 'blk{}-{}'.format(node_id, node_id)
+    child_Rn = 'nodeblk-blk{}-{}'.format(node_id, node_id)
+    child_Dn = 'uni/fabric/maintgrp-{}/{}'.format(Maint_Grp, child_Rn)
+
+    base_atts = {'dn': dn_strings}
+    child_atts = {childclass: {'attributes': {'dn': child_Dn, 'name': child_name, 'from_': node_id, 'to_': node_id, 'rn': child_Rn},}}
+    child_combined = [child_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
     if switch_role == 'leaf':
-        wr_file_sw.write('resource "aci_leaf_profile" "%s_SwSel" {\n' % (name))
-        wr_file_sw.write('\tname = "%s_SwSel"\n' % (name))
-        wr_file_sw.write('\tleaf_selector {\n')
-        wr_file_sw.write('\t\tname                    = "%s"\n' % (name))
-        wr_file_sw.write('\t\tswitch_association_type = "range"\n')
-        wr_file_sw.write('\t\tnode_block {\n')
-        wr_file_sw.write('\t\t\tname  = "%s"\n' % (name))
-        wr_file_sw.write('\t\t\tfrom_ = "%s"\n' % (node_id))
-        wr_file_sw.write('\t\t\tto_   = "%s"\n' % (node_id))
-        wr_file_sw.write('\t\t}\n')
-        wr_file_sw.write('\t}\n')
-        wr_file_sw.write('}\n')
-        wr_file_sw.write('\n')
-        wr_file_sw.write('resource "aci_leaf_interface_profile" "%s_IntProf" {\n' % (name))
-        wr_file_sw.write('\tname = "%s_IntProf"\n' % (name))
-        wr_file_sw.write('}\n')
-        wr_file_sw.write('\n')
-        wr_file_sw.write('resource "aci_rest" "leaf_int_selector_%s_IntProf" {\n' % (name))
-        wr_file_sw.write('\tpath       = "/api/node/mo/uni/infra/nprof-%s_SwSel.json"\n' % (name))
-        wr_file_sw.write('\tclass_name = "infraRsAccPortP"\n')
-        wr_file_sw.write('\tpayload    = <<EOF\n')
-        wr_file_sw.write('{\n')
-        wr_file_sw.write('\t"infraRsAccPortP": {\n')
-        wr_file_sw.write('\t\t"attributes": {\n')
-        wr_file_sw.write('\t\t\t"tDn": "uni/infra/accportprof-%s_IntProf"\n' % (name))
-        wr_file_sw.write('\t\t}\n')
-        wr_file_sw.write('\t}\n')
-        wr_file_sw.write('}\n')
-        wr_file_sw.write('\tEOF\n')
-        wr_file_sw.write('}\n')
-        wr_file_sw.write('\n')
+        wr_file.write('resource "aci_leaf_profile" "%s_SwSel" {\n' % (name))
+        wr_file.write('\tname = "%s_SwSel"\n' % (name))
+        wr_file.write('\tleaf_selector {\n')
+        wr_file.write('\t\tname                    = "%s"\n' % (name))
+        wr_file.write('\t\tswitch_association_type = "range"\n')
+        wr_file.write('\t\tnode_block {\n')
+        wr_file.write('\t\t\tname  = "%s"\n' % (name))
+        wr_file.write('\t\t\tfrom_ = "%s"\n' % (node_id))
+        wr_file.write('\t\t\tto_   = "%s"\n' % (node_id))
+        wr_file.write('\t\t}\n')
+        wr_file.write('\t}\n')
+        wr_file.write('}\n')
+        wr_file.write('\n')
+
+
+        # Resource for Leaf Interface Profile
+        resrc_type = 'aci_leaf_interface_profile'
+        resrc_desc = '{}_IntProf'.format(name)
+        attr_1st = 'name	= "{}_IntProf"'.format(name)
+
+        # Write Output to Resource Files using Template
+        template_aci_terraform_attr1(resrc_type, resrc_desc, attr_1st, wr_file)
+
+        # Define Variables for Template Creation
+        resrc_desc = 'leaf_int_selector_{}_IntProf'.format(name)
+        class_name = 'infraRsAccPortP'
+        tDn_string = "uni/infra/accportprof-{}_IntProf".format(name)
+        path_attrs = '"/api/node/mo/uni/infra/nprof-{}_SwSel.json"'.format(name)
+
+        base_atts = {'tDn': tDn_string}
+        data_out = {class_name: {'attributes': base_atts}}
+
+        # Write Output to Resource Files using Template
+        template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
         mod_count = 0
         while mod_count < int(modules):
             mod_count += 1
-            wr_file_sw.write('resource "aci_rest" "%s_%s_IntProf" {\n' % (name, mod_count))
-            wr_file_sw.write('\tfor_each         = var.port-selector-%s\n' %(port_count))
-            wr_file_sw.write('\tpath             = "/api/node/mo/uni/infra/accportprof-%s_IntProf/hports-Eth%s-${each.value.name}-typ-range.json"\n' % (name, mod_count))
-            wr_file_sw.write('\tclass_name       = "infraHPortS"\n')
-            wr_file_sw.write('\tpayload          = <<EOF\n')
-            wr_file_sw.write('{\n')
-            wr_file_sw.write('\t"infraHPortS": {\n')
-            wr_file_sw.write('\t\t"attributes": {\n')
-            wr_file_sw.write('\t\t\t"dn": "uni/infra/accportprof-%s_IntProf/hports-Eth%s-${each.value.name}-typ-range",\n' % (name, mod_count))
-            wr_file_sw.write('\t\t\t"name": "Eth%s-${each.value.name}",\n' % (mod_count))
-            wr_file_sw.write('\t\t\t"rn": "hports-Eth%s-${each.value.name}-typ-range"\n' % (mod_count))
-            wr_file_sw.write('\t\t},\n')
-            wr_file_sw.write('\t\t"children": [\n')
-            wr_file_sw.write('\t\t\t{\n')
-            wr_file_sw.write('\t\t\t\t"infraPortBlk": {\n')
-            wr_file_sw.write('\t\t\t\t\t"attributes": {\n')
-            wr_file_sw.write('\t\t\t\t\t\t"dn": "uni/infra/accportprof-%s_IntProf/hports-Eth%s-${each.value.name}-typ-range/portblk-block2",\n' % (name, mod_count))
-            wr_file_sw.write('\t\t\t\t\t\t"fromCard": "%s",\n' % (mod_count))
-            wr_file_sw.write('\t\t\t\t\t\t"fromPort": "${each.value.name}",\n')
-            wr_file_sw.write('\t\t\t\t\t\t"toCard": "%s",\n' % (mod_count))
-            wr_file_sw.write('\t\t\t\t\t\t"toPort": "${each.value.name}",\n')
-            wr_file_sw.write('\t\t\t\t\t\t"name": "block2",\n')
-            wr_file_sw.write('\t\t\t\t\t\t"rn": "portblk-block2"\n')
-            wr_file_sw.write('\t\t\t\t\t}\n')
-            wr_file_sw.write('\t\t\t\t}\n')
-            wr_file_sw.write('\t\t\t}\n')
-            wr_file_sw.write('\t\t]\n')
-            wr_file_sw.write('\t}\n')
-            wr_file_sw.write('}\n')
-            wr_file_sw.write('\tEOF\n')
-            wr_file_sw.write('}\n')
-            wr_file_sw.write('\n')
+
+            wr_file.write('resource "aci_rest" "%s_%s_IntProf" {\n' % (name, mod_count))
+            wr_file.write('\tfor_each         = var.port-selector-%s\n' %(port_count))
+            wr_file.write('\tpath             = "/api/node/mo/uni/infra/accportprof-%s_IntProf/hports-Eth%s-${each.value.name}-typ-range.json"\n' % (name, mod_count))
+            wr_file.write('\tclass_name       = "infraHPortS"\n')
+            wr_file.write('\tpayload          = <<EOF\n')
+
+            # Define Variables for Template Creation
+            class_name = 'infraHPortS'
+            rn_strings = 'hports-Eth%s-${each.value.name}-typ-range' % (mod_count)
+            dn_strings = 'uni/infra/accportprof-%s_IntProf/%s' % (name, rn_strings)
+            name_port = 'Eth%s-${each.value.name}' % (mod_count)
+            childclass = 'infraPortBlk'
+            child_name = 'block2'
+            child_port = '${each.value.name}'
+            child_Rn = 'portblk-block2'
+            child_Dn = 'uni/infra/accportprof-%s_IntProf/hports-Eth%s-${each.value.name}-typ-range/%s' % (name, mod_count, child_Rn)
+            mod_num = '%s' % (mod_count)
+
+            base_atts = {'dn': dn_strings, 'name': name_port, 'rn': rn_strings}
+            child_atts = {childclass: {'attributes': {'dn': child_Dn, 'fromCard': mod_num, 'fromPort': child_port, 'toCard': mod_num,
+                          'toPort': child_port, 'name': child_name, 'rn': child_Rn},}}
+            child_combined = [child_atts]
+            data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+
+            # Write Output to Resource File
+            wr_file.write(json.dumps(data_out, indent=4))
+
+            wr_file.write('\n\tEOF\n')
+            wr_file.write('}\n')
+            wr_file.write('\n')
     elif switch_role == 'spine':
-        wr_file_sw.write('resource "aci_spine_profile" "%s_SwSel" {\n' % (name))
-        wr_file_sw.write('\tname = "%s_SwSel"\n' % (name))
-        wr_file_sw.write('}\n')
-        wr_file_sw.write('\n')
-        wr_file_sw.write('resource "aci_spine_interface_profile" "%s_IntProf" {\n' % (name))
-        wr_file_sw.write('\tname = "%s_IntProf"\n' % (name))
-        wr_file_sw.write('}\n')
-        wr_file_sw.write('\n')
-        wr_file_sw.write('resource "aci_spine_port_policy_group" "%s" {\n' % (name))
-        wr_file_sw.write('\tname = "%s"\n' % (name))
-        wr_file_sw.write('}\n')
-        wr_file_sw.write('\n')
-        wr_file_sw.write('resource "aci_spine_switch_association" "%s" {\n' % (name))
-        wr_file_sw.write('\t\tspine_profile_dn              = aci_spine_profile.%s_SwSel.id\n' % (name))
-        wr_file_sw.write('\t\tname                          = "%s"\n' % (name))
-        wr_file_sw.write('\t\tspine_switch_association_type = "range"\n')
-        wr_file_sw.write('}\n')
-        wr_file_sw.write('\n')
-        wr_file_sw.write('resource "aci_spine_port_selector" "%s" {\n' % (name))
-        wr_file_sw.write('\t\tspine_profile_dn              = aci_spine_profile.%s_SwSel.id\n' % (name))
-        wr_file_sw.write('\t\ttdn                           = aci_spine_interface_profile.%s_IntProf.id\n' % (name))
-        wr_file_sw.write('}\n')
-        wr_file_sw.write('\n')
+
+        # Resource for Spine Profile
+        resrc_type = 'aci_spine_profile'
+        resrc_desc = '{}_SwSel'.format(name)
+        attr_1st = 'name = "{}_SwSel"'.format(name)
+
+        # Write Output to Resource Files using Template
+        template_aci_terraform_attr1(resrc_type, resrc_desc, attr_1st, wr_file)
+
+        # Resource for Spine Interface Profile
+        resrc_type = 'aci_spine_interface_profile'
+        resrc_desc = '{}_IntProf'.format(name)
+        attr_1st = 'name = "{}_IntProf"'.format(name)
+
+        # Write Output to Resource Files using Template
+        template_aci_terraform_attr1(resrc_type, resrc_desc, attr_1st, wr_file)
+
+        # Resource for Spine Port Policy Group
+        resrc_type = 'aci_spine_port_policy_group'
+        resrc_desc = '{}'.format(name)
+        attr_1st = 'name = "{}"'.format(name)
+
+        # Write Output to Resource Files using Template
+        template_aci_terraform_attr1(resrc_type, resrc_desc, attr_1st, wr_file)
+
+        # Resource for Spine Switch Association
+        resrc_type = 'aci_spine_switch_association'
+        resrc_desc = '{}'.format(name)
+        attr_1st = 'spine_profile_dn              = aci_spine_profile.{}_SwSel.id'.format(name)
+        attr_2st = 'name                          = "{}"'.format(name)
+        attr_3st = 'spine_switch_association_type = "range"'
+
+        # Write Output to Resource Files using Template
+        template_aci_terraform_attr3(resrc_type, resrc_desc, attr_1st, attr_2st, attr_3st, wr_file)
+
+        # Resource for Spine Switch Association
+        resrc_type = 'aci_spine_port_selector'
+        resrc_desc = '{}'.format(name)
+        attr_1st = 'spine_profile_dn              = aci_spine_profile.{}_SwSel.id'.format(name)
+        attr_2st = 'tdn                           = aci_spine_interface_profile.{}_IntProf.id'.format(name)
+
+        # Write Output to Resource Files using Template
+        template_aci_terraform_attr2(resrc_type, resrc_desc, attr_1st, attr_2st, wr_file)
+
         mod_count = 0
         while mod_count < int(modules):
             mod_count += 1
-            wr_file_sw.write('resource "aci_rest" "%s_%s_IntProf" {\n' % (name, mod_count))
-            wr_file_sw.write('\tfor_each         = var.port-selector-%s\n' %(port_count))
-            wr_file_sw.write('\tpath             = "/api/node/mo/uni/infra/spaccportprof-%s_IntProf/shports-Eth%s-${each.value.name}-typ-range.json"\n' % (name, mod_count))
-            wr_file_sw.write('\tclass_name       = "infraSHPortS"\n')
-            wr_file_sw.write('\tpayload          = <<EOF\n')
-            wr_file_sw.write('{\n')
-            wr_file_sw.write('\t"infraSHPortS": {\n')
-            wr_file_sw.write('\t\t"attributes": {\n')
-            wr_file_sw.write('\t\t\t"dn": "uni/infra/spaccportprof-%s_IntProf/shports-Eth%s-${each.value.name}-typ-range",\n' % (name, mod_count))
-            wr_file_sw.write('\t\t\t"name": "Eth%s-${each.value.name}",\n' % (mod_count))
-            wr_file_sw.write('\t\t\t"rn": "shports-Eth%s-${each.value.name}-typ-range"\n' % (mod_count))
-            wr_file_sw.write('\t\t},\n')
-            wr_file_sw.write('\t\t"children": [\n')
-            wr_file_sw.write('\t\t\t{\n')
-            wr_file_sw.write('\t\t\t\t"infraPortBlk": {\n')
-            wr_file_sw.write('\t\t\t\t\t"attributes": {\n')
-            wr_file_sw.write('\t\t\t\t\t\t"dn": "uni/infra/spaccportprof-%s_IntProf/shports-Eth%s-${each.value.name}-typ-range/portblk-block2",\n' % (name, mod_count))
-            wr_file_sw.write('\t\t\t\t\t\t"fromCard": "%s",\n' % (mod_count))
-            wr_file_sw.write('\t\t\t\t\t\t"fromPort": "${each.value.name}",\n')
-            wr_file_sw.write('\t\t\t\t\t\t"toCard": "%s",\n' % (mod_count))
-            wr_file_sw.write('\t\t\t\t\t\t"toPort": "${each.value.name}",\n')
-            wr_file_sw.write('\t\t\t\t\t\t"name": "block2",\n')
-            wr_file_sw.write('\t\t\t\t\t\t"rn": "portblk-block2"\n')
-            wr_file_sw.write('\t\t\t\t\t}\n')
-            wr_file_sw.write('\t\t\t\t}\n')
-            wr_file_sw.write('\t\t\t}\n')
-            wr_file_sw.write('\t\t]\n')
-            wr_file_sw.write('\t}\n')
-            wr_file_sw.write('}\n')
-            wr_file_sw.write('\tEOF\n')
-            wr_file_sw.write('}\n')
-            wr_file_sw.write('\n')
-    wr_file_sw.close()
+            wr_file.write('resource "aci_rest" "%s_%s_IntProf" {\n' % (name, mod_count))
+            wr_file.write('\tfor_each         = var.port-selector-%s\n' %(port_count))
+            wr_file.write('\tpath             = "/api/node/mo/uni/infra/spaccportprof-%s_IntProf/shports-Eth%s-${each.value.name}-typ-range.json"\n' % (name, mod_count))
+            wr_file.write('\tclass_name       = "infraSHPortS"\n')
+            wr_file.write('\tpayload          = <<EOF\n')
+
+            # Define Variables for Template Creation
+            class_name = 'infraSHPortS'
+            rn_strings = 'shports-Eth%s-${each.value.name}-typ-range' % (mod_count)
+            dn_strings = 'uni/infra/spaccportprof-%s_IntProf/%s' % (name, rn_strings)
+            name_port = 'Eth%s-${each.value.name}' % (mod_count)
+            childclass = 'infraPortBlk'
+            child_name = 'block2'
+            child_port = '${each.value.name}'
+            child_Rn = 'portblk-block2'
+            child_Dn = 'uni/infra/spaccportprof-%s_IntProf/shports-Eth%s-${each.value.name}-typ-range/%s' % (name, mod_count, child_Rn)
+            mod_num = '%s' % (mod_count)
+
+            base_atts = {'dn': dn_strings, 'name': name_port, 'rn': rn_strings}
+            child_atts = {childclass: {'attributes': {'dn': child_Dn, 'fromCard': mod_num, 'fromPort': child_port, 'toCard': mod_num,
+                          'toPort': child_port, 'name': child_name, 'rn': child_Rn},}}
+            child_combined = [child_atts]
+            data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+
+            # Write Output to Resource File
+            wr_file.write(json.dumps(data_out, indent=4))
+
+            wr_file.write('\n\tEOF\n')
+            wr_file.write('}\n')
+            wr_file.write('\n')
+    wr_file.close()
 
 def resource_syslog(syslog_ipv4, syslog_port, mgmt_domain, severity, facility, local_state, local_level, console_state, console_level):
     # Validate Syslog Server IPv4 Address
