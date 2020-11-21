@@ -259,6 +259,15 @@ def resource_dns_mgmt(mgmt_domain):
     template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
 def resource_domain(domain, prefer):
+    try:
+        # Validate Domain
+        validating.domain(line_count, domain)
+    except Exception as err:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   {SystemExit(err)}')
+        print(f'   Error on Row {line_count}.  Please verify Input Information.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
 
     # Which File to Write Data to
     wr_file = wr_base_info

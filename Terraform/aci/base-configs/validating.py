@@ -24,6 +24,14 @@ def bgp_as(line_count, bgp_as):
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 
+def domain(line_count, domain):
+    if not validators.domain(domain):
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   Error on Row {line_count}. Domain "{domain}" is invalid.')
+        print(f'   Please Validate the domain and retry.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
 def email(line_count, email):
     if not validators.email(email, whitelist=None):
         print(f'\n-----------------------------------------------------------------------------\n')
