@@ -386,6 +386,131 @@ def resource_ntp(ntp_ipv4, prefer, mgmt_domain):
     # Write Output to Resource Files using Template
     template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
+def resource_radius(login_domain, radius_ipv4, radius_port, radius_key, auth_proto, proto_timeout, proto_retry, mgmt_domain, tacacs_order_count):
+    try:
+        # Validate RADIUS IPv4 Address, Login Domain, Authentication Protocol,
+        # secret, Timeout, Retry Limit and Management Domain
+        validating.login_domain(line_count, login_domain)
+        validating.auth_proto(line_count, auth_proto)  
+        validating.secret(line_count, radius_key)
+        validating.timeout(line_count, proto_timeout)
+        validating.retry(line_count, proto_retry)
+        validating.ipv4(line_count, radius_ipv4)
+        mgmt_epg = validating.mgmt_domain(line_count, mgmt_domain)
+    except Exception as err:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   {SystemExit(err)}')
+        print(f'   Error on Row {line_count}.  Please verify Input Information.  Exiting....\n')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
+    # Which File to Write Data to
+    wr_file = wr_base_info
+
+    # Define Variables for Template Creation - RADIUS Provider
+    # Admin > AAA > Authentication: RADIUS
+    radius_ipv4_ = radius_ipv4.replace('.', '_')
+    resrc_desc = 'aaaRadiusProvider_{}'.format(radius_ipv4_)
+    class_name = 'aaaRadiusProvider'
+    rn_strings = "radiusprovider-{}".format(radius_ipv4)
+    dn_strings = "uni/userext/radiusext/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    descrption = 'RADIUS Provider - {}.  Added by Brahma Startup Wizard.'.format(radius_ipv4)
+    child_1_class = 'aaaRsSecProvToEpg'
+    child_1_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
+
+    # Format Variables for JSON Output
+    base_atts = {'dn': dn_strings, 'timeout': proto_timeout, 'retries': proto_retry, 'monitorServer': 'disabled', 'key': radius_key, 
+                 'authProtocol': auth_proto, 'name': radius_ipv4, 'descr': descrption, 'rn': rn_strings}
+    child_1_atts = {child_1_class: {'attributes': {'tDn': child_1_tDn}, 'children': []}}
+    child_combined = [child_1_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
+    # Define Variables for Template Creation - External Login Domain - RADIUS
+    # Admin > AAA > Authentication: AAA > Login Domains
+    resrc_desc = 'Ext_Login_RADIUS_prov-{}'.format(radius_ipv4_)
+    class_name = 'aaaUserEp'
+    dn_strings = "uni/userext"
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    child_1_class = 'aaaLoginDomain'
+    child_1_Rn = 'logindomain-{}'.format(login_domain)
+    child_1_Dn = 'uni/userext/{}'.format(child_1_Rn)
+    sub_child_1_class = 'aaaDomainAuth'
+    sub_child_1_Rn = 'domainauth'
+    sub_child_1_Dn = 'uni/userext/logindomain-{}/domainauth'.format(login_domain)
+    sub_child_1_desc = 'RADIUS Login Domain {}. Created by Brahma Wizard.'.format(login_domain)
+    child_2_class = 'aaaRadiusEp'
+    child_2_Dn = 'uni/userext/radiusext'
+    sub_child_2_class = 'aaaRadiusProviderGroup'
+    sub_child_2_Dn = 'uni/userext/radiusext/radiusprovidergroup-{}'.format(login_domain)
+    basement_2_class = 'aaaProviderRef'
+    basement_2_dn = 'uni/userext/radiusext/radiusprovidergroup-{}/providerref-{}'.format(login_domain, radius_ipv4)
+    basement_order = '{}'.format(radius_order_count)
+    basement_descr = 'Added RADIUS Server {} - Brahma Startup Wizard'.format(radius_ipv4)
+
+    # Format Variables for JSON Output
+    base_atts = {'dn': dn_strings}
+    sub_1_atts = {sub_child_1_class: {'attributes': {'dn': sub_child_1_Dn, 'providerGroup': login_domain, 'realm': 'radius',
+                  'descr': sub_child_1_desc, 'rn': sub_child_1_Rn}, 'children': []}}
+    child_1_atts = {child_1_class: {'attributes': {'dn': child_1_Dn, 'name': login_domain, 'rn': child_1_Rn}, 'children': [sub_1_atts]}}
+    basement_2_atts = {basement_2_class: {'attributes': {'dn': basement_2_dn, 'order': basement_order, 'name': radius_ipv4,
+                       'descr': basement_descr}, 'children': []}}
+    sub_2_atts = {sub_child_2_class: {'attributes': {'dn': sub_child_2_Dn}, 'children': [basement_2_atts]}}
+    child_2_atts = {child_2_class: {'attributes': {'dn': child_2_Dn}, 'children': [sub_2_atts]}}
+    child_combined = [child_1_atts, child_2_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
+def resource_realm(auth_realm, login_domain, login_type):
+    try:
+        # Validate Realm and Login Domain
+        validating.auth_realm(line_count, auth_realm)
+        validating.login_type(line_count, auth_realm, login_type)
+        if not login_type == 'local':
+            validating.login_domain(line_count, login_domain)
+    except Exception as err:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   {SystemExit(err)}')
+        print(f'   Error on Row {line_count}.  Please verify Input Information.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
+    # Which File to Write Data to
+    wr_file = wr_base_info
+
+
+    # Define Variables for Template Creation - Authentication Realms
+    # Admin > AAA > Authentication: AAA > Policy
+    resrc_desc = 'auth-realm_{}'.format(auth_realm)
+    class_name = 'aaaAuthRealm'
+    dn_strings = "uni/userext/authrealm"
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    if auth_realm == 'console':
+        childclass = 'aaaConsoleAuth'
+        child_Dn = 'uni/userext/authrealm/consoleauth'
+    elif auth_realm == 'default':
+        childclass = 'aaaDefaultAuth'
+        child_Dn = 'uni/userext/authrealm/defaultauth'
+    realm_attr = '{}'.format(login_type)
+    if login_type == 'local':
+        providergroup = ''
+    else:
+        providergroup = '{}'.format(login_domain)
+
+    # Format Variables for JSON Output
+    base_atts = {'dn': dn_strings}
+    child_atts = {childclass: {'attributes': {'dn': child_Dn, 'realm': realm_attr, 'providerGroup': providergroup}, 'children': []}}
+    child_combined = [child_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
 def resource_SmarthCallHome(smtp_port, smtp_relay, mgmt_domain, ch_fr_email, ch_rp_email, ch_to_email, phone_numbr, contact_inf,
                             str_address, contract_id, customer_id, site_identi):
     try:
@@ -552,7 +677,6 @@ def resource_snmp_info(contact, location):
     template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
 def resource_snmp_trap(snmp_ipv4, snmp_port, snmp_vers, snmp_string, snmp_auth, mgmt_domain):
-    
     try:
         # Validate SNMP Trap Server IPv4 Address, SNMP Port, Check SNMP Version
         # Check SNMP Community/Username and Validate Management Domain
@@ -999,15 +1123,15 @@ def resource_syslog(syslog_ipv4, syslog_port, mgmt_domain, severity, facility, l
     # Write Output to Resource Files using Template
     template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
-def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_proto, tac_timeout, tac_retry, mgmt_domain, tacacs_order_count):
+def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_proto, proto_timeout, proto_retry, mgmt_domain, tacacs_order_count):
     try:
         # Validate TACACS IPv4 Address, Login Domain, Authentication Protocol,
         # secret, Timeout, Retry Limit and Management Domain
         validating.login_domain(line_count, login_domain)
         validating.auth_proto(line_count, auth_proto)  
-        validating.tacacs_key(line_count, tacacs_key)
-        validating.tac_timeout(line_count, tac_timeout)
-        validating.tac_retry(line_count, tac_retry)
+        validating.secret(line_count, tacacs_key)
+        validating.timeout(line_count, proto_timeout)
+        validating.retry(line_count, proto_retry)
         validating.ipv4(line_count, tacacs_ipv4)
         mgmt_epg = validating.mgmt_domain(line_count, mgmt_domain)
     except Exception as err:
@@ -1080,7 +1204,7 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
     child_1_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
 
     # Format Variables for JSON Output
-    base_atts = {'dn': dn_strings, 'timeout': tac_timeout, 'retries': tac_retry, 'monitorServer': 'disabled', 'key': tacacs_key, 
+    base_atts = {'dn': dn_strings, 'timeout': proto_timeout, 'retries': proto_retry, 'monitorServer': 'disabled', 'key': tacacs_key, 
                  'authProtocol': auth_proto, 'name': tacacs_ipv4, 'descr': descrption, 'rn': rn_strings}
     child_1_atts = {child_1_class: {'attributes': {'tDn': child_1_tDn}, 'children': []}}
     child_combined = [child_1_atts]
@@ -1091,7 +1215,6 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
 
     # Define Variables for Template Creation - External Login Domain - TACACS+
     # Admin > AAA > Authentication: AAA > Login Domains
-    provider_group = 'TACACS'
     resrc_desc = 'Ext_Login_TACACS_prov-{}'.format(tacacs_ipv4_)
     class_name = 'aaaUserEp'
     dn_strings = "uni/userext"
@@ -1106,23 +1229,21 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
     child_2_class = 'aaaTacacsPlusEp'
     child_2_Dn = 'uni/userext/tacacsext'
     sub_child_2_class = 'aaaTacacsPlusProviderGroup'
-    sub_child_2_Dn = 'uni/userext/tacacsext/tacacsplusprovidergroup-{}'.format(provider_group)
+    sub_child_2_Dn = 'uni/userext/tacacsext/tacacsplusprovidergroup-{}'.format(login_domain)
     basement_2_class = 'aaaProviderRef'
-    basement_2_dn = 'uni/userext/tacacsext/tacacsplusprovidergroup-{}/providerref-{}'.format(provider_group, tacacs_ipv4)
-    print(f'count is {tacacs_order_count}')
+    basement_2_dn = 'uni/userext/tacacsext/tacacsplusprovidergroup-{}/providerref-{}'.format(login_domain, tacacs_ipv4)
     basement_order = '{}'.format(tacacs_order_count)
     basement_descr = 'Added TACACS Server {} - Brahma Startup Wizard'.format(tacacs_ipv4)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings}
-    sub_1_atts = {sub_child_1_class: {'attributes': {'dn': sub_child_1_Dn, 'providerGroup': provider_group, 'realm': 'tacacs',
+    sub_1_atts = {sub_child_1_class: {'attributes': {'dn': sub_child_1_Dn, 'providerGroup': login_domain, 'realm': 'tacacs',
                   'descr': sub_child_1_desc, 'rn': sub_child_1_Rn}, 'children': []}}
     child_1_atts = {child_1_class: {'attributes': {'dn': child_1_Dn, 'name': login_domain, 'rn': child_1_Rn}, 'children': [sub_1_atts]}}
     basement_2_atts = {basement_2_class: {'attributes': {'dn': basement_2_dn, 'order': basement_order, 'name': tacacs_ipv4,
                        'descr': basement_descr}, 'children': []}}
     sub_2_atts = {sub_child_2_class: {'attributes': {'dn': sub_child_2_Dn}, 'children': [basement_2_atts]}}
     child_2_atts = {child_2_class: {'attributes': {'dn': child_2_Dn}, 'children': [sub_2_atts]}}
-
     child_combined = [child_1_atts, child_2_atts]
     data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
     
@@ -1136,6 +1257,7 @@ with open(csv_input) as csv_file:
     count_inb_vlan = 0
     count_dns_servers = 0
     tacacs_order_count = 0
+    radius_order_count = 0
     inb_vlan = ''
     for column in csv_reader:
         if any(column):        
@@ -1207,6 +1329,26 @@ with open(csv_input) as csv_file:
                 mgmt_domain = column[3]
                 # Create Resource Record for NTP Servers
                 resource_ntp(ntp_ipv4, prefer, mgmt_domain)
+                line_count += 1
+            elif type == 'radius':
+                login_domain = column[1]
+                radius_ipv4 = column[2]
+                radius_port = column[3]
+                radius_key = column[4]
+                auth_proto = column[5]
+                proto_timeout = column[6]
+                proto_retry  = column[7]
+                mgmt_domain = column[8]
+                radius_order_count += 1
+                # Build TACACS+ Configuration
+                resource_radius(login_domain, radius_ipv4, radius_port, radius_key, auth_proto, proto_timeout, proto_retry, mgmt_domain, radius_order_count)
+                line_count += 1
+            elif type == 'realm':
+                auth_realm = column[1]
+                login_domain = column[2]
+                login_type = column[3]
+                # Modify the Default Login Realms
+                resource_realm(auth_realm, login_domain, login_type)
                 line_count += 1
             elif type == 'smartcallhome':
                 smtp___port = column[1]
@@ -1308,12 +1450,13 @@ with open(csv_input) as csv_file:
                 tacacs_port = column[3]
                 tacacs_key = column[4]
                 auth_proto = column[5]
-                tac_timeout = column[6]
-                tac_retry  = column[7]
+                proto_timeout = column[6]
+                proto_retry  = column[7]
                 mgmt_domain = column[8]
                 tacacs_order_count += 1
                 # Build TACACS+ Configuration
-                resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_proto, tac_timeout, tac_retry, mgmt_domain, tacacs_order_count)
+                resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_proto, proto_timeout, proto_retry, mgmt_domain, tacacs_order_count)
+                line_count += 1
             elif type == 'tenants':
                 line_count += 1
             else:

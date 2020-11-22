@@ -15,6 +15,15 @@ def auth_proto(line_count, auth_proto):
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 
+def auth_realm(line_count, auth_realm):
+    if not re.fullmatch('^(console|default)$', auth_realm):
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   Error on Line {line_count}.  The Authentication Realm should be one of the')
+        print(f'   following: [console|default]')
+        print(f'   "{auth_realm}" did not match one of these types.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
 def bgp_as(line_count, bgp_as):
     bgp_as=int(bgp_as)
     if not validators.between(int(bgp_as), min=1, max=4294967295):
@@ -97,18 +106,15 @@ def log_level(line_count, log_loc, log_level):
         if not re.match('(emergencies|alerts|critical)', log_level):
             print(f'\n-----------------------------------------------------------------------------\n')
             print(f'   Error on Row {line_count}. Logging Level for "{log_loc}"  with "{log_level}"')
-            print(f'   is not valid.  Logging Levels can be:')
-            print(f'   [emergencies|alerts|critical].  Exiting....')
+            print(f'   is not valid.  Logging Levels can be: [emergencies|alerts|critical].  Exiting....')
             print(f'\n-----------------------------------------------------------------------------\n')
             exit()
 
 def login_domain(line_count, login_domain):
     login_domain_count = 0
     if not re.fullmatch('^([a-zA-Z0-9\\_]+)$', login_domain):
-        print('invalid character')
         login_domain_count += 1
     elif not validators.length(login_domain, min=1, max=10):
-        print('Too Long')
         login_domain_count += 1
     if not login_domain_count == 0:
         print(f'\n-----------------------------------------------------------------------------\n')
@@ -116,6 +122,25 @@ def login_domain(line_count, login_domain):
         print(f'   domain must be between 1 and 10 characters.  The only non alphanumeric')
         print(f'   character allowed is "_"; but it must not start with "_".')
         print(f'   "{login_domain}" did not meet these restrictions.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+def login_type(line_count, auth_realm, login_type):
+    print(f'Match Login Domain Login Type {login_type}')
+    login_type_count = 0
+    if auth_realm == 'console':
+        if not re.fullmatch('^(local|ldap|radius|tacacs|rsa)$', login_type):
+            login_type_count += 1
+    elif auth_realm == 'default':
+        if not re.fullmatch('^(local|ldap|radius|tacacs|rsa|saml)$', login_type):
+            login_type_count += 1
+    if not login_type_count == 0:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   Error on Line {line_count}.  The Login Domain Type should be one of the following:')
+        if auth_realm == 'console':
+            print(f'       [local|ldap|radius|tacacs|rsa]')
+        elif auth_realm == 'default':
+            print(f'       [local|ldap|radius|tacacs|rsa|saml]')
+        print(f'   "{login_type}" did not match one of these types.  Exiting....')
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 
@@ -228,12 +253,33 @@ def port_count(line_count, name, switch_role, port_count):
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 
+def retry(line_count, retry):
+    if not validators.between(int(retry), min=1, max=5):
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   Error on Row {line_count}, The Retry shold be')
+        print(f'   between 1 and 5.  "{retry}" does not meet this.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
 def role(line_count, name, switch_role):
     if not re.search('^(leaf|spine)$', switch_role):
         print(f'\n-----------------------------------------------------------------------------\n')
         print(f'   Error on Row {line_count}. {name} role {switch_role} is not valid.')
         print(f'   Valid switch_roles are leaf or spine, which are required by the')
         print(f'   script to determine resources to build.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
+def secret(line_count, secret):
+    if not validators.length(secret, min=1, max=32):
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   Error on Row {line_count}, The Shared Secret Length must be')
+        print(f'   between 1 and 32 characters.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+    if re.search('[\\\\ #]+', secret):
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'  The Shared Secret cannot contain backslash, space or hashtag.  Exiting....')
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 
@@ -306,36 +352,15 @@ def syslog_fac(line_count, facility):
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 
-def tacacs_key(line_count, tacacs_key):
-    if not validators.length(tacacs_key, min=1, max=32):
-        print(f'\n-----------------------------------------------------------------------------\n')
-        print(f'   Error on Row {line_count}, The Shared Secret Length must be')
-        print(f'   between 1 and 32 characters.  Exiting....')
-        print(f'\n-----------------------------------------------------------------------------\n')
-        exit()
-    if re.search('[\\\\ #]+', tacacs_key):
-        print(f'\n-----------------------------------------------------------------------------\n')
-        print(f'  The Shared Secret cannot contain backslash, space or hashtag.  Exiting....')
-        print(f'\n-----------------------------------------------------------------------------\n')
-        exit()
-
-def tac_retry(line_count, retry):
-    if not validators.between(int(retry), min=1, max=5):
-        print(f'\n-----------------------------------------------------------------------------\n')
-        print(f'   Error on Row {line_count}, The Retry shold be')
-        print(f'   between 1 and 5.  "{retry}" does not meet this.  Exiting....')
-        print(f'\n-----------------------------------------------------------------------------\n')
-        exit()
-
-def tac_timeout(line_count, tac_timeout):
-    tac_timeout_count = 0
-    if not validators.between(int(tac_timeout), min=5, max=60):
-        tac_timeout_count += 1
-    if not (int(tac_timeout) % 5 == 0):
-        tac_timeout_count += 1
-    if not tac_timeout_count == 0:
+def timeout(line_count, proto_timeout):
+    timeout_count = 0
+    if not validators.between(int(proto_timeout), min=5, max=60):
+        timeout_count += 1
+    if not (int(proto_timeout) % 5 == 0):
+        timeout_count += 1
+    if not timeout_count == 0:
         print(f'\n-----------------------------------------------------------------------------\n')
         print(f'   Error on Row {line_count}, Timeout should be between 5 and 60 and')
-        print(f'   be a factor of 5.  "{tac_timeout}" does not meet this.  Exiting....')
+        print(f'   be a factor of 5.  "{proto_timeout}" does not meet this.  Exiting....')
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()

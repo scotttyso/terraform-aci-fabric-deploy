@@ -590,6 +590,206 @@ resource "aci_rest" "syslog_1_1_1_1" {
 	EOF
 }
 
+resource "aci_rest" "aaaRadiusProvider_1_1_1_5" {
+	path		= "/api/node/mo/uni/userext/radiusext/radiusprovider-1.1.1.5.json"
+	class_name	= "aaaRadiusProvider"
+	payload		= <<EOF
+{
+    "aaaRadiusProvider": {
+        "attributes": {
+            "dn": "uni/userext/radiusext/radiusprovider-1.1.1.5",
+            "timeout": "5",
+            "retries": "1",
+            "monitorServer": "disabled",
+            "key": "cisco1231",
+            "authProtocol": "chap",
+            "name": "1.1.1.5",
+            "descr": "RADIUS Provider - 1.1.1.5.  Added by Brahma Startup Wizard.",
+            "rn": "radiusprovider-1.1.1.5"
+        },
+        "children": [
+            {
+                "aaaRsSecProvToEpg": {
+                    "attributes": {
+                        "tDn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg"
+                    },
+                    "children": []
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "Ext_Login_RADIUS_prov-1_1_1_5" {
+	path		= "/api/node/mo/uni/userext.json"
+	class_name	= "aaaUserEp"
+	payload		= <<EOF
+{
+    "aaaUserEp": {
+        "attributes": {
+            "dn": "uni/userext"
+        },
+        "children": [
+            {
+                "aaaLoginDomain": {
+                    "attributes": {
+                        "dn": "uni/userext/logindomain-RAD_ISE",
+                        "name": "RAD_ISE",
+                        "rn": "logindomain-RAD_ISE"
+                    },
+                    "children": [
+                        {
+                            "aaaDomainAuth": {
+                                "attributes": {
+                                    "dn": "uni/userext/logindomain-RAD_ISE/domainauth",
+                                    "providerGroup": "RAD_ISE",
+                                    "realm": "radius",
+                                    "descr": "RADIUS Login Domain RAD_ISE. Created by Brahma Wizard.",
+                                    "rn": "domainauth"
+                                },
+                                "children": []
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "aaaRadiusEp": {
+                    "attributes": {
+                        "dn": "uni/userext/radiusext"
+                    },
+                    "children": [
+                        {
+                            "aaaRadiusProviderGroup": {
+                                "attributes": {
+                                    "dn": "uni/userext/radiusext/radiusprovidergroup-RAD_ISE"
+                                },
+                                "children": [
+                                    {
+                                        "aaaProviderRef": {
+                                            "attributes": {
+                                                "dn": "uni/userext/radiusext/radiusprovidergroup-RAD_ISE/providerref-1.1.1.5",
+                                                "order": "1",
+                                                "name": "1.1.1.5",
+                                                "descr": "Added RADIUS Server 1.1.1.5 - Brahma Startup Wizard"
+                                            },
+                                            "children": []
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "aaaRadiusProvider_1_1_1_6" {
+	path		= "/api/node/mo/uni/userext/radiusext/radiusprovider-1.1.1.6.json"
+	class_name	= "aaaRadiusProvider"
+	payload		= <<EOF
+{
+    "aaaRadiusProvider": {
+        "attributes": {
+            "dn": "uni/userext/radiusext/radiusprovider-1.1.1.6",
+            "timeout": "5",
+            "retries": "1",
+            "monitorServer": "disabled",
+            "key": "cisco123",
+            "authProtocol": "chap",
+            "name": "1.1.1.6",
+            "descr": "RADIUS Provider - 1.1.1.6.  Added by Brahma Startup Wizard.",
+            "rn": "radiusprovider-1.1.1.6"
+        },
+        "children": [
+            {
+                "aaaRsSecProvToEpg": {
+                    "attributes": {
+                        "tDn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg"
+                    },
+                    "children": []
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "Ext_Login_RADIUS_prov-1_1_1_6" {
+	path		= "/api/node/mo/uni/userext.json"
+	class_name	= "aaaUserEp"
+	payload		= <<EOF
+{
+    "aaaUserEp": {
+        "attributes": {
+            "dn": "uni/userext"
+        },
+        "children": [
+            {
+                "aaaLoginDomain": {
+                    "attributes": {
+                        "dn": "uni/userext/logindomain-RAD_ISE",
+                        "name": "RAD_ISE",
+                        "rn": "logindomain-RAD_ISE"
+                    },
+                    "children": [
+                        {
+                            "aaaDomainAuth": {
+                                "attributes": {
+                                    "dn": "uni/userext/logindomain-RAD_ISE/domainauth",
+                                    "providerGroup": "RAD_ISE",
+                                    "realm": "radius",
+                                    "descr": "RADIUS Login Domain RAD_ISE. Created by Brahma Wizard.",
+                                    "rn": "domainauth"
+                                },
+                                "children": []
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "aaaRadiusEp": {
+                    "attributes": {
+                        "dn": "uni/userext/radiusext"
+                    },
+                    "children": [
+                        {
+                            "aaaRadiusProviderGroup": {
+                                "attributes": {
+                                    "dn": "uni/userext/radiusext/radiusprovidergroup-RAD_ISE"
+                                },
+                                "children": [
+                                    {
+                                        "aaaProviderRef": {
+                                            "attributes": {
+                                                "dn": "uni/userext/radiusext/radiusprovidergroup-RAD_ISE/providerref-1.1.1.6",
+                                                "order": "2",
+                                                "name": "1.1.1.6",
+                                                "descr": "Added RADIUS Server 1.1.1.6 - Brahma Startup Wizard"
+                                            },
+                                            "children": []
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
 resource "aci_rest" "tacacs_TACACS_acct_1_1_1_5" {
 	path		= "/api/node/mo/uni/fabric/tacacsgroup-TACACS_acct.json"
 	class_name	= "tacacsGroup"
@@ -709,7 +909,7 @@ resource "aci_rest" "Ext_Login_TACACS_prov-1_1_1_5" {
                             "aaaDomainAuth": {
                                 "attributes": {
                                     "dn": "uni/userext/logindomain-ISE/domainauth",
-                                    "providerGroup": "TACACS",
+                                    "providerGroup": "ISE",
                                     "realm": "tacacs",
                                     "descr": "TACACS+ Login Domain ISE. Created by Brahma Wizard.",
                                     "rn": "domainauth"
@@ -729,13 +929,13 @@ resource "aci_rest" "Ext_Login_TACACS_prov-1_1_1_5" {
                         {
                             "aaaTacacsPlusProviderGroup": {
                                 "attributes": {
-                                    "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-TACACS"
+                                    "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-ISE"
                                 },
                                 "children": [
                                     {
                                         "aaaProviderRef": {
                                             "attributes": {
-                                                "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-TACACS/providerref-1.1.1.5",
+                                                "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-ISE/providerref-1.1.1.5",
                                                 "order": "1",
                                                 "name": "1.1.1.5",
                                                 "descr": "Added TACACS Server 1.1.1.5 - Brahma Startup Wizard"
@@ -848,7 +1048,7 @@ resource "aci_rest" "Ext_Login_TACACS_prov-1_1_1_6" {
                             "aaaDomainAuth": {
                                 "attributes": {
                                     "dn": "uni/userext/logindomain-ISE/domainauth",
-                                    "providerGroup": "TACACS",
+                                    "providerGroup": "ISE",
                                     "realm": "tacacs",
                                     "descr": "TACACS+ Login Domain ISE. Created by Brahma Wizard.",
                                     "rn": "domainauth"
@@ -868,13 +1068,13 @@ resource "aci_rest" "Ext_Login_TACACS_prov-1_1_1_6" {
                         {
                             "aaaTacacsPlusProviderGroup": {
                                 "attributes": {
-                                    "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-TACACS"
+                                    "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-ISE"
                                 },
                                 "children": [
                                     {
                                         "aaaProviderRef": {
                                             "attributes": {
-                                                "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-TACACS/providerref-1.1.1.6",
+                                                "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-ISE/providerref-1.1.1.6",
                                                 "order": "2",
                                                 "name": "1.1.1.6",
                                                 "descr": "Added TACACS Server 1.1.1.6 - Brahma Startup Wizard"
@@ -886,6 +1086,58 @@ resource "aci_rest" "Ext_Login_TACACS_prov-1_1_1_6" {
                             }
                         }
                     ]
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "auth-realm_console" {
+	path		= "/api/node/mo/uni/userext/authrealm.json"
+	class_name	= "aaaAuthRealm"
+	payload		= <<EOF
+{
+    "aaaAuthRealm": {
+        "attributes": {
+            "dn": "uni/userext/authrealm"
+        },
+        "children": [
+            {
+                "aaaConsoleAuth": {
+                    "attributes": {
+                        "dn": "uni/userext/authrealm/consoleauth",
+                        "realm": "tacacs",
+                        "providerGroup": "ISE"
+                    },
+                    "children": []
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "auth-realm_default" {
+	path		= "/api/node/mo/uni/userext/authrealm.json"
+	class_name	= "aaaAuthRealm"
+	payload		= <<EOF
+{
+    "aaaAuthRealm": {
+        "attributes": {
+            "dn": "uni/userext/authrealm"
+        },
+        "children": [
+            {
+                "aaaDefaultAuth": {
+                    "attributes": {
+                        "dn": "uni/userext/authrealm/defaultauth",
+                        "realm": "local",
+                        "providerGroup": ""
+                    },
+                    "children": []
                 }
             }
         ]
