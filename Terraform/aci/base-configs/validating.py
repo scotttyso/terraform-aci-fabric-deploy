@@ -125,7 +125,6 @@ def login_domain(line_count, login_domain):
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 def login_type(line_count, auth_realm, login_type):
-    print(f'Match Login Domain Login Type {login_type}')
     login_type_count = 0
     if auth_realm == 'console':
         if not re.fullmatch('^(local|ldap|radius|tacacs|rsa)$', login_type):

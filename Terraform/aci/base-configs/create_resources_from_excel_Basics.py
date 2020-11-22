@@ -1,36 +1,40 @@
 #!/usr/bin/env python3
 
 import csv
+import openpyxl
 import ipaddress
 import json
 import phonenumbers
 import os, re, sys, traceback, validators
 import validating
 from datetime import datetime, timedelta
+from openpyxl import load_workbook,workbook
+from os import path
 
-if len(sys.argv) == 2:
-    csv_input = sys.argv[1]
-    append = sys.argv[1]
-elif len(sys.argv) == 1:
-    csv_input = sys.argv[1]
-    append = 'no'
-
+excel_workbook = sys.argv[1]
 try:
-    open(csv_input)
+    if os.path.isfile(excel_workbook):
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   {excel_workbook} exists.  Beginning Script Execution...')
+        print(f'\n-----------------------------------------------------------------------------\n')
+    else:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   {excel_workbook} does not exist.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
 except IOError:
     print(f'\n-----------------------------------------------------------------------------\n')
-    print(f'   {csv_input} does not exist.  Exiting....')
+    print(f'   {excel_workbook} does not exist.  Exiting....')
     print(f'\n-----------------------------------------------------------------------------\n')
     exit()
+wb = openpyxl.load_workbook(excel_workbook)
+sheet = wb['User Input']
 
 # Creating User Input Fabric Policies File to attached policies for
 # DNS, Domain, NTP, SmartCallHome, SNMP, Syslog, TACACS Accounting etc.
 file_base_pod_info = 'resources_user_import_Fabric_Policies.tf'
-if append == 'yes':
-    wr_base_info = open(file_base_pod_info, 'a')
-else:
-    wr_base_info = open(file_base_pod_info, 'w')
-    wr_base_info.write('# This File will include DNS, Domain, NTP, SmartCallHome\n# SNMP, Syslog and other base configuration parameters\n')
+wr_base_info = open(file_base_pod_info, 'w')
+wr_base_info.write('# This File will include DNS, Domain, NTP, SmartCallHome\n# SNMP, Syslog and other base configuration parameters\n')
 
 # SNMP requires assigning Communities to Tenant VRF's.
 # These files are used to capture Communities Defined
@@ -77,6 +81,45 @@ def template_aci_terraform_attr3(resrc_type, resrc_desc, attr_1st, attr_2nd, att
     wr_to_file = template_payload.format(resource_line, "{", attr_1st, attr_2nd, attr_3rd, "}")
     # Write Data to Template
     wr_file.write(wr_to_file)
+
+def query_switch_model(line_count, switch_type):
+    if re.search('^93', switch_type):
+        modules = '1'
+    if re.search('^9316', switch_type):
+        port_count = '16'
+    elif re.search('^(93108|93120|93216|93360)', switch_type):
+        port_count = '96'
+    elif re.search('^(93180|93240|9348|9396)', switch_type):
+        port_count = '48'
+    elif re.search('^9332', switch_type):
+        port_count = '32'
+    elif re.search('^(9336|93600)', switch_type):
+        port_count = '36'
+    elif re.search('^9364', switch_type):
+        port_count = '64'
+    elif re.search('^93180', switch_type):
+        port_count = '48'
+    elif re.search('^95', switch_type):
+        port_count = '36'
+        if switch_type == '9504':
+            modules = '4'
+        elif switch_type == '9508':
+            modules = '8'
+        elif switch_type == '9516':
+            modules = '16'
+        else:
+            print(f'\n-----------------------------------------------------------------------------\n')
+            print(f'   Error on Row {line_count}.  Unknown Switch Model {switch_type}')
+            print(f'   Please verify Input Information.  Exiting....')
+            print(f'\n-----------------------------------------------------------------------------\n')
+            exit()
+    else:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   Error on Row {line_count}.  Unknown Switch Model {switch_type}')
+        print(f'   Please verify Input Information.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+    return modules,port_count
 
 def resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_leaf, p1_swpt, p2_leaf, p2_swpt):
     try:
@@ -790,7 +833,10 @@ def resource_snmp_user(snmp_user, priv_type, priv_key, auth_type, auth_key):
     # Write Output to Resource Files using Template
     template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
-def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modules, port_count, oob_ipv4, oob_gwv4, inb_ipv4, inb_gwv4, inb_vlan):
+def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switch_Type, oob_ipv4, oob_gwv4, inb_ipv4, inb_gwv4, inb_vlan):
+    # Use Switch_Type to Determine the Number of ports on the switch
+    modules,port_count = query_switch_model(line_count, switch_type)
+
     try:
         # Validate Serial Number, Hostname, node_id, node_type, pod_id,
         # switch_role, modules, port_count, oob_ipv4, oob_gwv4, inb_ipv4,
@@ -899,6 +945,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modul
     # Write Output to Resource Files using Template
     template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
+    
     if switch_role == 'leaf':
         # Define Variables for Template Creation - ACI Leaf Profile
         # Fabric > Access Policies > Switches > Leaf Switches > Profiles
@@ -1250,222 +1297,218 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
     # Write Output to Resource Files using Template
     template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
-with open(csv_input) as csv_file:
-    csv_reader = csv.reader(csv_file, delimiter=',')
-    line_count = 0
-    count_inb_gwv4 = 0
-    count_inb_vlan = 0
-    count_dns_servers = 0
-    tacacs_order_count = 0
-    radius_order_count = 0
-    inb_vlan = ''
-    for column in csv_reader:
-        if any(column):        
-            type = column[0]
-            if type == 'apic_inb':
-                name = column[1]
-                node_id = column[2]
-                pod_id = column[3]
-                inb_ipv4 = column[4]
-                inb_gwv4 = column[5]
-                p1_leaf = column[6]
-                p1_swpt = column[7]
-                p2_leaf = column[8]
-                p2_swpt = column[9]
+line_count = 0
+count_inb_gwv4 = 0
+count_inb_vlan = 0
+count_dns_servers = 0
+tacacs_order_count = 0
+radius_order_count = 0
+inb_vlan = ''
+for r in sheet.rows:
+    if any(r):        
+        type = str(r[0].value)
+        if type == 'apic_inb':
+            name = str(r[1].value)
+            node_id = str(r[2].value)
+            pod_id = str(r[3].value)
+            inb_ipv4 = str(r[4].value)
+            inb_gwv4 = str(r[5].value)
+            p1_leaf = str(r[6].value)
+            p1_swpt = str(r[7].value)
+            p2_leaf = str(r[8].value)
+            p2_swpt = str(r[9].value)
+            # Make sure the inband_vlan exists
+            validating.inb_vlan_exist(inb_vlan)
 
-                # Make sure the inband_vlan exists
-                validating.inb_vlan_exist(inb_vlan)
-
-                # Create Resource Record for Switch and inband Bridge  Domain AP/EPG
-                resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_leaf, p1_swpt, p2_leaf, p2_swpt)
-                if count_inb_gwv4 == 0: 
-                    resource_inband(inb_ipv4, inb_gwv4, inb_vlan)
-                    count_inb_gwv4 += 1
-                    current_inb_gwv4 = inb_gwv4
-                else:
-                    validating.match_current_gw(line_count, current_inb_gwv4, inb_gwv4)
-                line_count += 1
-            elif type == 'bgp_as':
-                bgp_as = column[1]
-                # Configure the Default BGP AS Number
-                resource_bgp_as(bgp_as)
-                line_count += 1
-            elif type == 'bgp_rr':
-                node_id = column[2]
-                # Configure the Default BGP Route Reflector
-                resource_bgp_rr(node_id)
-                line_count += 1
-            elif type == 'dns':
-                dns_ipv4 = column[1]
-                prefer = column[2]
-                if count_dns_servers < 2:
-                    # Create Resource Record for DNS Servers
-                    resource_dns(dns_ipv4, prefer) 
-                else:
-                    print(f'\n-----------------------------------------------------------------------------\n')
-                    print(f'   At this time it is only supported to add two DNS Providers')
-                    print(f'   Remove one or more providers.  Exiting....\n')
-                    print(f'\n-----------------------------------------------------------------------------\n')
-                    exit()
-                count_dns_servers += 1
-                line_count += 1
-            elif type == 'dns_mgmt':
-                mgmt_domain = column[1]
-                # Create Resource Record for DNS Servers
-                resource_dns_mgmt(mgmt_domain) 
-                line_count += 1
-            elif type == 'search_domain':
-                domain = column[1]
-                prefer = column[2]
-                # Create Resource Record for Search Domain
-                resource_domain(domain, prefer) 
-                line_count += 1
-            elif type == 'inband_vlan':
-                inb_vlan = column[1]
-                line_count += 1
-            elif type == 'ntp':
-                ntp_ipv4 = column[1]
-                prefer = column[2]
-                mgmt_domain = column[3]
-                # Create Resource Record for NTP Servers
-                resource_ntp(ntp_ipv4, prefer, mgmt_domain)
-                line_count += 1
-            elif type == 'radius':
-                login_domain = column[1]
-                radius_ipv4 = column[2]
-                radius_port = column[3]
-                radius_key = column[4]
-                auth_proto = column[5]
-                proto_timeout = column[6]
-                proto_retry  = column[7]
-                mgmt_domain = column[8]
-                radius_order_count += 1
-                # Build TACACS+ Configuration
-                resource_radius(login_domain, radius_ipv4, radius_port, radius_key, auth_proto, proto_timeout, proto_retry, mgmt_domain, radius_order_count)
-                line_count += 1
-            elif type == 'realm':
-                auth_realm = column[1]
-                login_domain = column[2]
-                login_type = column[3]
-                # Modify the Default Login Realms
-                resource_realm(auth_realm, login_domain, login_type)
-                line_count += 1
-            elif type == 'smartcallhome':
-                smtp___port = column[1]
-                smtp__relay = column[2]
-                mgmt_domain = column[3]
-                ch_fr_email = column[4]
-                ch_rp_email = column[5]
-                ch_to_email = column[6]
-                phone_numbr = column[7]
-                contact_inf = column[8]
-                str_address = column[9]
-                contract_id = column[10]
-                customer_id = column[11]
-                site_identi = column[12]
-                # Configure the Default SmartCallHome Policy
-                resource_SmarthCallHome(smtp___port, smtp__relay, mgmt_domain, ch_fr_email, ch_rp_email, ch_to_email, phone_numbr, 
-                                        contact_inf, str_address, contract_id, customer_id, site_identi)
-                line_count += 1
-            elif type == 'snmp_client':
-                client_name = column[1]
-                client_ipv4 = column[2]
-                mgmt_domain = column[3]
-                # Create Resource Record for SNMP Client
-                resource_snmp_client(client_name, client_ipv4, mgmt_domain)
-                line_count += 1
-            elif type == 'snmp_comm':
-                community = column[1]
-                description = column[2]
-                # Create Resource Record for SNMP Communities
-                resource_snmp_comm(community, description)
-                line_count += 1
-            elif type == 'snmp_info':
-                contact = column[1]
-                location = column[2]
-                # Create Resource Record for SNMP Default Policy
-                resource_snmp_info(contact, location)
-                line_count += 1
-            elif type == 'snmp_trap':
-                snmp_ipv4 = column[1]
-                snmp_port = column[2]
-                snmp_vers = column[3]
-                snmp_string = column[4]
-                snmp_auth = column[5]
-                mgmt_domain = column[6]
-                # Create Resource Record for SNMP Traps
-                resource_snmp_trap(snmp_ipv4, snmp_port, snmp_vers, snmp_string, snmp_auth, mgmt_domain)
-                line_count += 1
-            elif type == 'snmp_user':
-                snmp_user = column[1]
-                priv_type = column[2]
-                priv_key = column[3]
-                auth_type = column[4]
-                auth_key = column[5]
-                # Create Resource Record for SNMP Users
-                resource_snmp_user(snmp_user, priv_type, priv_key, auth_type, auth_key)
-                line_count += 1
-            elif type == 'switch':
-                serial = column[1]
-                name = column[2]
-                node_id = column[3]
-                node_type = column[4]
-                pod_id = column[5]
-                switch_role = column[6]
-                modules = column[7]
-                port_count = column[8]
-                oob_ipv4 = column[9]
-                oob_gwv4 = column[10]
-                inb_ipv4 = column[11]
-                inb_gwv4 = column[12]
-                
-                # Make sure the inband_vlan exists
-                validating.inb_vlan_exist(inb_vlan)
-
-                # Create Resource Record for Switch and inband Bridge  Domain AP/EPG
-                resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modules, port_count, oob_ipv4, oob_gwv4, 
-                                inb_ipv4, inb_gwv4, inb_vlan)
-                if count_inb_gwv4 == 0: 
-                    resource_inband(inb_ipv4, inb_gwv4, inb_vlan)
-                    count_inb_gwv4 += 1
-                    current_inb_gwv4 = inb_gwv4
-                else:
-                    validating.match_current_gw(line_count, current_inb_gwv4, inb_gwv4)
-                line_count += 1
-            elif type == 'syslog':
-                syslog_ipv4 = column[1]
-                syslog_port = column[2]
-                mgmt_domain = column[3]
-                severity = column[4]
-                facility = column[5]
-                local_state = column[6]
-                local_level = column[7]
-                console_state = column[8]
-                console_level = column[9]
-                resource_syslog(syslog_ipv4, syslog_port, mgmt_domain, severity, facility, local_state, local_level, console_state, console_level)
-                line_count += 1
-            elif type == 'tacacs':
-                login_domain = column[1]
-                tacacs_ipv4 = column[2]
-                tacacs_port = column[3]
-                tacacs_key = column[4]
-                auth_proto = column[5]
-                proto_timeout = column[6]
-                proto_retry  = column[7]
-                mgmt_domain = column[8]
-                tacacs_order_count += 1
-                # Build TACACS+ Configuration
-                resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_proto, proto_timeout, proto_retry, mgmt_domain, tacacs_order_count)
-                line_count += 1
-            elif type == 'tenants':
-                line_count += 1
+            # Create Resource Record for Switch and inband Bridge  Domain AP/EPG
+            resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_leaf, p1_swpt, p2_leaf, p2_swpt)
+            if count_inb_gwv4 == 0: 
+                resource_inband(inb_ipv4, inb_gwv4, inb_vlan)
+                count_inb_gwv4 += 1
+                current_inb_gwv4 = inb_gwv4
             else:
-                line_count += 1
+                validating.match_current_gw(line_count, current_inb_gwv4, inb_gwv4)
+            line_count += 1
+        elif type == 'bgp_as':
+            bgp_as = str(r[1].value)
+            # Configure the Default BGP AS Number
+            resource_bgp_as(bgp_as)
+            line_count += 1
+        elif type == 'bgp_rr':
+            node_id = str(r[2].value)
+            # Configure the Default BGP Route Reflector
+            resource_bgp_rr(node_id)
+            line_count += 1
+        elif type == 'dns':
+            dns_ipv4 = str(r[1].value)
+            prefer = str(r[2].value)
+            if count_dns_servers < 2:
+                # Create Resource Record for DNS Servers
+                resource_dns(dns_ipv4, prefer) 
+            else:
+                print(f'\n-----------------------------------------------------------------------------\n')
+                print(f'   At this time it is only supported to add two DNS Providers')
+                print(f'   Remove one or more providers.  Exiting....\n')
+                print(f'\n-----------------------------------------------------------------------------\n')
+                exit()
+            count_dns_servers += 1
+            line_count += 1
+        elif type == 'dns_mgmt':
+            mgmt_domain = str(r[1].value)
+            # Create Resource Record for DNS Servers
+            resource_dns_mgmt(mgmt_domain) 
+            line_count += 1
+        elif type == 'search_domain':
+            domain = str(r[1].value)
+            prefer = str(r[3].value)
+            # Create Resource Record for Search Domain
+            resource_domain(domain, prefer) 
+            line_count += 1
+        elif type == 'inband_vlan':
+            inb_vlan = str(r[1].value)
+            line_count += 1
+        elif type == 'ntp':
+            ntp_ipv4 = str(r[1].value)
+            prefer = str(r[2].value)
+            mgmt_domain = str(r[3].value)
+            # Create Resource Record for NTP Servers
+            resource_ntp(ntp_ipv4, prefer, mgmt_domain)
+            line_count += 1
+        elif type == 'radius':
+            login_domain = str(r[1].value)
+            radius_ipv4 = str(r[2].value)
+            radius_port = str(r[3].value)
+            radius_key = str(r[4].value)
+            auth_proto = str(r[5].value)
+            proto_timeout = str(r[6].value)
+            proto_retry  = str(r[7].value)
+            mgmt_domain = str(r[8].value)
+            radius_order_count += 1
+            # Build TACACS+ Configuration
+            resource_radius(login_domain, radius_ipv4, radius_port, radius_key, auth_proto, proto_timeout, proto_retry, mgmt_domain, radius_order_count)
+            line_count += 1
+        elif type == 'realm':
+            auth_realm = str(r[1].value)
+            login_domain = str(r[2].value)
+            login_type = str(r[3].value)
+            # Modify the Default Login Realms
+            resource_realm(auth_realm, login_domain, login_type)
+            line_count += 1
+        elif type == 'smartcallhome':
+            smtp___port = str(r[1].value)
+            smtp__relay = str(r[2].value)
+            mgmt_domain = str(r[3].value)
+            ch_fr_email = str(r[4].value)
+            ch_rp_email = str(r[6].value)
+            ch_to_email = str(r[8].value)
+            phone_numbr = str(r[10].value)
+            contact_inf = str(r[11].value)
+            str_address = str(r[12].value)
+            contract_id = str(r[13].value)
+            customer_id = str(r[14].value)
+            site_identi = str(r[15].value)
+            # Configure the Default SmartCallHome Policy
+            resource_SmarthCallHome(smtp___port, smtp__relay, mgmt_domain, ch_fr_email, ch_rp_email, ch_to_email, phone_numbr, 
+                                    contact_inf, str_address, contract_id, customer_id, site_identi)
+            line_count += 1
+        elif type == 'snmp_client':
+            client_name = str(r[1].value)
+            client_ipv4 = str(r[2].value)
+            mgmt_domain = str(r[3].value)
+            # Create Resource Record for SNMP Client
+            resource_snmp_client(client_name, client_ipv4, mgmt_domain)
+            line_count += 1
+        elif type == 'snmp_comm':
+            community = str(r[1].value)
+            description = str(r[2].value)
+            # Create Resource Record for SNMP Communities
+            resource_snmp_comm(community, description)
+            line_count += 1
+        elif type == 'snmp_info':
+            contact = str(r[1].value)
+            location = str(r[3].value)
+            # Create Resource Record for SNMP Default Policy
+            resource_snmp_info(contact, location)
+            line_count += 1
+        elif type == 'snmp_trap':
+            snmp_ipv4 = str(r[1].value)
+            snmp_port = str(r[2].value)
+            snmp_vers = str(r[3].value)
+            snmp_string = str(r[4].value)
+            snmp_auth = str(r[5].value)
+            mgmt_domain = str(r[6].value)
+            # Create Resource Record for SNMP Traps
+            resource_snmp_trap(snmp_ipv4, snmp_port, snmp_vers, snmp_string, snmp_auth, mgmt_domain)
+            line_count += 1
+        elif type == 'snmp_user':
+            snmp_user = str(r[1].value)
+            priv_type = str(r[2].value)
+            priv_key = str(r[3].value)
+            auth_type = str(r[4].value)
+            auth_key = str(r[5].value)
+            # Create Resource Record for SNMP Users
+            resource_snmp_user(snmp_user, priv_type, priv_key, auth_type, auth_key)
+            line_count += 1
+        elif type == 'switch':
+            serial = str(r[1].value)
+            name = str(r[2].value)
+            node_id = str(r[3].value)
+            node_type = str(r[4].value)
+            pod_id = str(r[5].value)
+            switch_role = str(r[6].value)
+            switch_type = str(r[7].value)
+            oob_ipv4 = str(r[8].value)
+            oob_gwv4 = str(r[9].value)
+            inb_ipv4 = str(r[10].value)
+            inb_gwv4 = str(r[11].value)
+            
+            # Make sure the inband_vlan exists
+            validating.inb_vlan_exist(inb_vlan)
+
+            # Create Resource Record for Switch and inband Bridge  Domain AP/EPG
+            resource_switch(serial, name, node_id, node_type, pod_id, switch_role, switch_type, oob_ipv4, oob_gwv4, 
+                            inb_ipv4, inb_gwv4, inb_vlan)
+            if count_inb_gwv4 == 0: 
+                resource_inband(inb_ipv4, inb_gwv4, inb_vlan)
+                count_inb_gwv4 += 1
+                current_inb_gwv4 = inb_gwv4
+            else:
+                validating.match_current_gw(line_count, current_inb_gwv4, inb_gwv4)
+            line_count += 1
+        elif type == 'syslog':
+            syslog_ipv4 = str(r[1].value)
+            syslog_port = str(r[2].value)
+            mgmt_domain = str(r[3].value)
+            severity = str(r[4].value)
+            facility = str(r[5].value)
+            local_state = str(r[6].value)
+            local_level = str(r[7].value)
+            console_state = str(r[8].value)
+            console_level = str(r[9].value)
+            resource_syslog(syslog_ipv4, syslog_port, mgmt_domain, severity, facility, local_state, local_level, console_state, console_level)
+            line_count += 1
+        elif type == 'tacacs':
+            login_domain = str(r[1].value)
+            tacacs_ipv4 = str(r[2].value)
+            tacacs_port = str(r[3].value)
+            tacacs_key = str(r[4].value)
+            auth_proto = str(r[5].value)
+            proto_timeout = str(r[6].value)
+            proto_retry  = str(r[7].value)
+            mgmt_domain = str(r[8].value)
+            tacacs_order_count += 1
+            # Build TACACS+ Configuration
+            resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_proto, proto_timeout, proto_retry, mgmt_domain, tacacs_order_count)
+            line_count += 1
+        elif type == 'tenants':
+            line_count += 1
         else:
             line_count += 1
+    else:
+        line_count += 1
 
 # Close out the Open Files
-csv_file.close()
+#csv_file.close()
 wr_base_info.close()
 wr_vrfs.close()
 wr_comm.close()

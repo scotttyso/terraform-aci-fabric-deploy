@@ -1,4 +1,4 @@
-resource "aci_tenant" "mgmt" {
+resource "aci_tenant" "common" {
 	name                   = "common"
 }
 
