@@ -94,10 +94,6 @@ resource "aci_spine_interface_profile" "spine101_IntProf" {
 	name = "spine101_IntProf"
 }
 
-resource "aci_spine_port_policy_group" "spine101" {
-	name = "spine101"
-}
-
 resource "aci_spine_switch_association" "spine101" {
 	spine_profile_dn              = aci_spine_profile.spine101_SwSel.id
 	name                          = "spine101"

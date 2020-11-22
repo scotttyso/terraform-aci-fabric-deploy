@@ -523,6 +523,16 @@ def resource_snmp_comm(community, description):
     wr_comm.write('%s\n' % (community))
 
 def resource_snmp_info(contact, location):
+    try:
+        # Validate SNMP Information STrings
+        validating.snmp_info(line_count, contact, location)
+    except Exception as err:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   {SystemExit(err)}')
+        print(f'   Error on Row {line_count}.  Please verify Input Information.  Exiting....\n')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
     # Which File to Write Data to
     wr_file = wr_base_info
 
@@ -993,12 +1003,12 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
     try:
         # Validate TACACS IPv4 Address, Login Domain, Authentication Protocol,
         # secret, Timeout, Retry Limit and Management Domain
-        validating.ipv4(line_count, tacacs_ipv4)
         validating.login_domain(line_count, login_domain)
         validating.auth_proto(line_count, auth_proto)  
         validating.tacacs_key(line_count, tacacs_key)
         validating.tac_timeout(line_count, tac_timeout)
         validating.tac_retry(line_count, tac_retry)
+        validating.ipv4(line_count, tacacs_ipv4)
         mgmt_epg = validating.mgmt_domain(line_count, mgmt_domain)
     except Exception as err:
         print(f'\n-----------------------------------------------------------------------------\n')
@@ -1006,7 +1016,6 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
         print(f'   Error on Row {line_count}.  Please verify Input Information.  Exiting....\n')
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
-
 
     # Which File to Write Data to
     wr_file = wr_base_info
@@ -1018,7 +1027,7 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
     resrc_desc = 'tacacs_{}_{}'.format(group_name, tacacs_ipv4_)
     class_name = 'tacacsGroup'
     rn_strings = 'tacacsgroup-{}'.format(group_name)
-    dn_strings = 'uni/fabric/tacacsgroup-{}'.format(rn_strings)
+    dn_strings = 'uni/fabric/{}'.format(rn_strings)
     path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
     descrption = 'TACACS Accounting Group {} - Created by Brahma Startup Wizard'.format(group_name)
     childclass = 'tacacsTacacsDest'
@@ -1061,7 +1070,7 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
 
     # Define Variables for Template Creation - TACACS+ Provider
     # Admin > AAA > Authentication: TACACS
-    resrc_desc = 'aaaTacacsPlusProvider_{}'.format(tacacs_ipv4)
+    resrc_desc = 'aaaTacacsPlusProvider_{}'.format(tacacs_ipv4_)
     class_name = 'aaaTacacsPlusProvider'
     rn_strings = "tacacsplusprovider-{}".format(tacacs_ipv4)
     dn_strings = "uni/userext/tacacsext/{}".format(rn_strings)
@@ -1083,7 +1092,7 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
     # Define Variables for Template Creation - External Login Domain - TACACS+
     # Admin > AAA > Authentication: AAA > Login Domains
     provider_group = 'TACACS'
-    resrc_desc = 'Ext_Login_TACACS_prov-{}'.format(tacacs_ipv4)
+    resrc_desc = 'Ext_Login_TACACS_prov-{}'.format(tacacs_ipv4_)
     class_name = 'aaaUserEp'
     dn_strings = "uni/userext"
     path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
@@ -1093,14 +1102,15 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
     sub_child_1_class = 'aaaDomainAuth'
     sub_child_1_Rn = 'domainauth'
     sub_child_1_Dn = 'uni/userext/logindomain-{}/domainauth'.format(login_domain)
-    sub_child_1_desc = 'TACACS+ Provider Group {}. Created by Brahma Wizard.'.format(provider_group)
+    sub_child_1_desc = 'TACACS+ Login Domain {}. Created by Brahma Wizard.'.format(login_domain)
     child_2_class = 'aaaTacacsPlusEp'
     child_2_Dn = 'uni/userext/tacacsext'
     sub_child_2_class = 'aaaTacacsPlusProviderGroup'
     sub_child_2_Dn = 'uni/userext/tacacsext/tacacsplusprovidergroup-{}'.format(provider_group)
     basement_2_class = 'aaaProviderRef'
     basement_2_dn = 'uni/userext/tacacsext/tacacsplusprovidergroup-{}/providerref-{}'.format(provider_group, tacacs_ipv4)
-    basement_order = tacacs_order_count
+    print(f'count is {tacacs_order_count}')
+    basement_order = '{}'.format(tacacs_order_count)
     basement_descr = 'Added TACACS Server {} - Brahma Startup Wizard'.format(tacacs_ipv4)
 
     # Format Variables for JSON Output
@@ -1109,7 +1119,7 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
                   'descr': sub_child_1_desc, 'rn': sub_child_1_Rn}, 'children': []}}
     child_1_atts = {child_1_class: {'attributes': {'dn': child_1_Dn, 'name': login_domain, 'rn': child_1_Rn}, 'children': [sub_1_atts]}}
     basement_2_atts = {basement_2_class: {'attributes': {'dn': basement_2_dn, 'order': basement_order, 'name': tacacs_ipv4,
-                       'basement_descr': basement_descr}, 'children': []}}
+                       'descr': basement_descr}, 'children': []}}
     sub_2_atts = {sub_child_2_class: {'attributes': {'dn': sub_child_2_Dn}, 'children': [basement_2_atts]}}
     child_2_atts = {child_2_class: {'attributes': {'dn': child_2_Dn}, 'children': [sub_2_atts]}}
 
@@ -1142,7 +1152,7 @@ with open(csv_input) as csv_file:
                 p2_swpt = column[9]
 
                 # Make sure the inband_vlan exists
-                validating.inb_vlan_exist(inb_vlan)(inb_vlan)
+                validating.inb_vlan_exist(inb_vlan)
 
                 # Create Resource Record for Switch and inband Bridge  Domain AP/EPG
                 resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_leaf, p1_swpt, p2_leaf, p2_swpt)
@@ -1268,7 +1278,7 @@ with open(csv_input) as csv_file:
                 inb_gwv4 = column[12]
                 
                 # Make sure the inband_vlan exists
-                validating.inb_vlan_exist(inb_vlan)(inb_vlan)
+                validating.inb_vlan_exist(inb_vlan)
 
                 # Create Resource Record for Switch and inband Bridge  Domain AP/EPG
                 resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modules, port_count, oob_ipv4, oob_gwv4, 

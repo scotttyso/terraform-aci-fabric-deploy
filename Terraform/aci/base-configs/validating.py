@@ -8,7 +8,7 @@ import validators
 
 # Validations
 def auth_proto(line_count, auth_proto):
-    if not re.search('(chap|mschap|pap)', auth_proto):
+    if not re.search('^(chap|mschap|pap)$', auth_proto):
         print(f'\n-----------------------------------------------------------------------------\n')
         print(f'   Error on Row {line_count}, Please verify The Authentication Protocol.')
         print(f'   "{auth_proto}" did not match "chap|mschap|pap".  Exiting....')
@@ -17,7 +17,7 @@ def auth_proto(line_count, auth_proto):
 
 def bgp_as(line_count, bgp_as):
     bgp_as=int(bgp_as)
-    if not validators.between(bgp_as, min=1, max=4294967295):
+    if not validators.between(int(bgp_as), min=1, max=4294967295):
         print(f'\n-----------------------------------------------------------------------------\n')
         print(f'   Error on Row {line_count}. BGP AS "{bgp_as}" is invalid.')
         print(f'   A valid BGP AS is between 1 and 4294967295.  Exiting....')
@@ -103,15 +103,14 @@ def log_level(line_count, log_loc, log_level):
             exit()
 
 def login_domain(line_count, login_domain):
-    if not validators.length(login_domain, min=1, max=10) and not re.fullmatch('^([a-zA-Z0-9\\_]+)$', login_domain):
-        print(f'\n-----------------------------------------------------------------------------\n')
-        print(f'   Error on Line {line_count}.  To Keep things simple for users, the login')
-        print(f'   domain must be between 1 and 10 characters.  The only non alphanumeric')
-        print(f'   character allowed is "_"; but it must not start with "_".')
-        print(f'   "{login_domain}" did not meet these restrictions.  Exiting....')
-        print(f'\n-----------------------------------------------------------------------------\n')
-        exit()
-    elif re.search('^[\\_]+', login_domain):
+    login_domain_count = 0
+    if not re.fullmatch('^([a-zA-Z0-9\\_]+)$', login_domain):
+        print('invalid character')
+        login_domain_count += 1
+    elif not validators.length(login_domain, min=1, max=10):
+        print('Too Long')
+        login_domain_count += 1
+    if not login_domain_count == 0:
         print(f'\n-----------------------------------------------------------------------------\n')
         print(f'   Error on Line {line_count}.  To Keep things simple for users, the login')
         print(f'   domain must be between 1 and 10 characters.  The only non alphanumeric')
@@ -260,14 +259,11 @@ def snmp_auth(line_count, auth_key, priv_key, priv_type):
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 
-def snmp_string(line_count, snmp_name):
-    if not (validators.length(snmp_name, min=1, max=32) and re.fullmatch('^([a-zA-Z0-9\\-\\_\\.]+)$', snmp_name)):
+def snmp_info(line_count, contact, location):
+    if contact == '' or location == '':
         print(f'\n-----------------------------------------------------------------------------\n')
-        print(f'   Error on Row {line_count}. Community {snmp_name} is not valid.')
-        print(f'   The community/username policy name can be a maximum of 32 characters in length.')
-        print(f'   The name can contain only letters, numbers and the special characters of')
-        print(f'   underscore (_), hyphen (-), or period (.). The name cannot contain')
-        print(f'   the @ symbol.  Exiting....')
+        print(f"  Error on Row {line_count}. Please add Information for Contact and Location.")
+        print(f"  Exiting....")
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 
@@ -283,6 +279,17 @@ def snmp_mgmt(line_count, mgmt_domain):
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
     return mgmt_domain
+
+def snmp_string(line_count, snmp_name):
+    if not (validators.length(snmp_name, min=1, max=32) and re.fullmatch('^([a-zA-Z0-9\\-\\_\\.]+)$', snmp_name)):
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   Error on Row {line_count}. Community {snmp_name} is not valid.')
+        print(f'   The community/username policy name can be a maximum of 32 characters in length.')
+        print(f'   The name can contain only letters, numbers and the special characters of')
+        print(f'   underscore (_), hyphen (-), or period (.). The name cannot contain')
+        print(f'   the @ symbol.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
 
 def snmp_ver(line_count, snmp_vers):
     if not re.search('(v1|v2c|v3)', snmp_vers):
@@ -306,24 +313,29 @@ def tacacs_key(line_count, tacacs_key):
         print(f'   between 1 and 32 characters.  Exiting....')
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
-    if re.search(r'[\ #]+', tacacs_key):
+    if re.search('[\\\\ #]+', tacacs_key):
         print(f'\n-----------------------------------------------------------------------------\n')
         print(f'  The Shared Secret cannot contain backslash, space or hashtag.  Exiting....')
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 
 def tac_retry(line_count, retry):
-    if not validators.length(retry, min=1, max=5):
+    if not validators.between(int(retry), min=1, max=5):
         print(f'\n-----------------------------------------------------------------------------\n')
         print(f'   Error on Row {line_count}, The Retry shold be')
-        print(f'   between 1 and 5.  Exiting....')
+        print(f'   between 1 and 5.  "{retry}" does not meet this.  Exiting....')
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 
 def tac_timeout(line_count, tac_timeout):
-    if not validators.length(int(tac_timeout), min=5, max=60) and not (int(tac_timeout) % 5 == 0):
+    tac_timeout_count = 0
+    if not validators.between(int(tac_timeout), min=5, max=60):
+        tac_timeout_count += 1
+    if not (int(tac_timeout) % 5 == 0):
+        tac_timeout_count += 1
+    if not tac_timeout_count == 0:
         print(f'\n-----------------------------------------------------------------------------\n')
         print(f'   Error on Row {line_count}, Timeout should be between 5 and 60 and')
-        print(f'   be a factor of 5.  Exiting....')
+        print(f'   be a factor of 5.  "{tac_timeout}" does not meet this.  Exiting....')
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()

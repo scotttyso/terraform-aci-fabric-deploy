@@ -590,3 +590,307 @@ resource "aci_rest" "syslog_1_1_1_1" {
 	EOF
 }
 
+resource "aci_rest" "tacacs_TACACS_acct_1_1_1_5" {
+	path		= "/api/node/mo/uni/fabric/tacacsgroup-TACACS_acct.json"
+	class_name	= "tacacsGroup"
+	payload		= <<EOF
+{
+    "tacacsGroup": {
+        "attributes": {
+            "dn": "uni/fabric/tacacsgroup-TACACS_acct",
+            "descr": "TACACS Accounting Group TACACS_acct - Created by Brahma Startup Wizard",
+            "name": "TACACS_acct",
+            "rn": "tacacsgroup-TACACS_acct"
+        },
+        "children": [
+            {
+                "tacacsTacacsDest": {
+                    "attributes": {
+                        "dn": "uni/fabric/tacacsgroup-TACACS_acct/tacacsdest-1.1.1.5-port-49",
+                        "authProtocol": "chap",
+                        "host": "1.1.1.5",
+                        "key": "cisco1231",
+                        "rn": "tacacsdest-1.1.1.5-port-49"
+                    },
+                    "children": [
+                        {
+                            "fileRsARemoteHostToEpg": {
+                                "attributes": {
+                                    "tDn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "tacacsSrc" {
+	path		= "/api/node/mo/uni/fabric/moncommon/tacacssrc-TACACS_Src.json"
+	class_name	= "tacacsSrc"
+	payload		= <<EOF
+{
+    "tacacsSrc": {
+        "attributes": {
+            "dn": "uni/fabric/moncommon/tacacssrc-TACACS_Src",
+            "name": "TACACS_Src",
+            "rn": "tacacssrc-TACACS_Src"
+        },
+        "children": [
+            {
+                "tacacsRsDestGroup": {
+                    "attributes": {
+                        "tDn": "uni/fabric/tacacsgroup-TACACS_acct"
+                    },
+                    "children": []
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "aaaTacacsPlusProvider_1_1_1_5" {
+	path		= "/api/node/mo/uni/userext/tacacsext/tacacsplusprovider-1.1.1.5.json"
+	class_name	= "aaaTacacsPlusProvider"
+	payload		= <<EOF
+{
+    "aaaTacacsPlusProvider": {
+        "attributes": {
+            "dn": "uni/userext/tacacsext/tacacsplusprovider-1.1.1.5",
+            "timeout": "5",
+            "retries": "1",
+            "monitorServer": "disabled",
+            "key": "cisco1231",
+            "authProtocol": "chap",
+            "name": "1.1.1.5",
+            "descr": "TACACS+ Provider - 1.1.1.5.  Added by Brahma Startup Wizard.",
+            "rn": "tacacsplusprovider-1.1.1.5"
+        },
+        "children": [
+            {
+                "aaaRsSecProvToEpg": {
+                    "attributes": {
+                        "tDn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg"
+                    },
+                    "children": []
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "Ext_Login_TACACS_prov-1_1_1_5" {
+	path		= "/api/node/mo/uni/userext.json"
+	class_name	= "aaaUserEp"
+	payload		= <<EOF
+{
+    "aaaUserEp": {
+        "attributes": {
+            "dn": "uni/userext"
+        },
+        "children": [
+            {
+                "aaaLoginDomain": {
+                    "attributes": {
+                        "dn": "uni/userext/logindomain-ISE",
+                        "name": "ISE",
+                        "rn": "logindomain-ISE"
+                    },
+                    "children": [
+                        {
+                            "aaaDomainAuth": {
+                                "attributes": {
+                                    "dn": "uni/userext/logindomain-ISE/domainauth",
+                                    "providerGroup": "TACACS",
+                                    "realm": "tacacs",
+                                    "descr": "TACACS+ Login Domain ISE. Created by Brahma Wizard.",
+                                    "rn": "domainauth"
+                                },
+                                "children": []
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "aaaTacacsPlusEp": {
+                    "attributes": {
+                        "dn": "uni/userext/tacacsext"
+                    },
+                    "children": [
+                        {
+                            "aaaTacacsPlusProviderGroup": {
+                                "attributes": {
+                                    "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-TACACS"
+                                },
+                                "children": [
+                                    {
+                                        "aaaProviderRef": {
+                                            "attributes": {
+                                                "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-TACACS/providerref-1.1.1.5",
+                                                "order": "1",
+                                                "name": "1.1.1.5",
+                                                "descr": "Added TACACS Server 1.1.1.5 - Brahma Startup Wizard"
+                                            },
+                                            "children": []
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "tacacs_TACACS_acct_1_1_1_6" {
+	path		= "/api/node/mo/uni/fabric/tacacsgroup-TACACS_acct.json"
+	class_name	= "tacacsGroup"
+	payload		= <<EOF
+{
+    "tacacsGroup": {
+        "attributes": {
+            "dn": "uni/fabric/tacacsgroup-TACACS_acct",
+            "descr": "TACACS Accounting Group TACACS_acct - Created by Brahma Startup Wizard",
+            "name": "TACACS_acct",
+            "rn": "tacacsgroup-TACACS_acct"
+        },
+        "children": [
+            {
+                "tacacsTacacsDest": {
+                    "attributes": {
+                        "dn": "uni/fabric/tacacsgroup-TACACS_acct/tacacsdest-1.1.1.6-port-49",
+                        "authProtocol": "chap",
+                        "host": "1.1.1.6",
+                        "key": "cisco123",
+                        "rn": "tacacsdest-1.1.1.6-port-49"
+                    },
+                    "children": [
+                        {
+                            "fileRsARemoteHostToEpg": {
+                                "attributes": {
+                                    "tDn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "aaaTacacsPlusProvider_1_1_1_6" {
+	path		= "/api/node/mo/uni/userext/tacacsext/tacacsplusprovider-1.1.1.6.json"
+	class_name	= "aaaTacacsPlusProvider"
+	payload		= <<EOF
+{
+    "aaaTacacsPlusProvider": {
+        "attributes": {
+            "dn": "uni/userext/tacacsext/tacacsplusprovider-1.1.1.6",
+            "timeout": "5",
+            "retries": "1",
+            "monitorServer": "disabled",
+            "key": "cisco123",
+            "authProtocol": "chap",
+            "name": "1.1.1.6",
+            "descr": "TACACS+ Provider - 1.1.1.6.  Added by Brahma Startup Wizard.",
+            "rn": "tacacsplusprovider-1.1.1.6"
+        },
+        "children": [
+            {
+                "aaaRsSecProvToEpg": {
+                    "attributes": {
+                        "tDn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg"
+                    },
+                    "children": []
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "Ext_Login_TACACS_prov-1_1_1_6" {
+	path		= "/api/node/mo/uni/userext.json"
+	class_name	= "aaaUserEp"
+	payload		= <<EOF
+{
+    "aaaUserEp": {
+        "attributes": {
+            "dn": "uni/userext"
+        },
+        "children": [
+            {
+                "aaaLoginDomain": {
+                    "attributes": {
+                        "dn": "uni/userext/logindomain-ISE",
+                        "name": "ISE",
+                        "rn": "logindomain-ISE"
+                    },
+                    "children": [
+                        {
+                            "aaaDomainAuth": {
+                                "attributes": {
+                                    "dn": "uni/userext/logindomain-ISE/domainauth",
+                                    "providerGroup": "TACACS",
+                                    "realm": "tacacs",
+                                    "descr": "TACACS+ Login Domain ISE. Created by Brahma Wizard.",
+                                    "rn": "domainauth"
+                                },
+                                "children": []
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "aaaTacacsPlusEp": {
+                    "attributes": {
+                        "dn": "uni/userext/tacacsext"
+                    },
+                    "children": [
+                        {
+                            "aaaTacacsPlusProviderGroup": {
+                                "attributes": {
+                                    "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-TACACS"
+                                },
+                                "children": [
+                                    {
+                                        "aaaProviderRef": {
+                                            "attributes": {
+                                                "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-TACACS/providerref-1.1.1.6",
+                                                "order": "2",
+                                                "name": "1.1.1.6",
+                                                "descr": "Added TACACS Server 1.1.1.6 - Brahma Startup Wizard"
+                                            },
+                                            "children": []
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
