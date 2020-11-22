@@ -125,6 +125,3 @@ tacacs,ISE,1.1.1.6,49,cisco123,chap,5,1,inband
 Type,Auth_Realm,Login_Domain,Login_Domain_Type
 realm,console,ISE,tacacs
 realm,default,,local
-
-Type,Company Name
-Company,Cisco Labs,
