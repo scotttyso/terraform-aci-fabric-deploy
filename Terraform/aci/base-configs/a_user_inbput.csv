@@ -93,21 +93,23 @@ syslog,1.1.1.1,514,inband,warnings,local7,enabled,information,enabled,alerts
 
 # The Login Domain is what will display on the APIC Login window for Authentication against these servers
 # It Also can be used from CLI by using the following: apic:{login_domain}\<username>
-# Authentication Protocol should be [chap|mschap|pap]
+# RADIUS Port should be 1812 or 1645.  Default is 1812... If you have a custom port it is supported
+# Authentorization Protocol should be [chap|mschap|pap]
 # Timeout should be between 5 and 60 and be a Factor of 5.  Default is 5
 # Retry Interval should be between 1 and 5.  Default is 1
 # Management Domain should be [inband|oob]
-Type,Login_Domain,RADIUS_IPv4,RADIUS_Port,RADIUS__Secret,Authentication_Protocol,Timeout,Retry Interval,Management_Domain
+Type,Login_Domain,RADIUS_IPv4,RADIUS_Port,RADIUS__Secret,Authorization_Protocol,Timeout,Retry Interval,Management_Domain
 radius,RAD_ISE,1.1.1.5,1812,cisco1231,chap,5,1,inband
 radius,RAD_ISE,1.1.1.6,1812,cisco123,chap,5,1,inband
 
 # The Login Domain is what will display on the APIC Login window for Authentication against these servers
 # It Also can be used from CLI by using the following: apic:{login_domain}\<username>
+# TACACS Port default is 49.  This typically should not change
 # Authentication Protocol should be [chap|mschap|pap]
 # Timeout should be between 5 and 60 and be a Factor of 5.  Default is 5
 # Retry Interval should be between 1 and 5.  Default is 1
 # Management Domain should be [inband|oob]
-Type,Login_Domain,TACACS_IPv4,TACACS_Port,TACACS__Secret,Authentication_Protocol,Timeout,Retry Interval,Management_Domain
+Type,Login_Domain,TACACS_IPv4,TACACS_Port,TACACS_Secret,Authentication_Protocol,Timeout,Retry Interval,Management_Domain
 tacacs,ISE,1.1.1.5,49,cisco1231,chap,5,1,inband
 tacacs,ISE,1.1.1.6,49,cisco123,chap,5,1,inband
 
