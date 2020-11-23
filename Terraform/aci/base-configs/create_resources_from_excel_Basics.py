@@ -1324,10 +1324,10 @@ def resource_vpc_pair(vpc_id, name, node_id_1, node_id_2):
     path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
     child_1_class = 'fabricNodePEp'
     child_1_Rn = 'nodepep-{}'.format(node_id_1)
-    child_1_Dn = 'uni/fabric/protpol/{}/{}'.format(rn_strings)
+    child_1_Dn = 'uni/fabric/protpol/{}/{}'.format(rn_strings, child_1_Rn)
     child_2_class = 'fabricNodePEp'
     child_2_Rn = 'nodepep-{}'.format(node_id_2)
-    child_2_Dn = 'uni/fabric/protpol/{}/{}'.format(rn_strings)
+    child_2_Dn = 'uni/fabric/protpol/{}/{}'.format(rn_strings, child_2_Rn)
     child_3_class = 'fabricRsVpcInstPol'
 
     # Format Variables for JSON Output

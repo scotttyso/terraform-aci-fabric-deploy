@@ -363,3 +363,12 @@ def timeout(line_count, proto_timeout):
         print(f'   be a factor of 5.  "{proto_timeout}" does not meet this.  Exiting....')
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
+
+def vpc_id(line_count, vpc_id):
+    if not validators.between(int(vpc_id), min=1, max=1000):
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   Error on Row {line_count}. vpc_id "{vpc_id}" is invalid.')
+        print(f'   A valid VPC ID is between 1 and 1000.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
