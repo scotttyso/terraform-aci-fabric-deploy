@@ -109,3 +109,19 @@ resource "aci_leaf_access_port_policy_group" "access_host_ap" {
     relation_infra_rs_stp_if_pol  = "uni/infra/ifPol-BPDU_fg"
 	relation_infra_rs_att_ent_p	  = "uni/infra/attentp-access_aep"
 }
+
+resource "aci_rest" "vpc_description" {
+	path		= "/api/node/mo/uni/fabric/protpol.json"
+	class_name	= "fabricProtPol"
+	payload		= <<EOF
+{
+    "fabricProtPol": {
+        "attributes": {
+            "dn": "uni/fabric/protpol",
+            "descr": "VPC Pair Configuration.  Configured by Brahma startup Wizard"
+        },
+        "children": []
+    }
+}
+	EOF
+}

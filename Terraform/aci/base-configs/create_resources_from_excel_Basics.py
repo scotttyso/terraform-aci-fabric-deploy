@@ -1297,6 +1297,50 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
     # Write Output to Resource Files using Template
     template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
+def resource_vpc_pair(vpc_id, name, node_id_1, node_id_2):
+    try:
+        # Validating Node ID's
+        validating.node_id(line_count, node_id_1)
+        validating.node_id(line_count, node_id_2)
+        validating.vpc_id(line_count, vpc_id)
+    except Exception as err:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   {SystemExit(err)}')
+        print(f'   Error on Row {line_count}.  Please verify Input Information.  Exiting....\n')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
+    # Which File to Write Data to
+    file_vpc = 'resources_user_import_vpc_{}.tf'.format(name)
+    wr_file = open(file_vpc, 'w')
+    wr_file = wr_base_info
+
+    # Define Variables for Template Creation - VPC Pair
+    # Fabric > Access Policies > Policies > Switch > Virtual Port Channel default
+    resrc_desc = 'vpc_Pair_{}'.format(name)
+    class_name = 'fabricExplicitGEp'
+    rn_strings = "expgep-{}".format(name)
+    dn_strings = "uni/fabric/protpol/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    child_1_class = 'fabricNodePEp'
+    child_1_Rn = 'nodepep-{}'.format(node_id_1)
+    child_1_Dn = 'uni/fabric/protpol/{}/{}'.format(rn_strings)
+    child_2_class = 'fabricNodePEp'
+    child_2_Rn = 'nodepep-{}'.format(node_id_2)
+    child_2_Dn = 'uni/fabric/protpol/{}/{}'.format(rn_strings)
+    child_3_class = 'fabricRsVpcInstPol'
+
+    # Format Variables for JSON Output
+    base_atts = {'dn': dn_strings, 'name': name, 'id': vpc_id, 'rn': rn_strings}
+    child_1_atts = {child_1_class: {'attributes': {'dn': child_1_Dn, 'id': node_id_1, 'rn': child_1_Rn}, 'children': []}}
+    child_2_atts = {child_2_class: {'attributes': {'dn': child_2_Dn, 'id': node_id_2, 'rn': child_2_Rn}, 'children': []}}
+    child_3_atts = {child_3_class: {'attributes': {'tnVpcInstPolName': 'default'}, 'children': []}}
+    child_combined = [child_1_atts, child_2_atts, child_3_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
 line_count = 0
 count_inb_gwv4 = 0
 count_inb_vlan = 0
@@ -1500,7 +1544,13 @@ for r in sheet.rows:
             # Build TACACS+ Configuration
             resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_proto, proto_timeout, proto_retry, mgmt_domain, tacacs_order_count)
             line_count += 1
-        elif type == 'tenants':
+        elif type == 'vpc_pair':
+            vpc_id = str(r[1].value)
+            name = str(r[2].value)
+            node_id_1 = str(r[3].value)
+            node_id_2 = str(r[4].value)
+            # Build VPC Configuration
+            resource_vpc_pair(vpc_id, name, node_id_1, node_id_2)
             line_count += 1
         else:
             line_count += 1
@@ -1528,43 +1578,54 @@ if not os.stat('snmp_comms.txt').st_size == 0:
     wr_snmp_ctx = open(file_snmp_ctx_cmds, 'w')
     wr_snmp_vars = open(file_snmp_ctx_vars, 'w')
     wr_snmp_comm = open(file_snmp_ctx_comm, 'w')
-    wr_snmp_ctx.write('resource "aci_rest" "snmp_ctx" {\n')
-    wr_snmp_ctx.write('\tfor_each        = var.snmp_ctx\n')
-    wr_snmp_ctx.write('\tpath            = "/api/node/mo/uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx.json"\n')
-    wr_snmp_ctx.write('\tclass_name      = "vzOOBBrCP"\n')
-    wr_snmp_ctx.write('\tpayload         = <<EOF\n')
-    wr_snmp_ctx.write('{\n')
-    wr_snmp_ctx.write('\t"snmpCtxP": {\n')
-    wr_snmp_ctx.write('\t\t"attributes": {\n')
-    wr_snmp_ctx.write('\t\t\t"dn": "uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx",\n')
-    wr_snmp_ctx.write('\t\t\t"name": "${each.value.name}",\n')
-    wr_snmp_ctx.write('\t\t\t"rn": "snmpctx",\n')
-    wr_snmp_ctx.write('\t\t},\n')
-    wr_snmp_ctx.write('\t\t"children": []\n')
-    wr_snmp_ctx.write('\t}\n')
-    wr_snmp_ctx.write('}\n')
-    wr_snmp_ctx.write('\tEOF\n')
-    wr_snmp_ctx.write('}\n')
-    wr_snmp_ctx.write('\n')
-    wr_snmp_ctx.write('resource "aci_rest" "snmp_ctx_community" {\n')
-    wr_snmp_ctx.write('\tfor_each        = var.snmp_ctx_community\n')
-    wr_snmp_ctx.write('\tpath            = "/api/node/mo/uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx/community-${each.value.name}.json"\n')
-    wr_snmp_ctx.write('\tclass_name      = "vzOOBBrCP"\n')
-    wr_snmp_ctx.write('\tpayload         = <<EOF\n')
-    wr_snmp_ctx.write('{\n')
-    wr_snmp_ctx.write('\t"snmpCommunityP": {\n')
-    wr_snmp_ctx.write('\t\t"attributes": {\n')
-    wr_snmp_ctx.write('\t\t\t"dn": "uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx/community-${each.value.name}",\n')
-    wr_snmp_ctx.write('\t\t\t"name": "${each.value.name}",\n')
-    wr_snmp_ctx.write('\t\t\t"descr": "Adding Community ${each.value.name} to Ctx",\n')
-    wr_snmp_ctx.write('\t\t\t"rn": "community-${each.value.name}",\n')
-    wr_snmp_ctx.write('\t\t},\n')
-    wr_snmp_ctx.write('\t\t"children": []\n')
-    wr_snmp_ctx.write('\t}\n')
-    wr_snmp_ctx.write('}\n')
-    wr_snmp_ctx.write('	EOF\n')
-    wr_snmp_ctx.write('}\n')
-    wr_snmp_ctx.close()
+
+    # Which File to Write Data to
+    wr_file = wr_snmp_ctx
+
+    wr_file.write('resource "aci_rest" "snmp_ctx" {\n')
+    wr_file.write('\tfor_each        = var.snmp_ctx\n')
+    wr_file.write('\tpath            = "/api/node/mo/uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx.json"\n')
+    wr_file.write('\tclass_name      = "vzOOBBrCP"\n')
+    wr_file.write('\tpayload         = <<EOF\n')
+
+    class_name = 'snmpCtxP'
+    rn_strings = 'snmpctx'
+    dn_strings = 'uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/%s' % (rn_strings)
+    name_ctx = '${each.value.name}'
+
+    # Format Variables for JSON Output
+    base_atts = {'dn': dn_strings, 'name': name_ctx, 'rn': rn_strings}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+    # Write Output to Resource File
+    wr_file.write(json.dumps(data_out, indent=4))
+
+    wr_file.write('\tEOF\n')
+    wr_file.write('}\n')
+    wr_file.write('\n')
+
+    wr_file.write('resource "aci_rest" "snmp_ctx_community" {\n')
+    wr_file.write('\tfor_each        = var.snmp_ctx_community\n')
+    wr_file.write('\tpath            = "/api/node/mo/uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx/community-${each.value.name}.json"\n')
+    wr_file.write('\tclass_name      = "vzOOBBrCP"\n')
+    wr_file.write('\tpayload         = <<EOF\n')
+
+    class_name = 'snmpCommunityP'
+    rn_strings = 'community-${each.value.name}'
+    dn_strings = 'uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx/%s' % (rn_strings)
+    name_ctx = '${each.value.name}'
+    descrption = 'Adding Community ${each.value.name} to Ctx'
+
+    # Format Variables for JSON Output
+    base_atts = {'dn': dn_strings, 'name': name_ctx, 'descr': descrption, 'rn': rn_strings}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+    # Write Output to Resource File
+    wr_file.write(json.dumps(data_out, indent=4))
+
+    wr_file.write('	EOF\n')
+    wr_file.write('}\n')
+    wr_file.close()
 
     wr_snmp_vars.write('variable "snmp_ctx" {\n')
     wr_snmp_vars.write('\tdefault = {\n')
