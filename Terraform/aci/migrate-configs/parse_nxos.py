@@ -447,7 +447,8 @@ for line in lines:
                     for line in po_lines:
                         x = line.split('\t')
                         desc = x[8].strip()
-                        if str_poch in x[1]:
+                        y = x[1].split('l')
+                        if str_poch == y[1]:
                             if str_swmd == 'access':
                                 swav = x[5]
                             else:
