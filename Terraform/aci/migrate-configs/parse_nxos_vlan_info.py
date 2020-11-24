@@ -126,11 +126,11 @@ wr_dhcp = open('dhcp.csv', 'w')
 bd1 = Side(style="thick", color="8EA9DB")
 bd2 = Side(style="medium", color="8EA9DB")
 wsh1 = NamedStyle(name="wsh1")
-wsh1.alignment = Alignment(horizontal="center", vertical="center")
+wsh1.alignment = Alignment(horizontal="center", vertical="center", wrap_text="True")
 wsh1.border = Border(left=bd1, top=bd1, right=bd1, bottom=bd1)
 wsh1.font = Font(bold=True, size=15, color="FFFFFF")
 wsh2 = NamedStyle(name="wsh2")
-wsh2.alignment = Alignment(horizontal="center", vertical="center")
+wsh2.alignment = Alignment(horizontal="center", vertical="center", wrap_text="True")
 wsh2.border = Border(left=bd2, top=bd2, right=bd2, bottom=bd2)
 wsh2.fill = PatternFill("solid", fgColor="305496")
 wsh2.font = Font(bold=True, size=15, color="FFFFFF")
@@ -200,7 +200,7 @@ data = ['Type','Tenant','VRF Name','Description']
 ws2.append(data)
 for cell in ws2["1:1"]:
     cell.style = 'wsh2'
-data = ['Type','Tenant','VRF Name','Bridge Domain','Extend BD Outside ACI','Description']
+data = ['Type','Tenant','VRF Name','Bridge Domain','Extend Outside ACI','Description']
 ws3.append(data)
 for cell in ws3["1:1"]:
     cell.style = 'wsh2'

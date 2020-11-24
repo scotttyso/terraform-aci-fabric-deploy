@@ -100,27 +100,27 @@ wb.add_named_style(ws_even)
 dest_file = 'migrate_interfaces.xlsx'
 ws1 = wb.active
 ws1.title = "Migrate Interfaces"
-ws1.column_dimensions['A'].width = 15
+ws1.column_dimensions['A'].width = 10
 ws1.column_dimensions['B'].width = 20
 ws1.column_dimensions['C'].width = 20
 ws1.column_dimensions['D'].width = 20
 ws1.column_dimensions['E'].width = 20
-ws1.column_dimensions['F'].width = 20
-ws1.column_dimensions['G'].width = 20
-ws1.column_dimensions['H'].width = 20
-ws1.column_dimensions['I'].width = 20
-ws1.column_dimensions['J'].width = 20
-ws1.column_dimensions['K'].width = 20
+ws1.column_dimensions['F'].width = 10
+ws1.column_dimensions['G'].width = 18
+ws1.column_dimensions['H'].width = 10
+ws1.column_dimensions['I'].width = 10
+ws1.column_dimensions['J'].width = 15
+ws1.column_dimensions['K'].width = 17
 ws1.column_dimensions['L'].width = 40
-ws1.column_dimensions['M'].width = 20
-ws1.column_dimensions['N'].width = 20
-ws1.column_dimensions['O'].width = 20
-ws1.column_dimensions['P'].width = 20
+ws1.column_dimensions['M'].width = 12
+ws1.column_dimensions['N'].width = 12
+ws1.column_dimensions['O'].width = 12
+ws1.column_dimensions['P'].width = 12
 ws1.column_dimensions['Q'].width = 40
 ws1.column_dimensions['R'].width = 40
 
-data = ['Type','New Host','New Interface','Current Host','Current Interface','Port Type','port-channel ID','VPC_ID','MTU','Switchport Mode',\
-    'Access VLAN or Native VLAN','Trunk Allowed VLANs','CDP Enabled','LLDP Receive','LLDP Transmit','BPDU Guard','Port-Channel Description',\
+data = ['Type','New Host','New Interface','Current Host','Current Interface','Port Type','port-channel ID','VPC Id','MTU','Switchport Mode',\
+    'Access or Native VLAN','Trunk Allowed VLANs','CDP Enabled','LLDP Receive','LLDP Transmit','BPDU Guard','Port-Channel Description',\
     'Port Description']
 ws1.append(data)
 for cell in ws1["1:1"]:
