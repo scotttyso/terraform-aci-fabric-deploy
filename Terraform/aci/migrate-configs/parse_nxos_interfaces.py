@@ -1,59 +1,56 @@
-import csv
+#!/usr/bin/env python3
+
 import ipaddress
+import openpyxl
+import pandas as pd
+import numpy as np
 import os, re, sys, traceback, validators
-from csv import reader
-from csv import writer
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, colors, Border, Font, NamedStyle, PatternFill, Protection, Side 
+from openpyxl.utils.dataframe import dataframe_to_rows
 
-re_desc = re.compile('^  description (.+)$')
-re_host = re.compile('^hostname ([a-zA-Z0-9\\-\\_\\.]+)$')
-re_intf = re.compile('^interface ((port\\-channel\\d+|Ethernet\\d+[\\d\\/]+))$')
-re_mtu_ = re.compile('^  mtu (\\d+)$')
-re_poch = re.compile('^  channel-group (\\d+) mode ((active|on|passive))$')
-re_swav = re.compile('^  switchport access vlan (\\d+)$')
-re_tknv = re.compile('^  switchport trunk native vlan (\\d{1,4})$')
-re_tkv1 = re.compile('^  switchport trunk allowed vlan (\\d{1,4}[\\-,]+.+\\d{1,4})$')
-re_tkv2 = re.compile('^  switchport trunk allowed vlan (\\d{1,4})$')
-re_vpc_ = re.compile('^  vpc ((\\d+|peer\\-link))$')
+re_bpdu = re.compile('^  spanning-tree bpduguard enable$\n')
+re_cdpe = re.compile('^  cdp enable$\n')
+re_desc = re.compile('^  description (.+)$\n')
+re_host = re.compile('^hostname (.+)$\n')
+re_intf = re.compile(r'^interface ((port\-channel\d+|Ethernet\d+[\d\/]+))$\n')
+re_ldpr = re.compile('^  lldp transmit$\n')
+re_ldpt = re.compile('^  lldp receive$\n')
+re_mtu_ = re.compile(r'^  mtu (\d+)$\n')
+re_poch = re.compile(r'^  channel-group (\d+) mode ((active|on|passive))$\n')
+re_swav = re.compile(r'^  switchport access vlan (\d+)$\n')
+re_swma = re.compile('^  switchport mode access$\n')
+re_swmt = re.compile('^  switchport mode trunk$\n')
+re_swpt = re.compile('^  switchport$\n')
+re_tknv = re.compile(r'^  switchport trunk native vlan (\d{1,4})$\n')
+re_tkv1 = re.compile(r'^  switchport trunk allowed vlan (\d{1,4}[\-,]+.+\d{1,4})$\n')
+re_tkv2 = re.compile(r'^  switchport trunk allowed vlan (\d{1,4})$\n')
+re_vpc_ = re.compile(r'^  vpc ((\d+|peer\-link))$\n')
 
-def function_re_swav(line):
-    search_swav = re.search('^  switchport access vlan (\\d+)$', line)
-    return search_swav.group(1)
+# Import the Configuration File
+config_file = sys.argv[1]
+try:
+    if os.path.isfile(config_file):
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   {config_file} exists.  Beginning Script Execution...')
+        print(f'\n-----------------------------------------------------------------------------\n')
+    else:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   {config_file} does not exist.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+except IOError:
+    print(f'\n-----------------------------------------------------------------------------\n')
+    print(f'   {config_file} does not exist.  Exiting....')
+    print(f'\n-----------------------------------------------------------------------------\n')
+    exit()
 
-def function_re_host(line):
-    search_host = re.search('^hostname ([a-zA-Z0-9\\-\\_\\.]+$)', line)
-    return search_host.group(1)
+file = open(config_file, 'r')
+wr_poch = open('int_poch.csv', 'w')
 
-def function_re_intf(line):
-    search_intf = re.search('^interface ((port\\-channel\\d+|Ethernet\\d+[\\d\\/]+))$', line)
-    return search_intf.group(1)
+def func_wr_poch(str_host, str_intf, str_vpc_, str_mtu_, str_swmd, str_swav, str_tknv, str_tkvl, str_desc):
+    wr_poch.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(str_host, str_intf, str_vpc_, str_mtu_, str_swmd, str_swav, str_tknv, str_tkvl, str_desc))
 
-def function_re_desc(line):
-    search_desc = re.search('^  description (.+)$', line)
-    return search_desc.group(1)
-
-def function_re_mtu_(line):
-    search_mtu_ = re.search('^  mtu (\\d+)$', line)
-    return search_mtu_.group(1)
-
-def function_re_poch(line):
-    search_poch = re.search('^  channel-group (\\d+) mode ((active|on|passive))$', line)
-    return search_poch.group(1),search_poch.group(2)
-
-def function_re_tknv(line):
-    search_tknv = re.search('^  switchport trunk native vlan (\\d{1,4})$', line)
-    return search_tknv.group(1)
-
-def function_re_tkv1(line):
-    search_tkvl = re.search('^  switchport trunk allowed vlan (\\d{1,4}[\\-,]+.+\\d{1,4})$', line)
-    return search_tkvl.group(1)
-
-def function_re_tkv2(line):
-    search_tkvl = re.search('^  switchport trunk allowed vlan (\\d{1,4})$', line)
-    return search_tkvl.group(1)
-
-def function_re_vpc_(line):
-    search_vpc_ = re.search('^  vpc ((\\d+|peer\\-link))$', line)
-    return search_vpc_.group(1)
 
 # Start by Creating Default Variable Values
 str_bpdg = 'no'
@@ -63,20 +60,72 @@ str_host = 'undefined'
 str_intf = ''
 str_lldr = 'no'
 str_lldt = 'no'
-str_mtu_ = 'undefined'
-str_poch = 'undefined'
-str_pomd = 'undefined'
-str_swav = '1'
+str_mtu_ = ''
+str_poch = 'n/a'
+str_pomd = 'n/a'
+str_swav = 'n/a'
 str_swmd = 'access'
 str_swpt = 'no'
-str_tknv = '1'
-str_tkvl = 'undefined'
-str_vpc_ = 'undefined'
+str_tknv = 'n/a'
+str_tkvl = 'n/a'
+str_vpc_ = 'n/a'
 
-# Import the Configuration File
-file = open('143b-core01.cfg', 'r')
-wr_poch = open('int_poch.csv', 'w')
-wr_intf = open('int_swpt.csv', 'w')
+bd1 = Side(style="thick", color="8EA9DB")
+bd2 = Side(style="medium", color="8EA9DB")
+wsh1 = NamedStyle(name="wsh1")
+wsh1.alignment = Alignment(horizontal="center", vertical="center", wrap_text="True")
+wsh1.border = Border(left=bd1, top=bd1, right=bd1, bottom=bd1)
+wsh1.font = Font(bold=True, size=15, color="FFFFFF")
+wsh2 = NamedStyle(name="wsh2")
+wsh2.alignment = Alignment(horizontal="center", vertical="center", wrap_text="True")
+wsh2.border = Border(left=bd2, top=bd2, right=bd2, bottom=bd2)
+wsh2.fill = PatternFill("solid", fgColor="305496")
+wsh2.font = Font(bold=True, size=15, color="FFFFFF")
+ws_odd = NamedStyle(name="ws_odd")
+ws_odd.alignment = Alignment(horizontal="center", vertical="center", wrap_text="True")
+ws_odd.border = Border(left=bd2, top=bd2, right=bd2, bottom=bd2)
+ws_odd.fill = PatternFill("solid", fgColor="D9E1F2")
+ws_odd.font = Font(bold=False, size=12, color="44546A")
+ws_even = NamedStyle(name="ws_even")
+ws_even.alignment = Alignment(horizontal="center", vertical="center", wrap_text="True")
+ws_even.border = Border(left=bd2, top=bd2, right=bd2, bottom=bd2)
+ws_even.font = Font(bold=False, size=12, color="44546A")
+
+wb = Workbook()
+wb.add_named_style(wsh1)
+wb.add_named_style(wsh2)
+wb.add_named_style(ws_odd)
+wb.add_named_style(ws_even)
+
+dest_file = 'migrate_interfaces.xlsx'
+ws1 = wb.active
+ws1.title = "Migrate Interfaces"
+ws1.column_dimensions['A'].width = 15
+ws1.column_dimensions['B'].width = 20
+ws1.column_dimensions['C'].width = 20
+ws1.column_dimensions['D'].width = 20
+ws1.column_dimensions['E'].width = 20
+ws1.column_dimensions['F'].width = 20
+ws1.column_dimensions['G'].width = 20
+ws1.column_dimensions['H'].width = 20
+ws1.column_dimensions['I'].width = 20
+ws1.column_dimensions['J'].width = 20
+ws1.column_dimensions['K'].width = 20
+ws1.column_dimensions['L'].width = 40
+ws1.column_dimensions['M'].width = 20
+ws1.column_dimensions['N'].width = 20
+ws1.column_dimensions['O'].width = 20
+ws1.column_dimensions['P'].width = 20
+ws1.column_dimensions['Q'].width = 40
+ws1.column_dimensions['R'].width = 40
+
+data = ['Type','New Host','New Interface','Current Host','Current Interface','Port Type','port-channel ID','VPC_ID','MTU','Switchport Mode',\
+    'Access VLAN or Native VLAN','Trunk Allowed VLANs','CDP Enabled','LLDP Receive','LLDP Transmit','BPDU Guard','Port-Channel Description',\
+    'Port Description']
+ws1.append(data)
+for cell in ws1["1:1"]:
+    cell.style = 'wsh2'
+ws1_row_count = 2
 
 # Read the Conifguration File and Gather Vlan Information
 lines = file.readlines()
@@ -84,118 +133,106 @@ lines = file.readlines()
 line_count = 0
 ethn_count = 0
 for line in lines:
-    if re.search(re_host, line):
-        # Found an Interface
-        str_host = function_re_host(line)
+    if re.fullmatch(re_host, line):
+        str_host = re.fullmatch(re_host, line).group(1)
         line_count += 1
-    elif re.search(re_intf, line):
-        # Found an Interface
-        str_intf = function_re_intf(line)
+    elif re.fullmatch(re_intf, line):
+        str_intf = re.fullmatch(re_intf, line).group(1)
         line_count += 1
-    elif re.search('^  spanning-tree bpduguard enable$', line):
+    elif re.fullmatch(re_bpdu, line):
         str_bpdg = 'yes'
         line_count += 1
-    elif re.search('^  cdp enable$', line):
+    elif re.fullmatch(re_cdpe, line):
         str_cdp_ = 'yes'
         line_count += 1
-    elif re.search('^  lldp receive$', line):
+    elif re.fullmatch(re_ldpr, line):
         str_lldr = 'yes'
         line_count += 1
-    elif re.search('^  lldp transmit$', line):
+    elif re.fullmatch(re_ldpt, line):
         str_lldt = 'yes'
         line_count += 1
-    elif re.search(re_swav, line):
-        # Access VLAN
-        str_swav = function_re_swav(line)
-    elif re.search('^  switchport mode access$', line):
-        # Interface is a switchport
+    elif re.fullmatch(re_swav, line):
+        str_swav = re.fullmatch(re_swav, line).group(1)
+    elif re.fullmatch(re_swma, line):
         str_swmd = 'access'
-    elif re.search('^  switchport mode trunk$', line):
-        # Interface is a switchport
+    elif re.fullmatch(re_swmt, line):
         str_swmd = 'trunk'
-    elif re.search(re_tknv, line):
-        # Trunk Native VLAN
-        str_tknv = function_re_tknv(line)
+    elif re.fullmatch(re_tknv, line):
+        str_tknv = re.fullmatch(re_tknv, line).group(1)
         line_count += 1
-    elif re.search(re_tkv1, line):
-        # Trunk Vlan List
-        str_tkvl = function_re_tkv1(line)
+    elif re.fullmatch(re_tkv1, line):
+        str_tkvl = re.fullmatch(re_tkv1, line).group(1)
         line_count += 1
-    elif re.search(re_tkv2, line):
-        # Trunk Vlan List
-        str_tkvl = function_re_tkv2(line)
+    elif re.fullmatch(re_tkv2, line):
+        str_tkvl = re.fullmatch(re_tkv2, line).group(1)
         line_count += 1
-    elif re.search('^  switchport$', line):
-        # Interface is a switchport
+    elif re.fullmatch(re_swpt, line):
         str_swpt = 'yes'
-    elif re.search(re_mtu_, line):
-        # Found MTU Defined in
-        str_mtu_ = function_re_mtu_(line)
+    elif re.fullmatch(re_mtu_, line):
+        str_mtu_ = re.fullmatch(re_mtu_, line).group(1)
         line_count += 1
-    elif re.search(re_poch, line):
-        # Found the VLAN name
-        str_poch,str_pomd = function_re_poch(line)
+    elif re.fullmatch(re_poch, line):
+        str_poch = re.fullmatch(re_poch, line).group(1)
+        str_pomd = re.fullmatch(re_poch, line).group(2)
         line_count += 1
-    elif re.search(re_vpc_, line):
-        # Found VPC_id on Port-Channel
-        str_vpc_ = function_re_vpc_(line)
+    elif re.fullmatch(re_vpc_, line):
+        str_vpc_ = re.fullmatch(re_vpc_, line).group(1)
         line_count += 1
-    elif re.search(re_desc, line):
-        # Found a Description on the Interface
-        str_desc = function_re_desc(line)
+    elif re.fullmatch(re_desc, line):
+        str_desc = re.fullmatch(re_desc, line).group(1)
         line_count += 1
     elif line == "\n":
         # Found blank line, which means the end of the interface, time to create the output
         if 'channel' in str_intf:
             if str_swpt == 'yes':
-                if re.search('[,]+', str_tkvl):
-                    str_tkvl = str_tkvl.replace(',', '_')
-                if re.search('[,]+', str_desc):
-                    str_desc = str_desc.replace(',', '_')
-                wr_poch.write('{},{},{},{},{},{},{},{},{}\n'.format(str_host, str_intf, str_vpc_, str_mtu_, str_swmd, str_swav, str_tknv, 
-                              str_tkvl, str_desc))
+                func_wr_poch(str_host, str_intf, str_vpc_, str_mtu_, str_swmd, str_swav, str_tknv, str_tkvl, str_desc)
         elif 'Ethernet' in str_intf:
             if ethn_count == 0:
                 wr_poch.close()
-                wr_intf.write('Type,New Host,New Interface,Current Host,Current Interface,Port Type ,port-channel ID,VPC_ID,MTU,Switchport Mode,\
-                              Access VLAN or Native VLAN,Trunk Allowed VLANs,CDP Enabled,LLDP Receive,LLDP Transmit,BPDU Guard,\
-                              Port-Channel Description,Port Description\n')
-                wr_poch = open('int_poch.csv', 'r')
-                po_lines = wr_poch.readlines()
+                read_poch = open('int_poch.csv', 'r')
+                po_lines = read_poch.readlines()
                 ethn_count += 1
             if str_swpt == 'yes':
-                if re.search('(\\d+|peer)', str_poch):
+                if re.search(r'(\d+|peer)', str_poch):
                     for line in po_lines:
-                        x = line.split(',')
+                        x = line.split('\t')
                         desc = x[8].strip()
                         if str_poch in x[1]:
-                            if x[3] == 'undefined':
-                                if str_swmd == 'access':
-                                    wr_intf.write('intf_add,,,{},{},pc,{},n/a,{},{},{},{},n/a,{},{},{},{},{}\n'.format(str_host, str_intf, str_poch, x[3], 
-                                                  x[4], x[5], str_cdp_, str_lldr, str_lldt, str_bpdg, desc, str_desc))
-                                elif str_swmd == 'trunk':
-                                    wr_intf.write('intf_add,,,{},{},pc,{},n/a,{},{},{},{},{},{},{},{},{},{}\n'.format(str_host, str_intf, str_poch, x[3], 
-                                                  x[4], x[6], x[7], str_cdp_, str_lldr, str_lldt, str_bpdg, desc, str_desc))
+                            if str_swmd == 'access':
+                                swav = x[5]
                             else:
-                                if str_swmd == 'access':
-                                    wr_intf.write('intf_add,,,{},{},vpc,{},{},{},{},{},{},n/a,{},{},{},{},{}\n'.format(str_host, str_intf, str_poch, x[2], 
-                                                  x[3], x[4], x[5], str_cdp_, str_lldr, str_lldt, str_bpdg, desc, str_desc))
-                                elif str_swmd == 'trunk':
-                                    wr_intf.write('intf_add,,,{},{},vpc,{},{},{},{},{},{},{},{},{},{},{},{}\n'.format(str_host, str_intf, str_poch, x[2], 
-                                                  x[3], x[4], x[6], x[7], str_cdp_, str_lldr, str_lldt, str_bpdg, desc, str_desc))
+                                swav = x[6]
+                            if x[2] == 'n/a':
+                                po_type = 'pc'
+                            else:
+                                po_type = 'vpc'
+                            data = ['intf_add','','',str_host,str_intf,po_type,str_poch,x[2],x[3],x[4],swav,x[7],str_cdp_,str_lldr,
+                                    str_lldt,str_bpdg,desc,str_desc]
+                            ws1.append(data)
+                            rc = '{}:{}'.format(ws1_row_count, ws1_row_count)
+                            for cell in ws1[rc]:
+                                if ws1_row_count % 2 == 0:
+                                    cell.style = 'ws_even'
+                                else:
+                                    cell.style = 'ws_odd'
+                            ws1_row_count += 1
                 else:
-                    if re.search('[,]+', str_tkvl):
-                        str_tkvl = str_tkvl.replace(',', '_')
-                    if re.search('[,]+', str_desc):
-                        str_desc = str_desc.replace(',', '_')
+                    po_type = 'ap'
                     if str_swmd == 'access':
-                        wr_intf.write('intf_add,,,{},{},ap,n/a,n/a,{},{},{},n/a,{},{},{},{},n/a,{}\n'.format(str_host, str_intf, str_mtu_, str_swmd, 
-                                      str_swav, str_cdp_, str_lldr, str_lldt, str_bpdg, str_desc))
-                    elif str_swmd == 'trunk':
-                        wr_intf.write('intf_add,,,{},{},ap,n/a,n/a,{},{},{},{},{},{},{},{},n/a,{}\n'.format(str_host, str_intf, str_mtu_, str_swmd, 
-                                      str_tknv, str_tkvl, str_cdp_, str_lldr, str_lldt, str_bpdg, str_desc))
+                        swav = str_swav
+                    else:
+                        swav = str_tknv
+                    data = ['intf_add','','',str_host,str_intf,po_type,str_poch,str_vpc_,str_mtu_,str_swmd,swav,str_tkvl,str_cdp_,str_lldr,
+                            str_lldt,str_bpdg,'n/a',str_desc]
+                    ws1.append(data)
+                    rc = '{}:{}'.format(ws1_row_count, ws1_row_count)
+                    for cell in ws1[rc]:
+                        if ws1_row_count % 2 == 0:
+                            cell.style = 'ws_even'
+                        else:
+                            cell.style = 'ws_odd'
+                    ws1_row_count += 1
 
-        
         # Reset the Variables back to Default
         str_bpdg = 'no'
         str_cdp_ = 'no'
@@ -203,25 +240,34 @@ for line in lines:
         str_intf = ''
         str_lldr = 'no'
         str_lldt = 'no'
-        str_mtu_ = 'undefined'
-        str_poch = 'undefined'
-        str_pomd = 'undefined'
+        str_mtu_ = 'n/a'
+        str_poch = 'n/a'
+        str_pomd = 'n/a'
         str_swav = '1'
         str_swmd = 'access'
         str_swpt = 'no'
         str_tknv = '1'
-        str_tkvl = 'undefined'
-        str_vpc_ = 'undefined'
+        str_tkvl = 'n/a'
+        str_vpc_ = 'n/a'
         line_count += 1
     else:
         line_count += 1
 
 
 file.close()
-wr_poch.close()
-wr_intf.close()
 
 remove_poch_file = 'rm int_poch.csv'
 os.system(remove_poch_file)
 
-print('end script')
+# Save the Excel Workbook
+wb.save(dest_file)
+
+if not str_host == '':
+    rename_excel = 'mv migrate_interfaces.xlsx {}_migrate_interfaces.xlsx'.format(str_host)
+    os.system(rename_excel)
+
+#End Script
+print(f'\n-----------------------------------------------------------------------------\n')
+print(f'   Completed Running Script.  Exiting....')
+print(f'\n-----------------------------------------------------------------------------\n')
+exit()
