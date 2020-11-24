@@ -10,47 +10,49 @@ from openpyxl.styles import Alignment, colors, Border, Font, NamedStyle, Pattern
 from openpyxl.utils.dataframe import dataframe_to_rows
 
 # Define Regular Expressions to be used in function definations and searches
+re_bpdu = re.compile('^  spanning-tree bpduguard enable$\n')
+re_cdpe = re.compile('^  cdp enable$\n')
 re_dhcp = re.compile(r'^  ip dhcp relay address (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}) $\n')
 re_desc = re.compile('^  description (.+)$\n')
 re_host = re.compile('^hostname (.+)$\n')
 re_hsv4 = re.compile(r'^    ip (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})$\n')
 re_hsv4s = re.compile(r'^    ip (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}) secondary$\n')
+re_intf = re.compile(r'^interface ((port\-channel\d+|Ethernet\d+[\d\/]+))$\n')
 re_ipv4 = re.compile(r'^  ip address (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}(?:/\d{1,2}|))$\n')
 re_ipv4s = re.compile(r'^  ip address (\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}(?:/\d{1,2}|)) secondary$\n')
 re_ivln = re.compile(r'^interface Vlan(\d+)$\n')
+re_ldpr = re.compile('^  lldp transmit$\n')
+re_ldpt = re.compile('^  lldp receive$\n')
 re_mtu_ = re.compile(r'^  mtu (\d+)$\n')
+re_poch = re.compile(r'^  channel-group (\d+) mode ((active|on|passive))$\n')
+re_swav = re.compile(r'^  switchport access vlan (\d+)$\n')
+re_swma = re.compile('^  switchport mode access$\n')
+re_swmt = re.compile('^  switchport mode trunk$\n')
+re_swpt = re.compile('^  switchport$\n')
+re_tknv = re.compile(r'^  switchport trunk native vlan (\d{1,4})$\n')
+re_tkv1 = re.compile(r'^  switchport trunk allowed vlan (\d{1,4}[\-,]+.+\d{1,4})$\n')
+re_tkv2 = re.compile(r'^  switchport trunk allowed vlan (\d{1,4})$\n')
 re_vlan = re.compile(r'^vlan (\d{1,4})$\n')
 re_vlnm = re.compile('^  name (.+)$\n')
 re_vlst = re.compile(r'^vlan (\d{1,4}[\-,]+.+\d{1,4})$\n')
+re_vpc_ = re.compile(r'^  vpc ((\d+|peer\-link))$\n')
 re_vrf_ = re.compile('^  vrf member (.+)$\n')
-
-def function_wr_vlan(vlan):
-    if vlan < 10:
-        vlan = str(vlan)
-        wr_vlan.write('v000{}_bd\n'.format(vlan))
-    elif vlan < 100:
-        vlan = str(vlan)
-        wr_vlan.write('v00{}_bd\n'.format(vlan))
-    elif vlan < 1000:
-        vlan = str(vlan)
-        wr_vlan.write('v0{}_bd\n'.format(vlan))
-    else:
-        vlan = str(vlan)
-        wr_vlan.write('v{}_bd\n'.format(vlan))
-
-def function_wr_name(vlan,name):
-    if vlan < 10:
-        wr_name.write('v000{}_bd\t{}\n'.format(vlan, name))
-    elif vlan < 100:
-        vlan = str(vlan)
-        wr_name.write('v00{}_bd\t{}\n'.format(vlan, name))
-    elif vlan < 1000:
-        vlan = str(vlan)
-        wr_name.write('v0{}_bd\t{}\n'.format(vlan, name))
-    else:
-        vlan = str(vlan)
-        wr_name.write('v{}_bd\t{}\n'.format(vlan, name))
-
+re_vrfc = re.compile('^vrf context (.+)$\n')
+reipv6m = re.compile('^  ipv6 multicast multipath s-g-hash\n')
+def function_expand_vlst(vlst):
+    vlist = str_vlst.split(',')
+    for v in vlist:
+        if re.fullmatch('^\\d{1,4}\\-\\d{1,4}$', v):
+            a,b = v.split('-')
+            a = int(a)
+            b = int(b)
+            vrange = range(a,b+1)
+            for vl in vrange:
+                function_wr_vlan(vl)
+        elif re.fullmatch('^\\d{1,4}$', v):
+            v = int(v)
+            function_wr_vlan(v)
+    
 def function_vlan_to_bd(vlan):
     if vlan < 10:
         vlan = str(vlan)
@@ -69,35 +71,64 @@ def function_vlan_to_bd(vlan):
         bd = 'v' + vlan + '_bd'
         return bd
 
-def function_expand_vlst(vlst):
-    vlist = str_vlst.split(',')
-    for v in vlist:
-        if re.fullmatch('^\\d{1,4}\\-\\d{1,4}$', v):
-            a,b = v.split('-')
-            a = int(a)
-            b = int(b)
-            vrange = range(a,b+1)
-            for vl in vrange:
-                function_wr_vlan(vl)
-        elif re.fullmatch('^\\d{1,4}$', v):
-            v = int(v)
-            function_wr_vlan(v)
-    
+def func_wr_poch(str_host, str_intf, str_vpc_, str_mtu_, str_swmd, str_swav, str_tknv, str_tkvl, str_desc):
+    wr_poch.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(str_host, str_intf, str_vpc_, str_mtu_, str_swmd, str_swav, str_tknv, str_tkvl, str_desc))
 
-# Start by Creating Empty Variables
-hostname = ''
+def function_wr_name(vlan,name):
+    if vlan < 10:
+        wr_name.write('v000{}_bd\t{}\n'.format(vlan, name))
+    elif vlan < 100:
+        vlan = str(vlan)
+        wr_name.write('v00{}_bd\t{}\n'.format(vlan, name))
+    elif vlan < 1000:
+        vlan = str(vlan)
+        wr_name.write('v0{}_bd\t{}\n'.format(vlan, name))
+    else:
+        vlan = str(vlan)
+        wr_name.write('v{}_bd\t{}\n'.format(vlan, name))
+
+def function_wr_vlan(vlan):
+    if vlan < 10:
+        vlan = str(vlan)
+        wr_vlan.write('v000{}_bd\n'.format(vlan))
+    elif vlan < 100:
+        vlan = str(vlan)
+        wr_vlan.write('v00{}_bd\n'.format(vlan))
+    elif vlan < 1000:
+        vlan = str(vlan)
+        wr_vlan.write('v0{}_bd\n'.format(vlan))
+    else:
+        vlan = str(vlan)
+        wr_vlan.write('v{}_bd\n'.format(vlan))
+
+# Start by Creating Default Variables
+str_bpdg = 'no'
+str_cdp_ = 'no'
 str_dhcp = ''
 str_desc = ''
+str_host = ''
 str_hsv4 = ''
 str_hsv4s = ''
+str_intf = ''
 str_ipv4 = ''
 str_ipv4s = ''
 str_ivln = ''
-str_mtu_ = '9000'
+str_lldr = 'no'
+str_lldt = 'no'
+str_mtu_ = ''
+str_poch = 'n/a'
+str_pomd = 'n/a'
+str_swav = 'n/a'
+str_swmd = 'access'
+str_swpt = 'no'
+str_tknv = 'n/a'
+str_tkvl = 'n/a'
 str_vlan = ''
 str_vlst = ''
 str_vlnm = ''
+str_vpc_ = 'n/a'
 str_vrf_ = 'default'
+str_vrfc = ''
 
 # Import the Configuration File
 config_file = sys.argv[1]
@@ -118,9 +149,10 @@ except IOError:
     exit()
 
 file = open(config_file, 'r')
-wr_vlan = open('vlan_list.csv', 'w')
-wr_name = open('vlan_name.csv', 'w')
 wr_dhcp = open('dhcp.csv', 'w')
+wr_poch = open('int_poch.csv', 'w')
+wr_name = open('vlan_name.csv', 'w')
+wr_vlan = open('vlan_list.csv', 'w')
 
 
 bd1 = Side(style="thick", color="8EA9DB")
@@ -151,26 +183,27 @@ wb.add_named_style(wsh2)
 wb.add_named_style(ws_odd)
 wb.add_named_style(ws_even)
 
-dest_file = 'export_vlan_info.xlsx'
+dest_file = 'export.xlsx'
 ws1 = wb.active
 ws1.title = "Tenant"
 ws2 = wb.create_sheet(title = "VRF")
 ws3 = wb.create_sheet(title = "Bridge_Domain")
 ws4 = wb.create_sheet(title = "Gateway")
 ws5 = wb.create_sheet(title = "DHCP Relay")
+ws6 = wb.create_sheet(title = "Migrate Interfaces")
+
 ws2 = wb["VRF"]
 ws3 = wb["Bridge_Domain"]
 ws4 = wb["Gateway"]
 ws5 = wb["DHCP Relay"]
+ws6 = wb["Migrate Interfaces"]
 ws1.column_dimensions['A'].width = 15
 ws1.column_dimensions['B'].width = 20
 ws1.column_dimensions['C'].width = 40
 ws2.column_dimensions['A'].width = 15
 ws2.column_dimensions['B'].width = 20
 ws2.column_dimensions['C'].width = 20
-ws2.column_dimensions['D'].width = 20
-ws2.column_dimensions['E'].width = 15
-ws2.column_dimensions['F'].width = 40
+ws2.column_dimensions['D'].width = 40
 ws3.column_dimensions['A'].width = 15
 ws3.column_dimensions['B'].width = 20
 ws3.column_dimensions['C'].width = 20
@@ -191,6 +224,25 @@ ws5.column_dimensions['B'].width = 20
 ws5.column_dimensions['C'].width = 20
 ws5.column_dimensions['D'].width = 20
 ws5.column_dimensions['E'].width = 40
+ws6.column_dimensions['A'].width = 10
+ws6.column_dimensions['B'].width = 20
+ws6.column_dimensions['C'].width = 20
+ws6.column_dimensions['D'].width = 20
+ws6.column_dimensions['E'].width = 20
+ws6.column_dimensions['F'].width = 10
+ws6.column_dimensions['G'].width = 18
+ws6.column_dimensions['H'].width = 10
+ws6.column_dimensions['I'].width = 10
+ws6.column_dimensions['J'].width = 15
+ws6.column_dimensions['K'].width = 17
+ws6.column_dimensions['L'].width = 40
+ws6.column_dimensions['M'].width = 12
+ws6.column_dimensions['N'].width = 12
+ws6.column_dimensions['O'].width = 12
+ws6.column_dimensions['P'].width = 12
+ws6.column_dimensions['Q'].width = 40
+ws6.column_dimensions['R'].width = 40
+
 
 data = ['Type','Tenant Name','Description']
 ws1.append(data)
@@ -212,26 +264,34 @@ data = ['Type','Tenant','VRF Name','IPv4 Address','Description']
 ws5.append(data)
 for cell in ws5["1:1"]:
     cell.style = 'wsh2'
+data = ['Type','New Host','New Interface','Current Host','Current Interface','Port Type','port-channel ID','VPC Id','MTU','Switchport Mode',\
+    'Access or Native VLAN','Trunk Allowed VLANs','CDP Enabled','LLDP Receive','LLDP Transmit','BPDU Guard','Port-Channel Description',\
+    'Port Description']
+ws6.append(data)
+for cell in ws6["1:1"]:
+    cell.style = 'wsh2'
 ws1_row_count = 2
 ws2_row_count = 2
 ws3_row_count = 2
 ws4_row_count = 2
 ws5_row_count = 2
+ws6_row_count = 2
 
 # Read the Conifguration File and Gather Vlan Information
 lines = file.readlines()
 
 line_count = 0
-
+ethn_count = 0
 for line in lines:
-    if re.fullmatch(re_vlst, line):
+    if re.fullmatch(re_host, line):
+        str_host = re.fullmatch(re_host, line).group(1)
+        line_count += 1
+    elif re.fullmatch(re_vlst, line):
         # Matched the VLAN List... Now Parse for Data Export
         str_vlst = re.fullmatch(re_vlst, line).group(1)
         # Expand VLAN Ranges into Full VLAN List
         function_expand_vlst(str_vlst)
         line_count += 1
-    elif re.fullmatch(re_host, line):
-        hostname = re.fullmatch(re_host, line).group(1)
     elif re.fullmatch(re_vlan, line):
         # Matched a VLAN... Now Parse for Data Export
         str_vlan = int(re.fullmatch(re_vlan, line).group(1))
@@ -241,6 +301,24 @@ for line in lines:
         str_vlnm = re.fullmatch(re_vlnm, line).group(1)
         function_wr_name(str_vlan,str_vlnm)
         line_count += 1
+    elif re.fullmatch(re_vrfc, line):
+        str_vrfc = re.fullmatch(re_vrfc, line).group(1)
+        line_count += 1
+    elif re.fullmatch(reipv6m, line):
+        data = ['vrf_add','',str_vrfc,str_desc]
+        ws2.append(data)
+        rc = '{}:{}'.format(ws2_row_count, ws2_row_count)
+        for cell in ws2[rc]:
+            if ws2_row_count % 2 == 0:
+                cell.style = 'ws_even'
+            else:
+                cell.style = 'ws_odd'
+        ws2_row_count += 1
+        line_count += 1
+        str_desc = ''
+        str_vrfc = ''
+        line_count += 1
+
     elif re.fullmatch(re_ivln, line):
         # Matched an Interface VLAN... Now Parse for Data Export
         str_ivln = int(re.fullmatch(re_ivln, line).group(1))
@@ -274,17 +352,56 @@ for line in lines:
         str_dhcp = re.fullmatch(re_dhcp, line).group(1)
         wr_dhcp.write('{},{}\n'.format(str_vrf_, str_dhcp))
         line_count += 1
+    elif re.fullmatch(re_intf, line):
+        str_intf = re.fullmatch(re_intf, line).group(1)
+        line_count += 1
+    elif re.fullmatch(re_bpdu, line):
+        str_bpdg = 'yes'
+        line_count += 1
+    elif re.fullmatch(re_cdpe, line):
+        str_cdp_ = 'yes'
+        line_count += 1
+    elif re.fullmatch(re_ldpr, line):
+        str_lldr = 'yes'
+        line_count += 1
+    elif re.fullmatch(re_ldpt, line):
+        str_lldt = 'yes'
+        line_count += 1
+    elif re.fullmatch(re_swav, line):
+        str_swav = re.fullmatch(re_swav, line).group(1)
+        line_count += 1
+    elif re.fullmatch(re_swma, line):
+        str_swmd = 'access'
+        line_count += 1
+    elif re.fullmatch(re_swmt, line):
+        str_swmd = 'trunk'
+        line_count += 1
+    elif re.fullmatch(re_tknv, line):
+        str_tknv = re.fullmatch(re_tknv, line).group(1)
+        line_count += 1
+    elif re.fullmatch(re_tkv1, line):
+        str_tkvl = re.fullmatch(re_tkv1, line).group(1)
+        line_count += 1
+    elif re.fullmatch(re_tkv2, line):
+        str_tkvl = re.fullmatch(re_tkv2, line).group(1)
+        line_count += 1
+    elif re.fullmatch(re_swpt, line):
+        str_swpt = 'yes'
+        line_count += 1
+    elif re.fullmatch(re_poch, line):
+        str_poch = re.fullmatch(re_poch, line).group(1)
+        str_pomd = re.fullmatch(re_poch, line).group(2)
+        line_count += 1
+    elif re.fullmatch(re_vpc_, line):
+        str_vpc_ = re.fullmatch(re_vpc_, line).group(1)
+        line_count += 1
     elif re.fullmatch(re_desc, line):
         # Found a Description on the Interface
         str_desc = re.fullmatch(re_desc, line).group(1)
         line_count += 1
     elif line == "\n":
         # Found blank line, which means the end of the interface, time to create the output
-        if not str_ipv4:
-            line_count += 1
-        elif not str_ivln:
-            line_count += 1
-        elif str_ipv4:
+        if str_ipv4 and str_ivln:
             bd = function_vlan_to_bd(str_ivln)
             if str_hsv4:
                 a,b = str_ipv4.split('/')
@@ -316,20 +433,84 @@ for line in lines:
                         cell.style = 'ws_odd'
                 ws4_row_count += 1
             line_count += 1
+        elif 'channel' in str_intf:
+            if str_swpt == 'yes':
+                func_wr_poch(str_host, str_intf, str_vpc_, str_mtu_, str_swmd, str_swav, str_tknv, str_tkvl, str_desc)
+        elif 'Ethernet' in str_intf:
+            if ethn_count == 0:
+                wr_poch.close()
+                read_poch = open('int_poch.csv', 'r')
+                po_lines = read_poch.readlines()
+                ethn_count += 1
+            if str_swpt == 'yes':
+                if re.search(r'(\d+|peer)', str_poch):
+                    for line in po_lines:
+                        x = line.split('\t')
+                        desc = x[8].strip()
+                        if str_poch in x[1]:
+                            if str_swmd == 'access':
+                                swav = x[5]
+                            else:
+                                swav = x[6]
+                            if x[2] == 'n/a':
+                                po_type = 'pc'
+                            else:
+                                po_type = 'vpc'
+                            data = ['intf_add','','',str_host,str_intf,po_type,str_poch,x[2],x[3],x[4],swav,x[7],str_cdp_,str_lldr,
+                                    str_lldt,str_bpdg,desc,str_desc]
+                            ws6.append(data)
+                            rc = '{}:{}'.format(ws6_row_count, ws6_row_count)
+                            for cell in ws6[rc]:
+                                if ws6_row_count % 2 == 0:
+                                    cell.style = 'ws_even'
+                                else:
+                                    cell.style = 'ws_odd'
+                            ws6_row_count += 1
+                else:
+                    po_type = 'ap'
+                    if str_swmd == 'access':
+                        swav = str_swav
+                    else:
+                        swav = str_tknv
+                    data = ['intf_add','','',str_host,str_intf,po_type,str_poch,str_vpc_,str_mtu_,str_swmd,swav,str_tkvl,str_cdp_,str_lldr,
+                            str_lldt,str_bpdg,'n/a',str_desc]
+                    ws6.append(data)
+                    rc = '{}:{}'.format(ws6_row_count, ws6_row_count)
+                    for cell in ws6[rc]:
+                        if ws6_row_count % 2 == 0:
+                            cell.style = 'ws_even'
+                        else:
+                            cell.style = 'ws_odd'
+                    ws6_row_count += 1
         
-        # Reset the Variables back to Blank
+        # Reset the Variables back to Blank except str_host
+        str_bpdg = 'no'
+        str_cdp_ = 'no'
         str_dhcp = ''
         str_desc = ''
         str_hsv4 = ''
         str_hsv4s = ''
+        str_intf = ''
         str_ipv4 = ''
         str_ipv4s = ''
         str_ivln = ''
-        str_mtu_ = '9000'
+        str_lldr = 'no'
+        str_lldt = 'no'
+        str_mtu_ = ''
+        str_poch = 'n/a'
+        str_pomd = 'n/a'
+        str_swav = 'n/a'
+        str_swmd = 'access'
+        str_swpt = 'no'
+        str_tknv = 'n/a'
+        str_tkvl = 'n/a'
         str_vlan = ''
         str_vlst = ''
         str_vlnm = ''
+        str_vpc_ = 'n/a'
         str_vrf_ = 'default'
+        str_vrfc = ''
+        line_count += 1
     else:
         line_count += 1
 
@@ -393,7 +574,7 @@ file_relays = open('dhcp_sort.csv', 'r')
 read_relays = file_relays.readlines()
 for line in read_relays:
     vrf,relay_ip = line.split(',')
-    data = ['dhcp_relay','Tenant',vrf,relay_ip]
+    data = ['dhcp_relay','',vrf,relay_ip]
     ws5.append(data)
     rc = '{}:{}'.format(ws5_row_count, ws5_row_count)
     for cell in ws5[rc]:
@@ -403,14 +584,14 @@ for line in read_relays:
             cell.style = 'ws_odd'
     ws5_row_count += 1
 file_relays.close()
-remove_extra_files = 'rm dhcp.csv dhcp_sort.csv vlan_comb.csv vlan_list.csv vlan_name.csv'
+remove_extra_files = 'rm dhcp.csv dhcp_sort.csv int_poch.csv vlan_comb.csv vlan_list.csv vlan_name.csv'
 os.system(remove_extra_files)
 
 # Save the Excel Workbook
 wb.save(dest_file)
 
-if not hostname == '':
-    rename_excel = 'mv export_vlan_info.xlsx {}_export_vlan_inf.xlsx'.format(hostname)
+if not str_host == '':
+    rename_excel = 'mv export.xlsx {}_export.xlsx'.format(str_host)
     os.system(rename_excel)
 
 #End Script
