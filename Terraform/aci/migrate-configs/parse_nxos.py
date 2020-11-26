@@ -153,6 +153,7 @@ wr_dhcp = open('dhcp.csv', 'w')
 wr_poch = open('int_poch.csv', 'w')
 wr_name = open('vlan_name.csv', 'w')
 wr_vlan = open('vlan_list.csv', 'w')
+wr_vrf = open('vrf_list.csv', 'w')
 
 
 bd1 = Side(style="thick", color="8EA9DB")
@@ -417,6 +418,7 @@ for line in lines:
                 else:
                     cell.style = 'ws_odd'
             ws4_row_count += 1
+            wr_vrf.write('{},{}\n'.format(bd, str_vrf_))
             if str_ipv4s:
                 if str_hsv4s:
                     a,b = str_ipv4s.split('/')
@@ -520,6 +522,7 @@ file.close()
 wr_vlan.close()
 wr_name.close()
 wr_dhcp.close()
+wr_vrf.close()
 
 #Get VLAN's that don't have a name and those that do and combine into one file
 bg_list1 = open('vlan_list.csv', 'r') 
@@ -546,7 +549,9 @@ bg_list3.close()
 
 #Sort the combined VLANs in final output file
 bg_list3 = open('vlan_comb.csv', 'r')
+vrf_list = open('vrf_list.csv', 'r')
 bddm = bg_list3.readlines()
+vrfl = vrf_list.readlines()
 bddm.sort()
 for line in range(len(bddm)):
     bddm[line]
@@ -555,7 +560,16 @@ for line in range(len(bddm)):
     else:
         bd = bddm[line]
         descr = ''
-    data = ['bd_add','','',bd,'yes',descr]
+    vrf_bd = ''
+    for x in vrfl:
+        x = x.strip()
+        y = x.split(',')
+        if y[0] == bd:
+            print(f'{y[0]} and {y[1]} to match {bd}')
+            vrf_bd = y[1]
+    if vrf_bd == '':
+        vrf_bd = 'default'
+    data = ['bd_add','',vrf_bd,bd,'yes',descr]
     ws3.append(data)
     rc = '{}:{}'.format(ws3_row_count, ws3_row_count)
     for cell in ws3[rc]:
@@ -567,6 +581,7 @@ for line in range(len(bddm)):
     #bg_list4.write('bd_add,extend_out,{}'.format(bddm[line]))
 
 bg_list3.close()
+vrf_list.close()
 
 dhcp_relay_uniq = 'cat dhcp.csv | sort | uniq > dhcp_sort.csv'
 os.system(dhcp_relay_uniq)
@@ -585,8 +600,14 @@ for line in read_relays:
             cell.style = 'ws_odd'
     ws5_row_count += 1
 file_relays.close()
-remove_extra_files = 'rm dhcp.csv dhcp_sort.csv int_poch.csv vlan_comb.csv vlan_list.csv vlan_name.csv'
+remove_extra_files = 'rm dhcp.csv dhcp_sort.csv int_poch.csv vlan_comb.csv vlan_list.csv vlan_name.csv vrf_list.csv'
 os.system(remove_extra_files)
+
+#for row in range(2,ws4.max_row+1):
+#    for column in 'CD':
+#        cell_name = "{}{}".format(column,row)
+#        #print(cell_name)
+#        print(ws4[cell_name].value)
 
 # Save the Excel Workbook
 wb.save(dest_file)

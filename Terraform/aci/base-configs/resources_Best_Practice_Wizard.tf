@@ -14,7 +14,6 @@ resource "aci_rest" "default-oob" {
 	EOF
 }
 
-
 resource "aci_rest" "fabric_best_practice" {
 	path       = "/api/node/mo/uni/fabric.json"
 	class_name = "fabricInst"
@@ -25,6 +24,16 @@ resource "aci_rest" "fabric_best_practice" {
             "dn": "uni/fabric"
         },
         "children": [
+			{
+				"coopPol": {
+					"attributes": {
+						"dn": "uni/fabric/pol-default",
+						"rn": "pol-default",
+						"type": "strict"
+					},
+					"children": []
+				}
+			},
             {
                 "isisDomPol": {
                     "attributes": {
@@ -36,11 +45,11 @@ resource "aci_rest" "fabric_best_practice" {
 				}
 			},
 			{
-				"coopPol": {
+				"l3IfPol": {
 					"attributes": {
-						"dn": "uni/fabric/pol-default",
-						"rn": "pol-default",
-						"type": "strict"
+						"dn": "uni/fabric/l3IfP-default",
+						"bfdIsis": "enabled",
+						"descr": "Policy Enabled as part of the Brahma Startup Wizard"
 					},
 					"children": []
 				}
@@ -66,7 +75,20 @@ resource "aci_rest" "infra_best_practice" {
 					"attributes": {
 						"dn": "uni/infra/settings",
 						"domainValidation": "true",
-						"enforceSubnetCheck": "true"
+						"enforceSubnetCheck": "true",
+						"unicastXrEpLearnDisable": "true"
+					},
+					"children": []
+				}
+			},
+			{
+				"epControlP": {
+					"attributes": {
+						"dn": "uni/infra/epCtrlP-default",
+						"adminSt": "enabled",
+						"rogueEpDetectIntvl": "30",
+						"rogueEpDetectMult": "6",
+						"rn": "epCtrlP-default"
 					},
 					"children": []
 				}
@@ -82,11 +104,24 @@ resource "aci_rest" "infra_best_practice" {
 				}
 			},
 			{
-				"epControlP": {
+				"epLoopProtectP": {
 					"attributes": {
-						"dn": "uni/infra/epCtrlP-default",
-						"rn": "epCtrlP-default",
-						"adminSt": "enabled"
+						"dn": "uni/infra/epLoopProtectP-default",
+						"adminSt": "enabled",
+						"action": ""
+						"rn": "epLoopProtectP-default",
+					},
+					"children": []
+				}
+			},
+			{
+				"mcpInstPol": {
+					"attributes": {
+						"dn": "uni/infra/mcpInstP-default",
+						"descr": "Policy Enabled as part of the Brahma Startup Wizard"
+						"ctrl": "pdu-per-vlan",
+						"adminSt": "enabled",
+						"key": "cisco"
 					},
 					"children": []
 				}
