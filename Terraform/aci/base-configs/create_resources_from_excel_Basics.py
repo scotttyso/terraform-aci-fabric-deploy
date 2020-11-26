@@ -895,20 +895,21 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
     wr_file.write('}\n')
     wr_file.write('\n')
 
-    # Define Variables for Template Creation - OOB IPv4
-    # Tenants > mgmt > Node Management Addresses > Static Node Management Addresses
-    resrc_desc = 'oob_mgmt_{}'.format(name)
-    class_name = 'mgmtRsOoBStNode'
-    dn_strings = "uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-{}/node-{}]".format(pod_id, node_id)
-    path_attrs = '"/api/node/mo/uni/tn-mgmt.json"'
-    tDn_string = 'topology/pod-{}/node-{}'.format(pod_id, node_id)
+    if not oob_ipv4 == '':
+        # Define Variables for Template Creation - OOB IPv4
+        # Tenants > mgmt > Node Management Addresses > Static Node Management Addresses
+        resrc_desc = 'oob_mgmt_{}'.format(name)
+        class_name = 'mgmtRsOoBStNode'
+        dn_strings = "uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-{}/node-{}]".format(pod_id, node_id)
+        path_attrs = '"/api/node/mo/uni/tn-mgmt.json"'
+        tDn_string = 'topology/pod-{}/node-{}'.format(pod_id, node_id)
 
-    # Format Variables for JSON Output
-    base_atts = {'dn': dn_strings, 'addr': oob_ipv4, 'gw': oob_gwv4, 'tDn': tDn_string, 'v6Addr': '::', 'v6Gw': '::'}
-    data_out = {class_name: {'attributes': base_atts}}
+        # Format Variables for JSON Output
+        base_atts = {'dn': dn_strings, 'addr': oob_ipv4, 'gw': oob_gwv4, 'tDn': tDn_string, 'v6Addr': '::', 'v6Gw': '::'}
+        data_out = {class_name: {'attributes': base_atts}}
 
-    # Write Output to Resource Files using Template
-    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+        # Write Output to Resource Files using Template
+        template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
     # Define Variables for Template Creation - Inband IPv4
     # Tenants > mgmt > Node Management Addresses > Static Node Management Addresses
