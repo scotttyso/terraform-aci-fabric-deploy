@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 
-import csv
 import openpyxl
 import ipaddress
 import json
-import phonenumbers
-import os, re, sys, traceback, validators
+import os, re, sys, traceback
 import validating
-from datetime import datetime, timedelta
 from openpyxl import load_workbook,workbook
 from os import path
 

@@ -1,36 +1,40 @@
 #!/usr/bin/env python3
 
 import csv
+import openpyxl
 import ipaddress
 import json
 import phonenumbers
 import os, re, sys, traceback, validators
 import validating
 from datetime import datetime, timedelta
+from openpyxl import load_workbook,workbook
+from os import path
 
-if len(sys.argv) == 2:
-    csv_input = sys.argv[1]
-    append = sys.argv[1]
-elif len(sys.argv) == 1:
-    csv_input = sys.argv[1]
-    append = 'no'
-
+excel_workbook = sys.argv[1]
 try:
-    open(csv_input)
+    if os.path.isfile(excel_workbook):
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   {excel_workbook} exists.  Beginning Script Execution...')
+        print(f'\n-----------------------------------------------------------------------------\n')
+    else:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   {excel_workbook} does not exist.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
 except IOError:
     print(f'\n-----------------------------------------------------------------------------\n')
-    print(f'   {csv_input} does not exist.  Exiting....')
+    print(f'   {excel_workbook} does not exist.  Exiting....')
     print(f'\n-----------------------------------------------------------------------------\n')
     exit()
+wb = load_workbook(excel_workbook)
+sheet = wb['User Input']
 
 # Creating User Input Fabric Policies File to attached policies for
 # DNS, Domain, NTP, SmartCallHome, SNMP, Syslog, TACACS Accounting etc.
 file_base_pod_info = 'resources_user_import_Fabric_Policies.tf'
-if append == 'yes':
-    wr_base_info = open(file_base_pod_info, 'a')
-else:
-    wr_base_info = open(file_base_pod_info, 'w')
-    wr_base_info.write('# This File will include DNS, Domain, NTP, SmartCallHome\n# SNMP, Syslog and other base configuration parameters\n')
+wr_base_info = open(file_base_pod_info, 'w')
+wr_base_info.write('# This File will include DNS, Domain, NTP, SmartCallHome\n# SNMP, Syslog and other base configuration parameters\n')
 
 # SNMP requires assigning Communities to Tenant VRF's.
 # These files are used to capture Communities Defined
@@ -77,6 +81,45 @@ def template_aci_terraform_attr3(resrc_type, resrc_desc, attr_1st, attr_2nd, att
     wr_to_file = template_payload.format(resource_line, "{", attr_1st, attr_2nd, attr_3rd, "}")
     # Write Data to Template
     wr_file.write(wr_to_file)
+
+def query_switch_model(line_count, switch_type):
+    if re.search('^93', switch_type):
+        modules = '1'
+    if re.search('^9316', switch_type):
+        port_count = '16'
+    elif re.search('^(93108|93120|93216|93360)', switch_type):
+        port_count = '96'
+    elif re.search('^(93180|93240|9348|9396)', switch_type):
+        port_count = '48'
+    elif re.search('^9332', switch_type):
+        port_count = '32'
+    elif re.search('^(9336|93600)', switch_type):
+        port_count = '36'
+    elif re.search('^9364', switch_type):
+        port_count = '64'
+    elif re.search('^93180', switch_type):
+        port_count = '48'
+    elif re.search('^95', switch_type):
+        port_count = '36'
+        if switch_type == '9504':
+            modules = '4'
+        elif switch_type == '9508':
+            modules = '8'
+        elif switch_type == '9516':
+            modules = '16'
+        else:
+            print(f'\n-----------------------------------------------------------------------------\n')
+            print(f'   Error on Row {line_count}.  Unknown Switch Model {switch_type}')
+            print(f'   Please verify Input Information.  Exiting....')
+            print(f'\n-----------------------------------------------------------------------------\n')
+            exit()
+    else:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   Error on Row {line_count}.  Unknown Switch Model {switch_type}')
+        print(f'   Please verify Input Information.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+    return modules,port_count
 
 def resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_leaf, p1_swpt, p2_leaf, p2_swpt):
     try:
@@ -141,6 +184,117 @@ def resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_le
 
     # Close the File created for this resource
     wr_file.close()
+
+def resource_backup(encryption_key, backup_hour, backup_minute, remote_host, mgmt_domain, protocol, remote_path, remote_port, user_name, auth_type, passphrase, ssh_key, description):
+    try:
+        # Validate Encryption Key Length & Management Domain
+        validating.encryption_key(line_count, encryption_key)
+        mgmt_epg = validating.mgmt_domain(line_count, mgmt_domain)
+    except Exception as err:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   {SystemExit(err)}')
+        print(f'   Error on Row {line_count}.  Please verify Input Information.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
+    if auth_type == 'password':
+        auth_type = 'usePassword'
+    elif auth_type == 'ssh-key':
+        auth_type = 'useSshKeyContents'
+    else:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   Error on Row {line_count}.  Authentication type should be password or ssh-key.')
+        print(f'   Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
+    # Which File to Write Data to
+    wr_file = wr_base_info
+
+    # Define Variables for Template Creation - Backup Encryption Key
+    # System > System Settings > Global AES Passphrase Encryption Settings
+    resrc_desc = 'encryption_key'
+    class_name = "pkiExportEncryptionKey"
+    dn_strings = "uni/exportcryptkey"
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+
+    # Format Variables for JSON Output
+    base_atts = {'dn': dn_strings, 'strongEncryptionEnabled': 'true', 'passphrase': encryption_key}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+    
+    # Define Variables for Template Creation - Backup Policy
+    # Admin > Import/Export > Remote Locations : {New Location}
+    resrc_desc = 'remote_location_{}'.format(remote_host)
+    class_name = 'fileRemotePath'
+    rn_strings = "path-{}".format(remote_host)
+    dn_strings = "uni/fabric/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    child_1_class = 'fileRsARemoteHostToEpg'
+    child_1_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
+
+    # Format Variables for JSON Output
+    if auth_type == 'usePassword':
+        base_atts = {'dn': dn_strings, 'authType': auth_type, 'descr': description, 'host': remote_host, 'name': remote_host,
+                     'protocol': protocol, 'remotePath': remote_path, 'remotePort': remote_port, 'userName': user_name, 
+                     'userPasswd': passphrase, 'rn': rn_strings}
+    else:
+        base_atts = {'dn': dn_strings, 'authType': auth_type, 'descr': description, 'host': remote_host, 'name': remote_host,
+                     'protocol': protocol, 'remotePath': remote_path, 'remotePort': remote_port, 'userName': user_name, 
+                     'identityPrivateKeyPassphrase': passphrase, 'identityPrivateKeyContents': ssh_key, 'rn': rn_strings}
+    child_1_atts = {child_1_class: {'attributes': {'tDn': child_1_tDn}, 'children': []}}
+    child_combined = [child_1_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
+    # Define Variables for Template Creation - Backup Policy
+    # Admin > Import/Export > Remote Locations : {New Location}
+    trigg_name = 'Every24Hours'
+    resrc_desc = 'backup_scheduler'
+    class_name = 'trigSchedP'
+    rn_strings = "schedp-{}".format(trigg_name)
+    dn_strings = "uni/fabric/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    child_1_class = 'trigRecurrWindowP'
+    child_1_Rn = 'recurrwinp-{}'.format(trigg_name)
+    child_1_Dn = 'uni/fabric/{}/{}'.format(rn_strings, child_1_Rn)
+    description = 'Create Backups Every 24 Hours - Brahma Startup Script.'
+
+    # Format Variables for JSON Output
+    base_atts = {'dn': dn_strings, 'name': trigg_name, 'descr': description, 'rn': rn_strings}
+    child_1_atts = {child_1_class: {'attributes': {'dn': child_1_Dn, 'name': trigg_name, 'hour': backup_hour, 'minute': backup_minute,
+                    'concurCap': '20', 'rn': child_1_Rn}, 'children': []}}
+    child_combined = [child_1_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
+    # Define Variables for Template Creation - Configuration Export Policy
+    # Admin > Import/Export > Export Policies > Configuration : {Backup Policy}
+    backup_name = 'backup_every24Hours'
+    resrc_desc = 'backup_Policy'
+    class_name = 'configExportP'
+    rn_strings = "configexp-{}".format(backup_name)
+    dn_strings = "uni/fabric/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    child_1_class = 'configRsExportScheduler'
+    child_2_class = 'configRsRemotePath'
+    description = 'Backup Configuration Every 24 Hours - Created by Brahma Startup Script'
+
+    # Format Variables for JSON Output
+    base_atts = {'dn': dn_strings, 'adminSt': 'triggered', 'name': backup_name, 'descr': description, 'rn': rn_strings}
+    child_1_atts = {child_1_class: {'attributes': {'tnTrigSchedPName': trigg_name}, 'children': []}}
+    child_2_atts = {child_2_class: {'attributes': {'tnFileRemotePathName': remote_host}, 'children': []}}
+    child_combined = [child_1_atts, child_2_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
 def resource_bgp_as(bgp_as):
     try:
@@ -790,7 +944,10 @@ def resource_snmp_user(snmp_user, priv_type, priv_key, auth_type, auth_key):
     # Write Output to Resource Files using Template
     template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
-def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modules, port_count, oob_ipv4, oob_gwv4, inb_ipv4, inb_gwv4, inb_vlan):
+def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switch_Type, oob_ipv4, oob_gwv4, inb_ipv4, inb_gwv4, inb_vlan):
+    # Use Switch_Type to Determine the Number of ports on the switch
+    modules,port_count = query_switch_model(line_count, switch_type)
+
     try:
         # Validate Serial Number, Hostname, node_id, node_type, pod_id,
         # switch_role, modules, port_count, oob_ipv4, oob_gwv4, inb_ipv4,
@@ -849,20 +1006,21 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modul
     wr_file.write('}\n')
     wr_file.write('\n')
 
-    # Define Variables for Template Creation - OOB IPv4
-    # Tenants > mgmt > Node Management Addresses > Static Node Management Addresses
-    resrc_desc = 'oob_mgmt_{}'.format(name)
-    class_name = 'mgmtRsOoBStNode'
-    dn_strings = "uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-{}/node-{}]".format(pod_id, node_id)
-    path_attrs = '"/api/node/mo/uni/tn-mgmt.json"'
-    tDn_string = 'topology/pod-{}/node-{}'.format(pod_id, node_id)
+    if not oob_ipv4 == '':
+        # Define Variables for Template Creation - OOB IPv4
+        # Tenants > mgmt > Node Management Addresses > Static Node Management Addresses
+        resrc_desc = 'oob_mgmt_{}'.format(name)
+        class_name = 'mgmtRsOoBStNode'
+        dn_strings = "uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-{}/node-{}]".format(pod_id, node_id)
+        path_attrs = '"/api/node/mo/uni/tn-mgmt.json"'
+        tDn_string = 'topology/pod-{}/node-{}'.format(pod_id, node_id)
 
-    # Format Variables for JSON Output
-    base_atts = {'dn': dn_strings, 'addr': oob_ipv4, 'gw': oob_gwv4, 'tDn': tDn_string, 'v6Addr': '::', 'v6Gw': '::'}
-    data_out = {class_name: {'attributes': base_atts}}
+        # Format Variables for JSON Output
+        base_atts = {'dn': dn_strings, 'addr': oob_ipv4, 'gw': oob_gwv4, 'tDn': tDn_string, 'v6Addr': '::', 'v6Gw': '::'}
+        data_out = {class_name: {'attributes': base_atts}}
 
-    # Write Output to Resource Files using Template
-    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+        # Write Output to Resource Files using Template
+        template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
     # Define Variables for Template Creation - Inband IPv4
     # Tenants > mgmt > Node Management Addresses > Static Node Management Addresses
@@ -899,6 +1057,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modul
     # Write Output to Resource Files using Template
     template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
+    
     if switch_role == 'leaf':
         # Define Variables for Template Creation - ACI Leaf Profile
         # Fabric > Access Policies > Switches > Leaf Switches > Profiles
@@ -937,6 +1096,25 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modul
         base_atts = {'tDn': tDn_string}
         data_out = {class_name: {'attributes': base_atts}}
 
+        # Write Output to Resource Files using Template
+        template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
+        # Define Variables for Template Creation - Leaf Policy Group Association
+        # Fabric > Access Policies > Switches > Leaf Switches > Profiles: {Leaf Profile}: Associate Policy Group
+        resrc_desc = 'leaf_policy_group_{}_SwSel'.format(name)
+        class_name = 'infraLeafS'
+        rn_strings = "leaves-{}-typ-range".format(name)
+        dn_strings = "uni/infra/nprof-{}_SwSel/{}".format(name, rn_strings)
+        path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+        child_1_class = 'infraRsAccNodePGrp'
+        child_1_tDn = 'uni/infra/funcprof/accnodepgrp-default'
+
+        # Format Variables for JSON Output
+        base_atts = {'dn': dn_strings}
+        child_1_atts = {child_1_class: {'attributes': {'tDn': child_1_tDn}, 'children': []}}
+        child_combined = [child_1_atts]
+        data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
         # Write Output to Resource Files using Template
         template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
@@ -999,21 +1177,40 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modul
         resrc_type = 'aci_spine_switch_association'
         resrc_desc = '{}'.format(name)
         attr_1st = 'spine_profile_dn              = aci_spine_profile.{}_SwSel.id'.format(name)
-        attr_2st = 'name                          = "{}"'.format(name)
-        attr_3st = 'spine_switch_association_type = "range"'
+        attr_2nd = 'name                          = "{}"'.format(name)
+        attr_3rd = 'spine_switch_association_type = "range"'
 
         # Write Output to Resource Files using Template
-        template_aci_terraform_attr3(resrc_type, resrc_desc, attr_1st, attr_2st, attr_3st, wr_file)
+        template_aci_terraform_attr3(resrc_type, resrc_desc, attr_1st, attr_2nd, attr_3rd, wr_file)
 
         # Define Variables for Template Creation - Spine Port Selector to Switch Selector
         # Fabric > Access Policies > Switches > Spine Switches > Profiles: {Spine Profile}: Associated Interface Selector Profile
         resrc_type = 'aci_spine_port_selector'
         resrc_desc = '{}'.format(name)
         attr_1st = 'spine_profile_dn              = aci_spine_profile.{}_SwSel.id'.format(name)
-        attr_2st = 'tdn                           = aci_spine_interface_profile.{}_IntProf.id'.format(name)
+        attr_2nd = 'tdn                           = aci_spine_interface_profile.{}_IntProf.id'.format(name)
 
         # Write Output to Resource Files using Template
-        template_aci_terraform_attr2(resrc_type, resrc_desc, attr_1st, attr_2st, wr_file)
+        template_aci_terraform_attr2(resrc_type, resrc_desc, attr_1st, attr_2nd, wr_file)
+
+        # Define Variables for Template Creation - Spine Policy Group Association
+        # Fabric > Access Policies > Switches > Spine Switches > Profiles: {Spine Profile}: Associate Policy Group
+        resrc_desc = 'spine_policy_group_{}_SwSel'.format(name)
+        class_name = 'infraSpineS'
+        rn_strings = "spines-{}-typ-range".format(name)
+        dn_strings = "uni/infra/spprof-{}_SwSel/{}".format(name, rn_strings)
+        path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+        child_1_class = 'infraRsSpineAccNodePGrp'
+        child_1_tDn = 'uni/infra/funcprof/spaccnodepgrp-default'
+
+        # Format Variables for JSON Output
+        base_atts = {'dn': dn_strings}
+        child_1_atts = {child_1_class: {'attributes': {'tDn': child_1_tDn}, 'children': []}}
+        child_combined = [child_1_atts]
+        data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+        # Write Output to Resource Files using Template
+        template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
         mod_count = 0
         while mod_count < int(modules):
@@ -1250,222 +1447,287 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
     # Write Output to Resource Files using Template
     template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
-with open(csv_input) as csv_file:
-    csv_reader = csv.reader(csv_file, delimiter=',')
-    line_count = 0
-    count_inb_gwv4 = 0
-    count_inb_vlan = 0
-    count_dns_servers = 0
-    tacacs_order_count = 0
-    radius_order_count = 0
-    inb_vlan = ''
-    for column in csv_reader:
-        if any(column):        
-            type = column[0]
-            if type == 'apic_inb':
-                name = column[1]
-                node_id = column[2]
-                pod_id = column[3]
-                inb_ipv4 = column[4]
-                inb_gwv4 = column[5]
-                p1_leaf = column[6]
-                p1_swpt = column[7]
-                p2_leaf = column[8]
-                p2_swpt = column[9]
+def resource_vpc_pair(vpc_id, name, node_id_1, node_id_2):
+    try:
+        # Validating Node ID's
+        validating.node_id(line_count, node_id_1)
+        validating.node_id(line_count, node_id_2)
+        validating.vpc_id(line_count, vpc_id)
+    except Exception as err:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   {SystemExit(err)}')
+        print(f'   Error on Row {line_count}.  Please verify Input Information.  Exiting....\n')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
 
-                # Make sure the inband_vlan exists
-                validating.inb_vlan_exist(inb_vlan)
+    # Which File to Write Data to
+    file_vpc = 'resources_user_import_vpc_{}.tf'.format(name)
+    wr_file = open(file_vpc, 'w')
+    wr_file = wr_base_info
 
-                # Create Resource Record for Switch and inband Bridge  Domain AP/EPG
-                resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_leaf, p1_swpt, p2_leaf, p2_swpt)
-                if count_inb_gwv4 == 0: 
-                    resource_inband(inb_ipv4, inb_gwv4, inb_vlan)
-                    count_inb_gwv4 += 1
-                    current_inb_gwv4 = inb_gwv4
-                else:
-                    validating.match_current_gw(line_count, current_inb_gwv4, inb_gwv4)
-                line_count += 1
-            elif type == 'bgp_as':
-                bgp_as = column[1]
-                # Configure the Default BGP AS Number
-                resource_bgp_as(bgp_as)
-                line_count += 1
-            elif type == 'bgp_rr':
-                node_id = column[2]
-                # Configure the Default BGP Route Reflector
-                resource_bgp_rr(node_id)
-                line_count += 1
-            elif type == 'dns':
-                dns_ipv4 = column[1]
-                prefer = column[2]
-                if count_dns_servers < 2:
-                    # Create Resource Record for DNS Servers
-                    resource_dns(dns_ipv4, prefer) 
-                else:
-                    print(f'\n-----------------------------------------------------------------------------\n')
-                    print(f'   At this time it is only supported to add two DNS Providers')
-                    print(f'   Remove one or more providers.  Exiting....\n')
-                    print(f'\n-----------------------------------------------------------------------------\n')
-                    exit()
-                count_dns_servers += 1
-                line_count += 1
-            elif type == 'dns_mgmt':
-                mgmt_domain = column[1]
-                # Create Resource Record for DNS Servers
-                resource_dns_mgmt(mgmt_domain) 
-                line_count += 1
-            elif type == 'search_domain':
-                domain = column[1]
-                prefer = column[2]
-                # Create Resource Record for Search Domain
-                resource_domain(domain, prefer) 
-                line_count += 1
-            elif type == 'inband_vlan':
-                inb_vlan = column[1]
-                line_count += 1
-            elif type == 'ntp':
-                ntp_ipv4 = column[1]
-                prefer = column[2]
-                mgmt_domain = column[3]
-                # Create Resource Record for NTP Servers
-                resource_ntp(ntp_ipv4, prefer, mgmt_domain)
-                line_count += 1
-            elif type == 'radius':
-                login_domain = column[1]
-                radius_ipv4 = column[2]
-                radius_port = column[3]
-                radius_key = column[4]
-                auth_proto = column[5]
-                proto_timeout = column[6]
-                proto_retry  = column[7]
-                mgmt_domain = column[8]
-                radius_order_count += 1
-                # Build TACACS+ Configuration
-                resource_radius(login_domain, radius_ipv4, radius_port, radius_key, auth_proto, proto_timeout, proto_retry, mgmt_domain, radius_order_count)
-                line_count += 1
-            elif type == 'realm':
-                auth_realm = column[1]
-                login_domain = column[2]
-                login_type = column[3]
-                # Modify the Default Login Realms
-                resource_realm(auth_realm, login_domain, login_type)
-                line_count += 1
-            elif type == 'smartcallhome':
-                smtp___port = column[1]
-                smtp__relay = column[2]
-                mgmt_domain = column[3]
-                ch_fr_email = column[4]
-                ch_rp_email = column[5]
-                ch_to_email = column[6]
-                phone_numbr = column[7]
-                contact_inf = column[8]
-                str_address = column[9]
-                contract_id = column[10]
-                customer_id = column[11]
-                site_identi = column[12]
-                # Configure the Default SmartCallHome Policy
-                resource_SmarthCallHome(smtp___port, smtp__relay, mgmt_domain, ch_fr_email, ch_rp_email, ch_to_email, phone_numbr, 
-                                        contact_inf, str_address, contract_id, customer_id, site_identi)
-                line_count += 1
-            elif type == 'snmp_client':
-                client_name = column[1]
-                client_ipv4 = column[2]
-                mgmt_domain = column[3]
-                # Create Resource Record for SNMP Client
-                resource_snmp_client(client_name, client_ipv4, mgmt_domain)
-                line_count += 1
-            elif type == 'snmp_comm':
-                community = column[1]
-                description = column[2]
-                # Create Resource Record for SNMP Communities
-                resource_snmp_comm(community, description)
-                line_count += 1
-            elif type == 'snmp_info':
-                contact = column[1]
-                location = column[2]
-                # Create Resource Record for SNMP Default Policy
-                resource_snmp_info(contact, location)
-                line_count += 1
-            elif type == 'snmp_trap':
-                snmp_ipv4 = column[1]
-                snmp_port = column[2]
-                snmp_vers = column[3]
-                snmp_string = column[4]
-                snmp_auth = column[5]
-                mgmt_domain = column[6]
-                # Create Resource Record for SNMP Traps
-                resource_snmp_trap(snmp_ipv4, snmp_port, snmp_vers, snmp_string, snmp_auth, mgmt_domain)
-                line_count += 1
-            elif type == 'snmp_user':
-                snmp_user = column[1]
-                priv_type = column[2]
-                priv_key = column[3]
-                auth_type = column[4]
-                auth_key = column[5]
-                # Create Resource Record for SNMP Users
-                resource_snmp_user(snmp_user, priv_type, priv_key, auth_type, auth_key)
-                line_count += 1
-            elif type == 'switch':
-                serial = column[1]
-                name = column[2]
-                node_id = column[3]
-                node_type = column[4]
-                pod_id = column[5]
-                switch_role = column[6]
-                modules = column[7]
-                port_count = column[8]
-                oob_ipv4 = column[9]
-                oob_gwv4 = column[10]
-                inb_ipv4 = column[11]
-                inb_gwv4 = column[12]
-                
-                # Make sure the inband_vlan exists
-                validating.inb_vlan_exist(inb_vlan)
+    # Define Variables for Template Creation - VPC Pair
+    # Fabric > Access Policies > Policies > Switch > Virtual Port Channel default
+    resrc_desc = 'vpc_Pair_{}'.format(name)
+    class_name = 'fabricExplicitGEp'
+    rn_strings = "expgep-{}".format(name)
+    dn_strings = "uni/fabric/protpol/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    child_1_class = 'fabricNodePEp'
+    child_1_Rn = 'nodepep-{}'.format(node_id_1)
+    child_1_Dn = 'uni/fabric/protpol/{}/{}'.format(rn_strings, child_1_Rn)
+    child_2_class = 'fabricNodePEp'
+    child_2_Rn = 'nodepep-{}'.format(node_id_2)
+    child_2_Dn = 'uni/fabric/protpol/{}/{}'.format(rn_strings, child_2_Rn)
+    child_3_class = 'fabricRsVpcInstPol'
 
-                # Create Resource Record for Switch and inband Bridge  Domain AP/EPG
-                resource_switch(serial, name, node_id, node_type, pod_id, switch_role, modules, port_count, oob_ipv4, oob_gwv4, 
-                                inb_ipv4, inb_gwv4, inb_vlan)
-                if count_inb_gwv4 == 0: 
-                    resource_inband(inb_ipv4, inb_gwv4, inb_vlan)
-                    count_inb_gwv4 += 1
-                    current_inb_gwv4 = inb_gwv4
-                else:
-                    validating.match_current_gw(line_count, current_inb_gwv4, inb_gwv4)
-                line_count += 1
-            elif type == 'syslog':
-                syslog_ipv4 = column[1]
-                syslog_port = column[2]
-                mgmt_domain = column[3]
-                severity = column[4]
-                facility = column[5]
-                local_state = column[6]
-                local_level = column[7]
-                console_state = column[8]
-                console_level = column[9]
-                resource_syslog(syslog_ipv4, syslog_port, mgmt_domain, severity, facility, local_state, local_level, console_state, console_level)
-                line_count += 1
-            elif type == 'tacacs':
-                login_domain = column[1]
-                tacacs_ipv4 = column[2]
-                tacacs_port = column[3]
-                tacacs_key = column[4]
-                auth_proto = column[5]
-                proto_timeout = column[6]
-                proto_retry  = column[7]
-                mgmt_domain = column[8]
-                tacacs_order_count += 1
-                # Build TACACS+ Configuration
-                resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_proto, proto_timeout, proto_retry, mgmt_domain, tacacs_order_count)
-                line_count += 1
-            elif type == 'tenants':
-                line_count += 1
+    # Format Variables for JSON Output
+    base_atts = {'dn': dn_strings, 'name': name, 'id': vpc_id, 'rn': rn_strings}
+    child_1_atts = {child_1_class: {'attributes': {'dn': child_1_Dn, 'id': node_id_1, 'rn': child_1_Rn}, 'children': []}}
+    child_2_atts = {child_2_class: {'attributes': {'dn': child_2_Dn, 'id': node_id_2, 'rn': child_2_Rn}, 'children': []}}
+    child_3_atts = {child_3_class: {'attributes': {'tnVpcInstPolName': 'default'}, 'children': []}}
+    child_combined = [child_1_atts, child_2_atts, child_3_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
+line_count = 0
+count_inb_gwv4 = 0
+count_inb_vlan = 0
+count_dns_servers = 0
+tacacs_order_count = 0
+radius_order_count = 0
+inb_vlan = ''
+for r in sheet.rows:
+    if any(r):        
+        type = str(r[0].value)
+        if type == 'apic_inb':
+            name = str(r[1].value)
+            node_id = str(r[2].value)
+            pod_id = str(r[3].value)
+            inb_ipv4 = str(r[4].value)
+            inb_gwv4 = str(r[5].value)
+            p1_leaf = str(r[6].value)
+            p1_swpt = str(r[7].value)
+            p2_leaf = str(r[8].value)
+            p2_swpt = str(r[9].value)
+            # Make sure the inband_vlan exists
+            validating.inb_vlan_exist(inb_vlan)
+
+            # Create Resource Record for Switch and inband Bridge  Domain AP/EPG
+            resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_leaf, p1_swpt, p2_leaf, p2_swpt)
+            if count_inb_gwv4 == 0: 
+                resource_inband(inb_ipv4, inb_gwv4, inb_vlan)
+                count_inb_gwv4 += 1
+                current_inb_gwv4 = inb_gwv4
             else:
-                line_count += 1
+                validating.match_current_gw(line_count, current_inb_gwv4, inb_gwv4)
+            line_count += 1
+        if type == 'backup':
+            encryption_key = str(r[1].value)
+            backup_hour = str(r[2].value)
+            backup_minute = str(r[3].value)
+            remote_host = str(r[4].value)
+            mgmt_domain = str(r[5].value)
+            protocol = str(r[6].value)
+            remote_path = str(r[7].value)
+            remote_port = str(r[8].value)
+            user_name = str(r[9].value)
+            auth_type = str(r[10].value)
+            passphrase = str(r[11].value)
+            ssh_key = str(r[12].value)
+            description = str(r[13].value)
+            # Make sure the inband_vlan exists
+
+            # Create Resource Records for Backup Policy
+            resource_backup(encryption_key, backup_hour, backup_minute, remote_host, mgmt_domain, protocol, remote_path, remote_port, user_name, auth_type, passphrase, ssh_key, description)
+            line_count += 1
+        elif type == 'bgp_as':
+            bgp_as = str(r[1].value)
+            # Configure the Default BGP AS Number
+            resource_bgp_as(bgp_as)
+            line_count += 1
+        elif type == 'bgp_rr':
+            node_id = str(r[2].value)
+            # Configure the Default BGP Route Reflector
+            resource_bgp_rr(node_id)
+            line_count += 1
+        elif type == 'dns':
+            dns_ipv4 = str(r[1].value)
+            prefer = str(r[2].value)
+            if count_dns_servers < 2:
+                # Create Resource Record for DNS Servers
+                resource_dns(dns_ipv4, prefer) 
+            else:
+                print(f'\n-----------------------------------------------------------------------------\n')
+                print(f'   At this time it is only supported to add two DNS Providers')
+                print(f'   Remove one or more providers.  Exiting....\n')
+                print(f'\n-----------------------------------------------------------------------------\n')
+                exit()
+            count_dns_servers += 1
+            line_count += 1
+        elif type == 'dns_mgmt':
+            mgmt_domain = str(r[1].value)
+            # Create Resource Record for DNS Servers
+            resource_dns_mgmt(mgmt_domain) 
+            line_count += 1
+        elif type == 'search_domain':
+            domain = str(r[1].value)
+            prefer = str(r[3].value)
+            # Create Resource Record for Search Domain
+            resource_domain(domain, prefer) 
+            line_count += 1
+        elif type == 'inband_vlan':
+            inb_vlan = str(r[1].value)
+            line_count += 1
+        elif type == 'ntp':
+            ntp_ipv4 = str(r[1].value)
+            prefer = str(r[2].value)
+            mgmt_domain = str(r[3].value)
+            # Create Resource Record for NTP Servers
+            resource_ntp(ntp_ipv4, prefer, mgmt_domain)
+            line_count += 1
+        elif type == 'radius':
+            login_domain = str(r[1].value)
+            radius_ipv4 = str(r[2].value)
+            radius_port = str(r[3].value)
+            radius_key = str(r[4].value)
+            auth_proto = str(r[5].value)
+            proto_timeout = str(r[6].value)
+            proto_retry  = str(r[7].value)
+            mgmt_domain = str(r[8].value)
+            radius_order_count += 1
+            # Build TACACS+ Configuration
+            resource_radius(login_domain, radius_ipv4, radius_port, radius_key, auth_proto, proto_timeout, proto_retry, mgmt_domain, radius_order_count)
+            line_count += 1
+        elif type == 'realm':
+            auth_realm = str(r[1].value)
+            login_domain = str(r[2].value)
+            login_type = str(r[3].value)
+            # Modify the Default Login Realms
+            resource_realm(auth_realm, login_domain, login_type)
+            line_count += 1
+        elif type == 'smartcallhome':
+            smtp___port = str(r[1].value)
+            smtp__relay = str(r[2].value)
+            mgmt_domain = str(r[3].value)
+            ch_fr_email = str(r[4].value)
+            ch_rp_email = str(r[6].value)
+            ch_to_email = str(r[8].value)
+            phone_numbr = str(r[10].value)
+            contact_inf = str(r[11].value)
+            str_address = str(r[12].value)
+            contract_id = str(r[13].value)
+            customer_id = str(r[14].value)
+            site_identi = str(r[15].value)
+            # Configure the Default SmartCallHome Policy
+            resource_SmarthCallHome(smtp___port, smtp__relay, mgmt_domain, ch_fr_email, ch_rp_email, ch_to_email, phone_numbr, 
+                                    contact_inf, str_address, contract_id, customer_id, site_identi)
+            line_count += 1
+        elif type == 'snmp_client':
+            client_name = str(r[1].value)
+            client_ipv4 = str(r[2].value)
+            mgmt_domain = str(r[3].value)
+            # Create Resource Record for SNMP Client
+            resource_snmp_client(client_name, client_ipv4, mgmt_domain)
+            line_count += 1
+        elif type == 'snmp_comm':
+            community = str(r[1].value)
+            description = str(r[2].value)
+            # Create Resource Record for SNMP Communities
+            resource_snmp_comm(community, description)
+            line_count += 1
+        elif type == 'snmp_info':
+            contact = str(r[1].value)
+            location = str(r[3].value)
+            # Create Resource Record for SNMP Default Policy
+            resource_snmp_info(contact, location)
+            line_count += 1
+        elif type == 'snmp_trap':
+            snmp_ipv4 = str(r[1].value)
+            snmp_port = str(r[2].value)
+            snmp_vers = str(r[3].value)
+            snmp_string = str(r[4].value)
+            snmp_auth = str(r[5].value)
+            mgmt_domain = str(r[6].value)
+            # Create Resource Record for SNMP Traps
+            resource_snmp_trap(snmp_ipv4, snmp_port, snmp_vers, snmp_string, snmp_auth, mgmt_domain)
+            line_count += 1
+        elif type == 'snmp_user':
+            snmp_user = str(r[1].value)
+            priv_type = str(r[2].value)
+            priv_key = str(r[3].value)
+            auth_type = str(r[4].value)
+            auth_key = str(r[5].value)
+            # Create Resource Record for SNMP Users
+            resource_snmp_user(snmp_user, priv_type, priv_key, auth_type, auth_key)
+            line_count += 1
+        elif type == 'switch':
+            serial = str(r[1].value)
+            name = str(r[2].value)
+            node_id = str(r[3].value)
+            node_type = str(r[4].value)
+            pod_id = str(r[5].value)
+            switch_role = str(r[6].value)
+            switch_type = str(r[7].value)
+            oob_ipv4 = str(r[8].value)
+            oob_gwv4 = str(r[9].value)
+            inb_ipv4 = str(r[10].value)
+            inb_gwv4 = str(r[11].value)
+            
+            # Make sure the inband_vlan exists
+            validating.inb_vlan_exist(inb_vlan)
+
+            # Create Resource Record for Switch and inband Bridge  Domain AP/EPG
+            resource_switch(serial, name, node_id, node_type, pod_id, switch_role, switch_type, oob_ipv4, oob_gwv4, 
+                            inb_ipv4, inb_gwv4, inb_vlan)
+            if count_inb_gwv4 == 0: 
+                resource_inband(inb_ipv4, inb_gwv4, inb_vlan)
+                count_inb_gwv4 += 1
+                current_inb_gwv4 = inb_gwv4
+            else:
+                validating.match_current_gw(line_count, current_inb_gwv4, inb_gwv4)
+            line_count += 1
+        elif type == 'syslog':
+            syslog_ipv4 = str(r[1].value)
+            syslog_port = str(r[2].value)
+            mgmt_domain = str(r[3].value)
+            severity = str(r[4].value)
+            facility = str(r[5].value)
+            local_state = str(r[6].value)
+            local_level = str(r[7].value)
+            console_state = str(r[8].value)
+            console_level = str(r[9].value)
+            resource_syslog(syslog_ipv4, syslog_port, mgmt_domain, severity, facility, local_state, local_level, console_state, console_level)
+            line_count += 1
+        elif type == 'tacacs':
+            login_domain = str(r[1].value)
+            tacacs_ipv4 = str(r[2].value)
+            tacacs_port = str(r[3].value)
+            tacacs_key = str(r[4].value)
+            auth_proto = str(r[5].value)
+            proto_timeout = str(r[6].value)
+            proto_retry  = str(r[7].value)
+            mgmt_domain = str(r[8].value)
+            tacacs_order_count += 1
+            # Build TACACS+ Configuration
+            resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_proto, proto_timeout, proto_retry, mgmt_domain, tacacs_order_count)
+            line_count += 1
+        elif type == 'vpc_pair':
+            vpc_id = str(r[1].value)
+            name = str(r[2].value)
+            node_id_1 = str(r[3].value)
+            node_id_2 = str(r[4].value)
+            # Build VPC Configuration
+            resource_vpc_pair(vpc_id, name, node_id_1, node_id_2)
+            line_count += 1
         else:
             line_count += 1
+    else:
+        line_count += 1
 
 # Close out the Open Files
-csv_file.close()
+#csv_file.close()
 wr_base_info.close()
 wr_vrfs.close()
 wr_comm.close()
@@ -1485,43 +1747,54 @@ if not os.stat('snmp_comms.txt').st_size == 0:
     wr_snmp_ctx = open(file_snmp_ctx_cmds, 'w')
     wr_snmp_vars = open(file_snmp_ctx_vars, 'w')
     wr_snmp_comm = open(file_snmp_ctx_comm, 'w')
-    wr_snmp_ctx.write('resource "aci_rest" "snmp_ctx" {\n')
-    wr_snmp_ctx.write('\tfor_each        = var.snmp_ctx\n')
-    wr_snmp_ctx.write('\tpath            = "/api/node/mo/uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx.json"\n')
-    wr_snmp_ctx.write('\tclass_name      = "vzOOBBrCP"\n')
-    wr_snmp_ctx.write('\tpayload         = <<EOF\n')
-    wr_snmp_ctx.write('{\n')
-    wr_snmp_ctx.write('\t"snmpCtxP": {\n')
-    wr_snmp_ctx.write('\t\t"attributes": {\n')
-    wr_snmp_ctx.write('\t\t\t"dn": "uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx",\n')
-    wr_snmp_ctx.write('\t\t\t"name": "${each.value.name}",\n')
-    wr_snmp_ctx.write('\t\t\t"rn": "snmpctx",\n')
-    wr_snmp_ctx.write('\t\t},\n')
-    wr_snmp_ctx.write('\t\t"children": []\n')
-    wr_snmp_ctx.write('\t}\n')
-    wr_snmp_ctx.write('}\n')
-    wr_snmp_ctx.write('\tEOF\n')
-    wr_snmp_ctx.write('}\n')
-    wr_snmp_ctx.write('\n')
-    wr_snmp_ctx.write('resource "aci_rest" "snmp_ctx_community" {\n')
-    wr_snmp_ctx.write('\tfor_each        = var.snmp_ctx_community\n')
-    wr_snmp_ctx.write('\tpath            = "/api/node/mo/uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx/community-${each.value.name}.json"\n')
-    wr_snmp_ctx.write('\tclass_name      = "vzOOBBrCP"\n')
-    wr_snmp_ctx.write('\tpayload         = <<EOF\n')
-    wr_snmp_ctx.write('{\n')
-    wr_snmp_ctx.write('\t"snmpCommunityP": {\n')
-    wr_snmp_ctx.write('\t\t"attributes": {\n')
-    wr_snmp_ctx.write('\t\t\t"dn": "uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx/community-${each.value.name}",\n')
-    wr_snmp_ctx.write('\t\t\t"name": "${each.value.name}",\n')
-    wr_snmp_ctx.write('\t\t\t"descr": "Adding Community ${each.value.name} to Ctx",\n')
-    wr_snmp_ctx.write('\t\t\t"rn": "community-${each.value.name}",\n')
-    wr_snmp_ctx.write('\t\t},\n')
-    wr_snmp_ctx.write('\t\t"children": []\n')
-    wr_snmp_ctx.write('\t}\n')
-    wr_snmp_ctx.write('}\n')
-    wr_snmp_ctx.write('	EOF\n')
-    wr_snmp_ctx.write('}\n')
-    wr_snmp_ctx.close()
+
+    # Which File to Write Data to
+    wr_file = wr_snmp_ctx
+
+    wr_file.write('resource "aci_rest" "snmp_ctx" {\n')
+    wr_file.write('\tfor_each        = var.snmp_ctx\n')
+    wr_file.write('\tpath            = "/api/node/mo/uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx.json"\n')
+    wr_file.write('\tclass_name      = "vzOOBBrCP"\n')
+    wr_file.write('\tpayload         = <<EOF\n')
+
+    class_name = 'snmpCtxP'
+    rn_strings = 'snmpctx'
+    dn_strings = 'uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/%s' % (rn_strings)
+    name_ctx = '${each.value.name}'
+
+    # Format Variables for JSON Output
+    base_atts = {'dn': dn_strings, 'name': name_ctx, 'rn': rn_strings}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+    # Write Output to Resource File
+    wr_file.write(json.dumps(data_out, indent=4))
+
+    wr_file.write('\tEOF\n')
+    wr_file.write('}\n')
+    wr_file.write('\n')
+
+    wr_file.write('resource "aci_rest" "snmp_ctx_community" {\n')
+    wr_file.write('\tfor_each        = var.snmp_ctx_community\n')
+    wr_file.write('\tpath            = "/api/node/mo/uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx/community-${each.value.name}.json"\n')
+    wr_file.write('\tclass_name      = "vzOOBBrCP"\n')
+    wr_file.write('\tpayload         = <<EOF\n')
+
+    class_name = 'snmpCommunityP'
+    rn_strings = 'community-${each.value.name}'
+    dn_strings = 'uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx/%s' % (rn_strings)
+    name_ctx = '${each.value.name}'
+    descrption = 'Adding Community ${each.value.name} to Ctx'
+
+    # Format Variables for JSON Output
+    base_atts = {'dn': dn_strings, 'name': name_ctx, 'descr': descrption, 'rn': rn_strings}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+    # Write Output to Resource File
+    wr_file.write(json.dumps(data_out, indent=4))
+
+    wr_file.write('	EOF\n')
+    wr_file.write('}\n')
+    wr_file.close()
 
     wr_snmp_vars.write('variable "snmp_ctx" {\n')
     wr_snmp_vars.write('\tdefault = {\n')
