@@ -125,3 +125,217 @@ resource "aci_rest" "vpc_description" {
 }
 	EOF
 }
+
+resource "aci_rest" "Leaf_Policy_Group" {
+	path		= "/api/node/mo/uni/infra/funcprof/accnodepgrp-default.json"
+	class_name	= "infraAccNodePGrp"
+	payload		= <<EOF
+{
+	"infraAccNodePGrp": {
+		"attributes": {
+			"dn": "uni/infra/funcprof/accnodepgrp-default",
+			"name": "default",
+			"descr": "Default Policy Group for Leaf Switches - Created by Brahma Startup Script.",
+			"rn": "accnodepgrp-default"
+		},
+		"children": [
+			{
+				"infraRsMstInstPol": {
+					"attributes": {
+						"tnStpInstPolName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsTopoctrlFwdScaleProfPol": {
+					"attributes": {
+						"tnTopoctrlFwdScaleProfilePolName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsTopoctrlFastLinkFailoverInstPol": {
+					"attributes": {
+						"tnTopoctrlFastLinkFailoverInstPolName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsL2NodeAuthPol": {
+					"attributes": {
+						"tnL2NodeAuthPolName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsIaclLeafProfile": {
+					"attributes": {
+						"tnIaclLeafProfileName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsEquipmentFlashConfigPol": {
+					"attributes": {
+						"tnEquipmentFlashConfigPolName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsLeafPGrpToCdpIfPol": {
+					"attributes": {
+						"tnCdpIfPolName": "cdp_Enabled"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsLeafPGrpToLldpIfPol": {
+					"attributes": {
+						"tnLldpIfPolName": "lldp_Enabled"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsBfdIpv4InstPol": {
+					"attributes": {
+						"tnBfdIpv4InstPolName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsBfdIpv6InstPol": {
+					"attributes": {
+						"tnBfdIpv6InstPolName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsFcInstPol": {
+					"attributes": {
+						"tnFcInstPolName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsPoeInstPol": {
+					"attributes": {
+						"tnPoeInstPolName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsFcFabricPol": {
+					"attributes": {
+						"tnFcFabricPolName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsMonNodeInfraPol": {
+					"attributes": {
+						"tnMonInfraPolName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsNetflowNodePol": {
+					"attributes": {
+						"tnNetflowNodePolName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsLeafCoppProfile": {
+					"attributes": {
+						"tnCoppLeafProfileName": "default"
+					},
+					"children": []
+				}
+			}
+		]
+	}
+}
+	EOF
+}
+
+resource "aci_rest" "Spine_Policy_Group" {
+	path		= "/api/node/mo/uni/infra/funcprof/spaccnodepgrp-default.json"
+	class_name	= "infraSpineAccNodePGrp"
+	payload		= <<EOF
+{
+	"infraSpineAccNodePGrp": {
+		"attributes": {
+			"dn": "uni/infra/funcprof/spaccnodepgrp-default",
+			"name": "default",
+			"descr": "Default Policy Group for Spine Switches - Created by Brahma Startup Script.",
+			"rn": "spaccnodepgrp-default"
+		},
+		"children": [
+			{
+				"infraRsSpineCoppProfile": {
+					"attributes": {
+						"tnCoppSpineProfileName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsSpineBfdIpv4InstPol": {
+					"attributes": {
+						"tnBfdIpv4InstPolName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsSpineBfdIpv6InstPol": {
+					"attributes": {
+						"tnBfdIpv6InstPolName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsIaclSpineProfile": {
+					"attributes": {
+						"tnIaclSpineProfileName": "default"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsSpinePGrpToCdpIfPol": {
+					"attributes": {
+						"tnCdpIfPolName": "cdp_Enabled"
+					},
+					"children": []
+				}
+			},
+			{
+				"infraRsSpinePGrpToLldpIfPol": {
+					"attributes": {
+						"tnLldpIfPolName": "lldp_Enabled"
+					},
+					"children": []
+				}
+			}
+		]
+	}
+}
+	EOF
+}

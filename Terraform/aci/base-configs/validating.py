@@ -49,6 +49,14 @@ def email(line_count, email):
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 
+def encryption_key(line_count, encryption_key):
+    if not validators.length(encryption_key, min=16, max=32):
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   Error on Row {line_count}, The Encryption Key Length must be')
+        print(f'   between 16 and 32 characters.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
 def hostname(line_count, name):
     pattern = re.compile('^[a-zA-Z0-9\\-]+$')
     if not re.search(pattern, name) and validators.length(name, min=1, max=63):

@@ -27,7 +27,7 @@ except IOError:
     print(f'   {excel_workbook} does not exist.  Exiting....')
     print(f'\n-----------------------------------------------------------------------------\n')
     exit()
-wb = openpyxl.load_workbook(excel_workbook)
+wb = load_workbook(excel_workbook)
 sheet = wb['User Input']
 
 # Creating User Input Fabric Policies File to attached policies for
@@ -184,6 +184,117 @@ def resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_le
 
     # Close the File created for this resource
     wr_file.close()
+
+def resource_backup(encryption_key, backup_hour, backup_minute, remote_host, mgmt_domain, protocol, remote_path, remote_port, user_name, auth_type, passphrase, ssh_key, description):
+    try:
+        # Validate Encryption Key Length & Management Domain
+        validating.encryption_key(line_count, encryption_key)
+        mgmt_epg = validating.mgmt_domain(line_count, mgmt_domain)
+    except Exception as err:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   {SystemExit(err)}')
+        print(f'   Error on Row {line_count}.  Please verify Input Information.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
+    if auth_type == 'password':
+        auth_type = 'usePassword'
+    elif auth_type == 'ssh-key':
+        auth_type = 'useSshKeyContents'
+    else:
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   Error on Row {line_count}.  Authentication type should be password or ssh-key.')
+        print(f'   Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
+    # Which File to Write Data to
+    wr_file = wr_base_info
+
+    # Define Variables for Template Creation - Backup Encryption Key
+    # System > System Settings > Global AES Passphrase Encryption Settings
+    resrc_desc = 'encryption_key'
+    class_name = "pkiExportEncryptionKey"
+    dn_strings = "uni/exportcryptkey"
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+
+    # Format Variables for JSON Output
+    base_atts = {'dn': dn_strings, 'strongEncryptionEnabled': 'true', 'passphrase': encryption_key}
+    data_out = {class_name: {'attributes': base_atts, 'children': []}}
+
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+    
+    # Define Variables for Template Creation - Backup Policy
+    # Admin > Import/Export > Remote Locations : {New Location}
+    resrc_desc = 'remote_location_{}'.format(remote_host)
+    class_name = 'fileRemotePath'
+    rn_strings = "path-{}".format(remote_host)
+    dn_strings = "uni/fabric/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    child_1_class = 'fileRsARemoteHostToEpg'
+    child_1_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
+
+    # Format Variables for JSON Output
+    if auth_type == 'usePassword':
+        base_atts = {'dn': dn_strings, 'authType': auth_type, 'descr': description, 'host': remote_host, 'name': remote_host,
+                     'protocol': protocol, 'remotePath': remote_path, 'remotePort': remote_port, 'userName': user_name, 
+                     'userPasswd': passphrase, 'rn': rn_strings}
+    else:
+        base_atts = {'dn': dn_strings, 'authType': auth_type, 'descr': description, 'host': remote_host, 'name': remote_host,
+                     'protocol': protocol, 'remotePath': remote_path, 'remotePort': remote_port, 'userName': user_name, 
+                     'identityPrivateKeyPassphrase': passphrase, 'identityPrivateKeyContents': ssh_key, 'rn': rn_strings}
+    child_1_atts = {child_1_class: {'attributes': {'tDn': child_1_tDn}, 'children': []}}
+    child_combined = [child_1_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
+    # Define Variables for Template Creation - Backup Policy
+    # Admin > Import/Export > Remote Locations : {New Location}
+    trigg_name = 'Every24Hours'
+    resrc_desc = 'backup_scheduler'
+    class_name = 'trigSchedP'
+    rn_strings = "schedp-{}".format(trigg_name)
+    dn_strings = "uni/fabric/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    child_1_class = 'trigRecurrWindowP'
+    child_1_Rn = 'recurrwinp-{}'.format(trigg_name)
+    child_1_Dn = 'uni/fabric/{}/{}'.format(rn_strings, child_1_Rn)
+    description = 'Create Backups Every 24 Hours - Brahma Startup Script.'
+
+    # Format Variables for JSON Output
+    base_atts = {'dn': dn_strings, 'name': trigg_name, 'descr': description, 'rn': rn_strings}
+    child_1_atts = {child_1_class: {'attributes': {'dn': child_1_Dn, 'name': trigg_name, 'hour': backup_hour, 'minute': backup_minute,
+                    'concurCap': '20', 'rn': child_1_Rn}, 'children': []}}
+    child_combined = [child_1_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
+    # Define Variables for Template Creation - Configuration Export Policy
+    # Admin > Import/Export > Export Policies > Configuration : {Backup Policy}
+    backup_name = 'backup_every24Hours'
+    resrc_desc = 'backup_Policy'
+    class_name = 'configExportP'
+    rn_strings = "configexp-{}".format(backup_name)
+    dn_strings = "uni/fabric/{}".format(rn_strings)
+    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    child_1_class = 'configRsExportScheduler'
+    child_2_class = 'configRsRemotePath'
+    description = 'Backup Configuration Every 24 Hours - Created by Brahma Startup Script'
+
+    # Format Variables for JSON Output
+    base_atts = {'dn': dn_strings, 'adminSt': 'triggered', 'name': backup_name, 'descr': description, 'rn': rn_strings}
+    child_1_atts = {child_1_class: {'attributes': {'tnTrigSchedPName': trigg_name}, 'children': []}}
+    child_2_atts = {child_2_class: {'attributes': {'tnFileRemotePathName': remote_host}, 'children': []}}
+    child_combined = [child_1_atts, child_2_atts]
+    data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+    # Write Output to Resource Files using Template
+    template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
 def resource_bgp_as(bgp_as):
     try:
@@ -988,6 +1099,25 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
         # Write Output to Resource Files using Template
         template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
+        # Define Variables for Template Creation - Leaf Policy Group Association
+        # Fabric > Access Policies > Switches > Leaf Switches > Profiles: {Leaf Profile}: Associate Policy Group
+        resrc_desc = 'leaf_policy_group_{}_SwSel'.format(name)
+        class_name = 'infraLeafS'
+        rn_strings = "leaves-{}-typ-range".format(name)
+        dn_strings = "uni/infra/nprof-{}_SwSel/{}".format(name, rn_strings)
+        path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+        child_1_class = 'infraRsAccNodePGrp'
+        child_1_tDn = 'uni/infra/funcprof/accnodepgrp-default'
+
+        # Format Variables for JSON Output
+        base_atts = {'dn': dn_strings}
+        child_1_atts = {child_1_class: {'attributes': {'tDn': child_1_tDn}, 'children': []}}
+        child_combined = [child_1_atts]
+        data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+        # Write Output to Resource Files using Template
+        template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+
         mod_count = 0
         while mod_count < int(modules):
             mod_count += 1
@@ -1047,21 +1177,40 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
         resrc_type = 'aci_spine_switch_association'
         resrc_desc = '{}'.format(name)
         attr_1st = 'spine_profile_dn              = aci_spine_profile.{}_SwSel.id'.format(name)
-        attr_2st = 'name                          = "{}"'.format(name)
-        attr_3st = 'spine_switch_association_type = "range"'
+        attr_2nd = 'name                          = "{}"'.format(name)
+        attr_3rd = 'spine_switch_association_type = "range"'
 
         # Write Output to Resource Files using Template
-        template_aci_terraform_attr3(resrc_type, resrc_desc, attr_1st, attr_2st, attr_3st, wr_file)
+        template_aci_terraform_attr3(resrc_type, resrc_desc, attr_1st, attr_2nd, attr_3rd, wr_file)
 
         # Define Variables for Template Creation - Spine Port Selector to Switch Selector
         # Fabric > Access Policies > Switches > Spine Switches > Profiles: {Spine Profile}: Associated Interface Selector Profile
         resrc_type = 'aci_spine_port_selector'
         resrc_desc = '{}'.format(name)
         attr_1st = 'spine_profile_dn              = aci_spine_profile.{}_SwSel.id'.format(name)
-        attr_2st = 'tdn                           = aci_spine_interface_profile.{}_IntProf.id'.format(name)
+        attr_2nd = 'tdn                           = aci_spine_interface_profile.{}_IntProf.id'.format(name)
 
         # Write Output to Resource Files using Template
-        template_aci_terraform_attr2(resrc_type, resrc_desc, attr_1st, attr_2st, wr_file)
+        template_aci_terraform_attr2(resrc_type, resrc_desc, attr_1st, attr_2nd, wr_file)
+
+        # Define Variables for Template Creation - Spine Policy Group Association
+        # Fabric > Access Policies > Switches > Spine Switches > Profiles: {Spine Profile}: Associate Policy Group
+        resrc_desc = 'spine_policy_group_{}_SwSel'.format(name)
+        class_name = 'infraSpineS'
+        rn_strings = "spines-{}-typ-range".format(name)
+        dn_strings = "uni/infra/spprof-{}_SwSel/{}".format(name, rn_strings)
+        path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+        child_1_class = 'infraRsSpineAccNodePGrp'
+        child_1_tDn = 'uni/infra/funcprof/spaccnodepgrp-default'
+
+        # Format Variables for JSON Output
+        base_atts = {'dn': dn_strings}
+        child_1_atts = {child_1_class: {'attributes': {'tDn': child_1_tDn}, 'children': []}}
+        child_combined = [child_1_atts]
+        data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
+    
+        # Write Output to Resource Files using Template
+        template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
 
         mod_count = 0
         while mod_count < int(modules):
@@ -1373,6 +1522,25 @@ for r in sheet.rows:
                 current_inb_gwv4 = inb_gwv4
             else:
                 validating.match_current_gw(line_count, current_inb_gwv4, inb_gwv4)
+            line_count += 1
+        if type == 'backup':
+            encryption_key = str(r[1].value)
+            backup_hour = str(r[2].value)
+            backup_minute = str(r[3].value)
+            remote_host = str(r[4].value)
+            mgmt_domain = str(r[5].value)
+            protocol = str(r[6].value)
+            remote_path = str(r[7].value)
+            remote_port = str(r[8].value)
+            user_name = str(r[9].value)
+            auth_type = str(r[10].value)
+            passphrase = str(r[11].value)
+            ssh_key = str(r[12].value)
+            description = str(r[13].value)
+            # Make sure the inband_vlan exists
+
+            # Create Resource Records for Backup Policy
+            resource_backup(encryption_key, backup_hour, backup_minute, remote_host, mgmt_domain, protocol, remote_path, remote_port, user_name, auth_type, passphrase, ssh_key, description)
             line_count += 1
         elif type == 'bgp_as':
             bgp_as = str(r[1].value)

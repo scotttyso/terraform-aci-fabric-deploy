@@ -34,6 +34,16 @@ resource "aci_rest" "fabric_best_practice" {
 					"children": []
 				}
 			},
+			{
+				"fabricNodeControl": {
+					"attributes": {
+						"dn": "uni/fabric/nodecontrol-default",
+						"control": "1",
+						"descr": "help my baby"
+					},
+					"children": []
+				}
+			},
             {
                 "isisDomPol": {
                     "attributes": {
@@ -115,6 +125,15 @@ resource "aci_rest" "infra_best_practice" {
 				}
 			},
 			{
+				"infraPortTrackPol": {
+					"attributes": {
+						"dn": "uni/infra/trackEqptFabP-default",
+						"adminSt": "on"
+					},
+					"children": []
+				}
+			},
+			{
 				"mcpInstPol": {
 					"attributes": {
 						"dn": "uni/infra/mcpInstP-default",
@@ -122,6 +141,15 @@ resource "aci_rest" "infra_best_practice" {
 						"ctrl": "pdu-per-vlan",
 						"adminSt": "enabled",
 						"key": "cisco"
+					},
+					"children": []
+				}
+			},
+			{
+				"qosInstPol": {
+					"attributes": {
+						"dn": "uni/infra/qosinst-default",
+						"ctrl": "dot1p-preserve"
 					},
 					"children": []
 				}
