@@ -192,6 +192,14 @@ def modules(line_count, name, switch_role, modules):
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 
+def name_rule(line_count, name):
+    if not re.fullmatch(r'^[a-zA-Z0-9\_\-]+$', name):
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   Error on Row {line_count}, The Name {name} does not meet complexity rules.')
+        print(f'   Allowed Characters are A-Z, a-z, 0-9, underscore or dash.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
 def node_id(line_count, node_id):
     if not validators.between(int(node_id), min=101, max=4001):
         print(f'\n-----------------------------------------------------------------------------\n')
@@ -379,4 +387,3 @@ def vpc_id(line_count, vpc_id):
         print(f'   A valid VPC ID is between 1 and 1000.  Exiting....')
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
-
