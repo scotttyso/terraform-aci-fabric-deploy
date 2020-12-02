@@ -89,7 +89,7 @@ resource "aci_rest" "stp-policies" {
 	EOF
 }
 
-resource "aci_leaf_access_port_policy_group" "inband_ap" {
+resource "aci_leaf_access_port_policy_group" "inband_apg" {
 	description 				  = "Inband port-group policy"
 	name 						  = "inband_ap"
 	relation_infra_rs_h_if_pol	  = "uni/infra/hintfpol-inherit_Auto"
@@ -99,7 +99,7 @@ resource "aci_leaf_access_port_policy_group" "inband_ap" {
 	relation_infra_rs_att_ent_p	  = "uni/infra/attentp-access_aep"
 }
 
-resource "aci_leaf_access_port_policy_group" "access_host_ap" {
+resource "aci_leaf_access_port_policy_group" "access_host_apg" {
 	description 				  = "Template for a Host Access Port"
 	name 						  = "access_host_ap"
 	relation_infra_rs_h_if_pol	  = "uni/infra/hintfpol-inherit_Auto"
@@ -108,6 +108,45 @@ resource "aci_leaf_access_port_policy_group" "access_host_ap" {
 	relation_infra_rs_lldp_if_pol = "uni/infra/lldpIfP-lldp_Enabled"
     relation_infra_rs_stp_if_pol  = "uni/infra/ifPol-BPDU_fg"
 	relation_infra_rs_att_ent_p	  = "uni/infra/attentp-access_aep"
+}
+
+resource "aci_rest" "breakout_4x10g" {
+	path		= "/api/node/mo/uni/infra/funcprof/brkoutportgrp-4x10g_pg.json"
+	class_name	= "infraBrkoutPortGrp"
+	payload		= <<EOF
+{
+    "infraBrkoutPortGrp": {
+        "attributes": {
+            "dn": "uni/infra/funcprof/brkoutportgrp-4x10g_pg",
+            "brkoutMap": "10g-4x"
+            "name": "4x10g_pg"
+            "descr": "Breakout of 40G to 4x10g.  Configured by Brahma startup Wizard"
+            "rn": "brkoutportgrp-4x10g_pg"
+        },
+        "children": []
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "breakout" {
+	for_each    = var.breakouts
+	path		= "/api/node/mo/uni/infra/funcprof/brkoutportgrp-${each.value.name}.json"
+	class_name	= "infraBrkoutPortGrp"
+	payload		= <<EOF
+{
+    "infraBrkoutPortGrp": {
+        "attributes": {
+            "dn": "uni/infra/funcprof/brkoutportgrp-${each.value.name}",
+            "brkoutMap": "${each.value.map}"
+            "name": "${each.value.name}"
+            "descr": "Breakout of ${each.value.descr}.  Configured by Brahma startup Wizard"
+            "rn": "brkoutportgrp-${each.value.name}"
+        },
+        "children": []
+    }
+}
+	EOF
 }
 
 resource "aci_rest" "vpc_description" {
