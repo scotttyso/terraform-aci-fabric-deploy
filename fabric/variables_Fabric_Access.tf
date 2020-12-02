@@ -23,7 +23,7 @@ variable "breakouts" {
 		"8x50g_pg" = {
 			description = "400G to 8x50g"
 			name        = "8x50g_pg"
-			map			= "50g-4x"
+			map			= "50g-8x"
 		},
 	}
 }

@@ -118,10 +118,10 @@ resource "aci_rest" "breakout_4x10g" {
     "infraBrkoutPortGrp": {
         "attributes": {
             "dn": "uni/infra/funcprof/brkoutportgrp-4x10g_pg",
-            "brkoutMap": "10g-4x"
-            "name": "4x10g_pg"
-            "descr": "Breakout of 40G to 4x10g.  Configured by Brahma startup Wizard"
-            "rn": "brkoutportgrp-4x10g_pg"
+            "brkoutMap": "10g-4x",
+            "name": "4x10g_pg",
+            "descr": "Breakout of 40G to 4x10g.  Configured by Brahma startup Wizard",
+            "rn": "brkoutportgrp-4x10g_pg",
         },
         "children": []
     }

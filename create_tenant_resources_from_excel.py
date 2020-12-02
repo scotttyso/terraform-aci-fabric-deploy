@@ -99,28 +99,28 @@ def resource_vrf(tenant_name, vrf_name, vrf_desc, fltr_type):
     # Add VRF to Resource File
     resource_type = 'aci_vrf'
     resource_desc = '%s' % (vrf_name)
-    attr_1 = 'tenant_dn							= "/uni/tn-%s"' % (tenant_name)
+    attr_1 = 'tenant_dn							= "uni/tn-%s"' % (tenant_name)
     attr_2 = 'name        						= "%s"' % (vrf_name)
-    attr_3 = 'bd_enforced_enable				    = "enabled"'
+    attr_3 = 'bd_enforced_enable				    = "yes"'
     attr_4 = 'ip_data_plane_learning			    = "enabled"'
     attr_5 = 'pc_enf_pref						    = "enforced"'
     attr_6 = 'pc_enf_dir						    = "ingress"'
-    attr_7 = 'relation_fv_rs_ctx_mon_pol		    = "/uni/tn-common/monepg-default"'
-    attr_8 = 'relation_fv_rs_ctx_to_ep_ret		= "/uni/tn-common/epRPol-default"'
-    attr_9 = 'relation_fv_rs_vrf_validation_pol	= "/uni/tn-common/vrfvalidationpol-default"'
+    attr_7 = 'relation_fv_rs_ctx_mon_pol		    = "uni/tn-common/monepg-default"'
+    attr_8 = 'relation_fv_rs_ctx_to_ep_ret		= "uni/tn-common/epRPol-default"'
+    attr_9 = 'relation_fv_rs_vrf_validation_pol	= "uni/tn-common/vrfvalidationpol-default"'
     tf_templates.aci_terraform_attr9(resource_type, resource_desc, attr_1, attr_2,  attr_3, attr_4, attr_5, attr_6,  attr_7, attr_8, attr_9, wr_file)
 
     resource_type = 'aci_any'
     resource_desc = "%s_pc" % (vrf_name)
-    attr_1 = 'vrf_dn 				        = "/uni/tn-%s/ctx-%s"' % (tenant_name, vrf_name)
+    attr_1 = 'vrf_dn 				        = "uni/tn-%s/ctx-%s"' % (tenant_name, vrf_name)
     attr_2 = 'description 				= "%s"' % (vrf_desc)
     if fltr_type == 'pg':
         attr_3 = 'pref_gr_memb                = "enabled"'
         tf_templates.aci_terraform_attr3(resource_type, resource_desc, attr_1, attr_2,  attr_3, wr_file)
     elif fltr_type == 'vzAny':
         attr_3 = 'match_t      				= "AtleastOne"'
-        attr_4 = 'relation_vz_rs_any_to_cons	= "uni/tn-common/brc-default"'
-        attr_5 = 'relation_vz_rs_any_to_prov	= "uni/tn-common/brc-default"'
+        attr_4 = '#relation_vz_rs_any_to_cons	= [data.aci_contract.default.id]'
+        attr_5 = '#relation_vz_rs_any_to_prov	= [data.aci_contract.default.id]'
         tf_templates.aci_terraform_attr5(resource_type, resource_desc, attr_1, attr_2,  attr_3, attr_4, attr_5, wr_file)
 
 

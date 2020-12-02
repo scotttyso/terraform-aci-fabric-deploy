@@ -1,0 +1,7 @@
+provider "aci" {
+	username    = var.aciUser
+	private_key = var.aciPrivateKey
+	cert_name   = var.aciCertName
+	url         = var.aciUrl
+	insecure    = true
+}

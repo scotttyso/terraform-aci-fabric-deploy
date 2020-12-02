@@ -118,8 +118,8 @@ resource "aci_rest" "infra_best_practice" {
 					"attributes": {
 						"dn": "uni/infra/epLoopProtectP-default",
 						"adminSt": "enabled",
-						"action": ""
-						"rn": "epLoopProtectP-default",
+						"action": "",
+						"rn": "epLoopProtectP-default"
 					},
 					"children": []
 				}
@@ -137,7 +137,7 @@ resource "aci_rest" "infra_best_practice" {
 				"mcpInstPol": {
 					"attributes": {
 						"dn": "uni/infra/mcpInstP-default",
-						"descr": "Policy Enabled as part of the Brahma Startup Wizard"
+						"descr": "Policy Enabled as part of the Brahma Startup Wizard",
 						"ctrl": "pdu-per-vlan",
 						"adminSt": "enabled",
 						"key": "cisco"
