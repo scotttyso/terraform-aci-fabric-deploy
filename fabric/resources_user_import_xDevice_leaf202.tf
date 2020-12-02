@@ -142,7 +142,7 @@ resource "aci_rest" "leaf_policy_group_leaf202_SwSel" {
 }
 
 resource "aci_rest" "leaf202_1_IntProf" {
-	for_each         = var.port-selector-48
+	for_each         = var.port-selector-54
 	path             = "/api/node/mo/uni/infra/accportprof-leaf202_IntProf/hports-Eth1-${each.value.name}-typ-range.json"
 	class_name       = "infraHPortS"
 	payload          = <<EOF

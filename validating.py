@@ -261,10 +261,10 @@ def port(line_count, port):
         exit()
 
 def port_count(line_count, name, switch_role, port_count):
-    if not re.search('^(32|36|48|64|96)$', port_count):
+    if not re.search('^(16|32|34|36|48|54|60|64|66|102|108)$', port_count):
         print(f'\n-----------------------------------------------------------------------------\n')
         print(f'   Error on Row {line_count}. {name} port count of {port_count} is not valid.')
-        print(f'   Valid port counts are 32, 36, 48, 64, 96.  Exiting....')
+        print(f'   Valid port counts are 16, 32, 34, 36, 48, 54, 60, 64, 66, 102, 108.  Exiting....')
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 

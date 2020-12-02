@@ -47,18 +47,22 @@ def query_switch_model(line_count, switch_type):
         modules = '1'
     if re.search('^9316', switch_type):
         port_count = '16'
+    elif re.search('^(93120)', switch_type):
+        port_count = '102'
     elif re.search('^(93108|93120|93216|93360)', switch_type):
-        port_count = '96'
+        port_count = '108'
     elif re.search('^(93180|93240|9348|9396)', switch_type):
-        port_count = '48'
+        port_count = '54'
+    elif re.search('^(93240)', switch_type):
+        port_count = '60'
     elif re.search('^9332', switch_type):
-        port_count = '32'
+        port_count = '34'
     elif re.search('^(9336|93600)', switch_type):
         port_count = '36'
-    elif re.search('^9364', switch_type):
+    elif re.search('^9364C-GX', switch_type):
         port_count = '64'
-    elif re.search('^93180', switch_type):
-        port_count = '48'
+    elif re.search('^9364', switch_type):
+        port_count = '66'
     elif re.search('^95', switch_type):
         port_count = '36'
         if switch_type == '9504':
