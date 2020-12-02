@@ -4,14 +4,14 @@ resource "aci_rest" "snmp_ctx" {
 	class_name      = "vzOOBBrCP"
 	payload         = <<EOF
 {
-	"snmpCtxP": {
-		"attributes": {
-			"dn": "uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx",
-			"name": "${each.value.name}",
-			"rn": "snmpctx",
-		},
-		"children": []
-	}
+    "snmpCtxP": {
+        "attributes": {
+            "dn": "uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx",
+            "name": "${each.value.name}",
+            "rn": "snmpctx"
+        },
+        "children": []
+    }
 }
 	EOF
 }
@@ -22,15 +22,15 @@ resource "aci_rest" "snmp_ctx_community" {
 	class_name      = "vzOOBBrCP"
 	payload         = <<EOF
 {
-	"snmpCommunityP": {
-		"attributes": {
-			"dn": "uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx/community-${each.value.name}",
-			"name": "${each.value.name}",
-			"descr": "Adding Community ${each.value.name} to Ctx",
-			"rn": "community-${each.value.name}",
-		},
-		"children": []
-	}
+    "snmpCommunityP": {
+        "attributes": {
+            "dn": "uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx/community-${each.value.name}",
+            "name": "${each.value.name}",
+            "descr": "Adding Community ${each.value.name} to Ctx",
+            "rn": "community-${each.value.name}"
+        },
+        "children": []
+    }
 }
 	EOF
 }

@@ -29,8 +29,8 @@ resource "aci_rest" "oob_mgmt_spine101" {
     "mgmtRsOoBStNode": {
         "attributes": {
             "dn": "uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-1/node-101]",
-            "addr": "192.168.86.13/24",
-            "gw": "192.168.86.254",
+            "addr": "198.18.1.101/24",
+            "gw": "198.18.1.1",
             "tDn": "topology/pod-1/node-101",
             "v6Addr": "::",
             "v6Gw": "::"
@@ -47,9 +47,9 @@ resource "aci_rest" "inb_mgmt_spine101" {
 {
     "mgmtRsInBStNode": {
         "attributes": {
-            "dn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-1/node-101]",
-            "addr": "192.168.87.13/24",
-            "gw": "192.168.87.254",
+            "dn": "uni/tn-mgmt/mgmtp-default/inb-default/rsinBStNode-[topology/pod-1/node-101]",
+            "addr": "198.18.2.101/24",
+            "gw": "198.18.2.1",
             "tDn": "topology/pod-1/node-101",
             "v6Addr": "::",
             "v6Gw": "::"
@@ -103,6 +103,30 @@ resource "aci_spine_switch_association" "spine101" {
 resource "aci_spine_port_selector" "spine101" {
 	spine_profile_dn              = aci_spine_profile.spine101_SwSel.id
 	tdn                           = aci_spine_interface_profile.spine101_IntProf.id
+}
+
+resource "aci_rest" "spine_policy_group_spine101_SwSel" {
+	path		= "/api/node/mo/uni/infra/spprof-spine101_SwSel/spines-spine101-typ-range.json"
+	class_name	= "infraSpineS"
+	payload		= <<EOF
+{
+    "infraSpineS": {
+        "attributes": {
+            "dn": "uni/infra/spprof-spine101_SwSel/spines-spine101-typ-range"
+        },
+        "children": [
+            {
+                "infraRsSpineAccNodePGrp": {
+                    "attributes": {
+                        "tDn": "uni/infra/funcprof/spaccnodepgrp-default"
+                    },
+                    "children": []
+                }
+            }
+        ]
+    }
+}
+	EOF
 }
 
 resource "aci_rest" "spine101_1_IntProf" {

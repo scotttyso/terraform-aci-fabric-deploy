@@ -188,14 +188,14 @@ dest_file = 'export.xlsx'
 ws1 = wb.active
 ws1.title = "Tenant"
 ws2 = wb.create_sheet(title = "VRF")
-ws3 = wb.create_sheet(title = "Bridge_Domain")
-ws4 = wb.create_sheet(title = "Gateway")
+ws3 = wb.create_sheet(title = "Bridge Domain")
+ws4 = wb.create_sheet(title = "Subnet")
 ws5 = wb.create_sheet(title = "DHCP Relay")
 ws6 = wb.create_sheet(title = "Migrate Interfaces")
 
 ws2 = wb["VRF"]
-ws3 = wb["Bridge_Domain"]
-ws4 = wb["Gateway"]
+ws3 = wb["Bridge Domain"]
+ws4 = wb["Subnet"]
 ws5 = wb["DHCP Relay"]
 ws6 = wb["Migrate Interfaces"]
 ws1.column_dimensions['A'].width = 15
@@ -565,7 +565,6 @@ for line in range(len(bddm)):
         x = x.strip()
         y = x.split(',')
         if y[0] == bd:
-            print(f'{y[0]} and {y[1]} to match {bd}')
             vrf_bd = y[1]
     if vrf_bd == '':
         vrf_bd = 'default'

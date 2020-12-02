@@ -2,7 +2,7 @@
 
 resource "aci_subnet" "inb_subnet" {
 	parent_dn	= aci_bridge_domain.inb.id
-	ip			= "192.168.87.254/24"
+	ip			= "198.18.2.1/24"
 	scope		= ["public"]
 }
 
@@ -13,16 +13,16 @@ resource "aci_ranges" "inb_vlan" {
 }
 
 resource "aci_rest" "inb_mgmt_default_epg" {
-	path		= "/api/node/mo/uni/tn-mgmt/mgmtp-default/inb-inb_epg.json"
+	path		= "/api/node/mo/uni/tn-mgmt/mgmtp-default/inb-default.json"
 	class_name	= "mgmtInB"
 	payload		= <<EOF
 {
     "mgmtInB": {
         "attributes": {
-            "dn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg",
+            "dn": "uni/tn-mgmt/mgmtp-default/inb-default",
             "descr": "Default Inband Mmgmt EPG Used by Brahma Startup Wizard.",
             "encap": "vlan-100",
-            "name": "inb_epg"
+            "name": "default"
         },
         "children": [
             {

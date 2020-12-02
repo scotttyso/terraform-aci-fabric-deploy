@@ -29,8 +29,8 @@ resource "aci_rest" "oob_mgmt_leaf201" {
     "mgmtRsOoBStNode": {
         "attributes": {
             "dn": "uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-1/node-201]",
-            "addr": "192.168.85.11/24",
-            "gw": "192.168.85.254",
+            "addr": "198.18.1.201/24",
+            "gw": "198.18.1.1",
             "tDn": "topology/pod-1/node-201",
             "v6Addr": "::",
             "v6Gw": "::"
@@ -47,9 +47,9 @@ resource "aci_rest" "inb_mgmt_leaf201" {
 {
     "mgmtRsInBStNode": {
         "attributes": {
-            "dn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-1/node-201]",
-            "addr": "192.168.87.11/24",
-            "gw": "192.168.87.254",
+            "dn": "uni/tn-mgmt/mgmtp-default/inb-default/rsinBStNode-[topology/pod-1/node-201]",
+            "addr": "198.18.2.201/24",
+            "gw": "198.18.2.1",
             "tDn": "topology/pod-1/node-201",
             "v6Addr": "::",
             "v6Gw": "::"
@@ -112,6 +112,30 @@ resource "aci_rest" "leaf_int_selector_leaf201_IntProf" {
         "attributes": {
             "tDn": "uni/infra/accportprof-leaf201_IntProf"
         }
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "leaf_policy_group_leaf201_SwSel" {
+	path		= "/api/node/mo/uni/infra/nprof-leaf201_SwSel/leaves-leaf201-typ-range.json"
+	class_name	= "infraLeafS"
+	payload		= <<EOF
+{
+    "infraLeafS": {
+        "attributes": {
+            "dn": "uni/infra/nprof-leaf201_SwSel/leaves-leaf201-typ-range"
+        },
+        "children": [
+            {
+                "infraRsAccNodePGrp": {
+                    "attributes": {
+                        "tDn": "uni/infra/funcprof/accnodepgrp-default"
+                    },
+                    "children": []
+                }
+            }
+        ]
     }
 }
 	EOF

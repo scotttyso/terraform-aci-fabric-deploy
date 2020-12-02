@@ -164,7 +164,7 @@ def mgmt_domain(line_count, mgmt_domain):
     if mgmt_domain == 'oob':
         mgmt_domain = 'oob-default'
     elif mgmt_domain == 'inband':
-        mgmt_domain = 'inb-inb_epg'
+        mgmt_domain = 'inb-default'
     else:
         print(f'\n-----------------------------------------------------------------------------\n')
         print(f'   Error on Row {line_count}, the Management Domain Should be inband or oob')

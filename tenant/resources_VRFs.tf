@@ -11,18 +11,3 @@ resource "aci_vrf" "default" {
 	relation_fv_rs_vrf_validation_pol	= "/uni/tn-common/vrfvalidationpol-default"
 }
 
-resource "aci_any" "pref_group" {
-	for_each		= var.user_vrfs_pg
-	vrf_dn       	= "/uni/tn-${each.value.tenant}ctx-${each.value.vrf}"
-	description  	= each.value.description
-	pref_gr_memb 	= "enabled"
-}
-
-resource "aci_any" "vzAny" {
-	for_each    				= var.user_vrfs_vzany
-	vrf_dn       				= "/uni/tn-${each.value.tenant}ctx-${each.value.vrf}"
-	description  				= each.value.description
-	match_t      				= "AtleastOne"
-	relation_vz_rs_any_to_cons	= "uni/tn-common/brc-default"
-	relation_vz_rs_any_to_prov	= "uni/tn-common/brc-default"
-}

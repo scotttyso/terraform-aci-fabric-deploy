@@ -5,9 +5,9 @@ resource "aci_rest" "inb_mgmt_apic_apic1" {
 {
     "mgmtRsInBStNode": {
         "attributes": {
-            "dn": "uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-1/node-1]",
-            "addr": "192.168.87.1/24",
-            "gw": "192.168.87.254",
+            "dn": "uni/tn-mgmt/mgmtp-default/inb-default/rsinBStNode-[topology/pod-1/node-1]",
+            "addr": "198.18.2.11/24",
+            "gw": "198.18.2.1",
             "tDn": "topology/pod-1/node-1"
         },
         "children": []

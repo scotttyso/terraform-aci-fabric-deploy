@@ -3,9 +3,3 @@ resource "aci_tenant" "default" {
 	name        = each.value.name
 	description = each.value.description
 }
-
-resource "aci_tenant" "user_tenants" {
-	for_each    = var.user_tenants
-	name        = each.value.name
-	description = each.value.description
-}

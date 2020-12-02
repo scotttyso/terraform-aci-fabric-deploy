@@ -143,7 +143,7 @@ def resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_le
     resrc_desc = 'inb_mgmt_apic_{}'.format(name)
     class_name = 'mgmtRsInBStNode'
     tDn_string = "topology/pod-{}/node-{}".format(pod_id, node_id)
-    dn_strings = "uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-{}/node-{}]".format(pod_id, node_id)
+    dn_strings = "uni/tn-mgmt/mgmtp-default/inb-default/rsinBStNode-[topology/pod-{}/node-{}]".format(pod_id, node_id)
     path_attrs = '"/api/node/mo/uni/tn-mgmt.json"'
 
     # Format Variables for JSON Output
@@ -484,7 +484,7 @@ def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
     # Tenants > mgmt > Node Management EPGs > In-Band EPG
     resrc_desc = 'inb_mgmt_default_epg'
     class_name = 'mgmtInB'
-    dn_strings = 'uni/tn-mgmt/mgmtp-default/inb-inb_epg'
+    dn_strings = 'uni/tn-mgmt/mgmtp-default/inb-default'
     path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
     descrption = 'Default Inband Mmgmt EPG Used by Brahma Startup Wizard.'
     encapsulat = 'vlan-{}'.format(inb_vlan)
@@ -492,7 +492,7 @@ def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
     child_Brdg = 'inb'
 
     # Format Variables for JSON Output
-    base_atts = {'dn': dn_strings, 'descr': descrption, 'encap': encapsulat, 'name': 'inb_epg'}
+    base_atts = {'dn': dn_strings, 'descr': descrption, 'encap': encapsulat, 'name': 'default'}
     child_atts = {'tnFvBDName': child_Brdg}
     data_out = {class_name: {'attributes': base_atts, 'children': [{childclass: {'attributes': child_atts}}]}}
 
@@ -1023,7 +1023,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
     # Tenants > mgmt > Node Management Addresses > Static Node Management Addresses
     resrc_desc = 'inb_mgmt_{}'.format(name)
     class_name = 'mgmtRsInBStNode'
-    dn_strings = "uni/tn-mgmt/mgmtp-default/inb-inb_epg/rsinBStNode-[topology/pod-{}/node-{}]".format(pod_id, node_id)
+    dn_strings = "uni/tn-mgmt/mgmtp-default/inb-default/rsinBStNode-[topology/pod-{}/node-{}]".format(pod_id, node_id)
     path_attrs = '"/api/node/mo/uni/tn-mgmt.json"'
     tDn_string = 'topology/pod-{}/node-{}'.format(pod_id, node_id)
 
@@ -1460,7 +1460,6 @@ def resource_vpc_pair(vpc_id, name, node_id_1, node_id_2):
     # Which File to Write Data to
     file_vpc = 'resources_user_import_vpc_{}.tf'.format(name)
     wr_file = open(file_vpc, 'w')
-    wr_file = wr_base_info
 
     # Define Variables for Template Creation - VPC Pair
     # Fabric > Access Policies > Policies > Switch > Virtual Port Channel default
@@ -1487,8 +1486,9 @@ def resource_vpc_pair(vpc_id, name, node_id_1, node_id_2):
     
     # Write Output to Resource Files using Template
     template_aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+    wr_file.close()
 
-line_count = 0
+line_count = 1
 count_inb_gwv4 = 0
 count_inb_vlan = 0
 count_dns_servers = 0
@@ -1529,12 +1529,11 @@ for r in sheet.rows:
             protocol = str(r[6].value)
             remote_path = str(r[7].value)
             remote_port = str(r[8].value)
-            user_name = str(r[9].value)
-            auth_type = str(r[10].value)
+            auth_type = str(r[9].value)
+            user_name = str(r[10].value)
             passphrase = str(r[11].value)
             ssh_key = str(r[12].value)
             description = str(r[13].value)
-            # Make sure the inband_vlan exists
 
             # Create Resource Records for Backup Policy
             resource_backup(encryption_key, backup_hour, backup_minute, remote_host, mgmt_domain, protocol, remote_path, remote_port, user_name, auth_type, passphrase, ssh_key, description)
@@ -1766,7 +1765,7 @@ if not os.stat('snmp_comms.txt').st_size == 0:
     # Write Output to Resource File
     wr_file.write(json.dumps(data_out, indent=4))
 
-    wr_file.write('\tEOF\n')
+    wr_file.write('\n\tEOF\n')
     wr_file.write('}\n')
     wr_file.write('\n')
 
@@ -1789,7 +1788,7 @@ if not os.stat('snmp_comms.txt').st_size == 0:
     # Write Output to Resource File
     wr_file.write(json.dumps(data_out, indent=4))
 
-    wr_file.write('	EOF\n')
+    wr_file.write('\n\tEOF\n')
     wr_file.write('}\n')
     wr_file.close()
 

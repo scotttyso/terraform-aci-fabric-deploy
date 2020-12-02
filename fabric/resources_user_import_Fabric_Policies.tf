@@ -1,5 +1,124 @@
 # This File will include DNS, Domain, NTP, SmartCallHome
 # SNMP, Syslog and other base configuration parameters
+resource "aci_rest" "encryption_key" {
+	path		= "/api/node/mo/uni/exportcryptkey.json"
+	class_name	= "pkiExportEncryptionKey"
+	payload		= <<EOF
+{
+    "pkiExportEncryptionKey": {
+        "attributes": {
+            "dn": "uni/exportcryptkey",
+            "strongEncryptionEnabled": "true",
+            "passphrase": "cisco123cisco123"
+        },
+        "children": []
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "remote_location_lnx2.example.com" {
+	path		= "/api/node/mo/uni/fabric/path-lnx2.example.com.json"
+	class_name	= "fileRemotePath"
+	payload		= <<EOF
+{
+    "fileRemotePath": {
+        "attributes": {
+            "dn": "uni/fabric/path-lnx2.example.com",
+            "authType": "usePassword",
+            "descr": "None",
+            "host": "lnx2.example.com",
+            "name": "lnx2.example.com",
+            "protocol": "sftp",
+            "remotePath": "/",
+            "remotePort": "22",
+            "userName": "username",
+            "userPasswd": "cisco123",
+            "rn": "path-lnx2.example.com"
+        },
+        "children": [
+            {
+                "fileRsARemoteHostToEpg": {
+                    "attributes": {
+                        "tDn": "uni/tn-mgmt/mgmtp-default/oob-default"
+                    },
+                    "children": []
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "backup_scheduler" {
+	path		= "/api/node/mo/uni/fabric/schedp-Every24Hours.json"
+	class_name	= "trigSchedP"
+	payload		= <<EOF
+{
+    "trigSchedP": {
+        "attributes": {
+            "dn": "uni/fabric/schedp-Every24Hours",
+            "name": "Every24Hours",
+            "descr": "Create Backups Every 24 Hours - Brahma Startup Script.",
+            "rn": "schedp-Every24Hours"
+        },
+        "children": [
+            {
+                "trigRecurrWindowP": {
+                    "attributes": {
+                        "dn": "uni/fabric/schedp-Every24Hours/recurrwinp-Every24Hours",
+                        "name": "Every24Hours",
+                        "hour": "0",
+                        "minute": "0",
+                        "concurCap": "20",
+                        "rn": "recurrwinp-Every24Hours"
+                    },
+                    "children": []
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "backup_Policy" {
+	path		= "/api/node/mo/uni/fabric/configexp-backup_every24Hours.json"
+	class_name	= "configExportP"
+	payload		= <<EOF
+{
+    "configExportP": {
+        "attributes": {
+            "dn": "uni/fabric/configexp-backup_every24Hours",
+            "adminSt": "triggered",
+            "name": "backup_every24Hours",
+            "descr": "Backup Configuration Every 24 Hours - Created by Brahma Startup Script",
+            "rn": "configexp-backup_every24Hours"
+        },
+        "children": [
+            {
+                "configRsExportScheduler": {
+                    "attributes": {
+                        "tnTrigSchedPName": "Every24Hours"
+                    },
+                    "children": []
+                }
+            },
+            {
+                "configRsRemotePath": {
+                    "attributes": {
+                        "tnFileRemotePathName": "lnx2.example.com"
+                    },
+                    "children": []
+                }
+            }
+        ]
+    }
+}
+	EOF
+}
+
 resource "aci_rest" "bgp_as_65513" {
 	path		= "/api/node/mo/uni/fabric/bgpInstP-default/as.json"
 	class_name	= "bgpAsP"
@@ -49,17 +168,17 @@ resource "aci_rest" "dns_epg_oob-default" {
 	EOF
 }
 
-resource "aci_rest" "dns_1_1_1_1" {
-	path		= "/api/node/mo/uni/fabric/dnsp-default/prov-[1.1.1.1].json"
+resource "aci_rest" "dns_198_18_1_51" {
+	path		= "/api/node/mo/uni/fabric/dnsp-default/prov-[198.18.1.51].json"
 	class_name	= "dnsProv"
 	payload		= <<EOF
 {
     "dnsProv": {
         "attributes": {
-            "dn": "uni/fabric/dnsp-default/prov-[1.1.1.1]",
-            "addr": "1.1.1.1",
+            "dn": "uni/fabric/dnsp-default/prov-[198.18.1.51]",
+            "addr": "198.18.1.51",
             "preferred": "no",
-            "rn": "prov-[1.1.1.1]"
+            "rn": "prov-[198.18.1.51]"
         },
         "children": []
     }
@@ -67,17 +186,17 @@ resource "aci_rest" "dns_1_1_1_1" {
 	EOF
 }
 
-resource "aci_rest" "dns_1_1_1_2" {
-	path		= "/api/node/mo/uni/fabric/dnsp-default/prov-[1.1.1.2].json"
+resource "aci_rest" "dns_198_18_1_52" {
+	path		= "/api/node/mo/uni/fabric/dnsp-default/prov-[198.18.1.52].json"
 	class_name	= "dnsProv"
 	payload		= <<EOF
 {
     "dnsProv": {
         "attributes": {
-            "dn": "uni/fabric/dnsp-default/prov-[1.1.1.2]",
-            "addr": "1.1.1.2",
+            "dn": "uni/fabric/dnsp-default/prov-[198.18.1.52]",
+            "addr": "198.18.1.52",
             "preferred": "yes",
-            "rn": "prov-[1.1.1.2]"
+            "rn": "prov-[198.18.1.52]"
         },
         "children": []
     }
@@ -102,12 +221,12 @@ resource "aci_rest" "SmartCallHome_dg" {
                     "attributes": {
                         "dn": "uni/fabric/smartgroup-SmartCallHome_dg/prof",
                         "port": "25",
-                        "from": "asgard-aci@rich.ciscolabs.com",
-                        "replyTo": "rich-lab@cisco.com",
-                        "email": "rich-lab@cisco.com",
-                        "phone": "+1-408-525-5300",
-                        "contact": "Richfield Labs",
-                        "addr": "4125 Highlander Pkwy Richfield, OH 44286",
+                        "from": "cust-aci-fabric@example.com",
+                        "replyTo": "network-ops@example.com",
+                        "email": "network-ops@example.com",
+                        "phone": "+1 408-555-5555",
+                        "contact": "Brahma Lab",
+                        "addr": "5555 Some Streat Some City, CA 95000",
                         "contract": "5555555",
                         "customer": "5555555",
                         "site": "555555",
@@ -118,7 +237,7 @@ resource "aci_rest" "SmartCallHome_dg" {
                             "callhomeSmtpServer": {
                                 "attributes": {
                                     "dn": "uni/fabric/smartgroup-SmartCallHome_dg/prof/smtp",
-                                    "host": "cisco-ext.cisco.com",
+                                    "host": "cisco-smtp.example.com",
                                     "rn": "smtp"
                                 },
                                 "children": [
@@ -141,7 +260,7 @@ resource "aci_rest" "SmartCallHome_dg" {
                     "attributes": {
                         "dn": "uni/fabric/smartgroup-SmartCallHome_dg/smartdest-SCH_Receiver",
                         "name": "SCH_Receiver",
-                        "email": "rich-lab@cisco.com",
+                        "email": "network-ops@example.com",
                         "format": "short-txt",
                         "rn": "smartdest-SCH_Receiver"
                     },
@@ -179,17 +298,17 @@ resource "aci_rest" "callhomeSmartSrc" {
 	EOF
 }
 
-resource "aci_rest" "ntp_1_1_1_4" {
-	path		= "/api/node/mo/uni/fabric/time-default/ntpprov-1.1.1.4.json"
+resource "aci_rest" "ntp_198_18_1_51" {
+	path		= "/api/node/mo/uni/fabric/time-default/ntpprov-198.18.1.51.json"
 	class_name	= "datetimeNtpProv"
 	payload		= <<EOF
 {
     "datetimeNtpProv": {
         "attributes": {
-            "dn": "uni/fabric/time-default/ntpprov-1.1.1.4",
-            "name": "1.1.1.4",
+            "dn": "uni/fabric/time-default/ntpprov-198.18.1.51",
+            "name": "198.18.1.51",
             "preferred": "false",
-            "rn": "ntpprov-1.1.1.4"
+            "rn": "ntpprov-198.18.1.51"
         },
         "children": [
             {
@@ -205,17 +324,17 @@ resource "aci_rest" "ntp_1_1_1_4" {
 	EOF
 }
 
-resource "aci_rest" "ntp_1_1_1_5" {
-	path		= "/api/node/mo/uni/fabric/time-default/ntpprov-1.1.1.5.json"
+resource "aci_rest" "ntp_198_18_1_52" {
+	path		= "/api/node/mo/uni/fabric/time-default/ntpprov-198.18.1.52.json"
 	class_name	= "datetimeNtpProv"
 	payload		= <<EOF
 {
     "datetimeNtpProv": {
         "attributes": {
-            "dn": "uni/fabric/time-default/ntpprov-1.1.1.5",
-            "name": "1.1.1.5",
+            "dn": "uni/fabric/time-default/ntpprov-198.18.1.52",
+            "name": "198.18.1.52",
             "preferred": "true",
-            "rn": "ntpprov-1.1.1.5"
+            "rn": "ntpprov-198.18.1.52"
         },
         "children": [
             {
@@ -267,17 +386,17 @@ resource "aci_rest" "domain_cisco_com" {
 	EOF
 }
 
-resource "aci_rest" "snmp_client_10_0_0_1" {
-	path		= "/api/node/mo/uni/fabric/snmppol-default/clgrp-Out-of-Band_Clients/client-[10.0.0.1].json"
+resource "aci_rest" "snmp_client_198_18_1_61" {
+	path		= "/api/node/mo/uni/fabric/snmppol-default/clgrp-Out-of-Band_Clients/client-[198.18.1.61].json"
 	class_name	= "snmpClientP"
 	payload		= <<EOF
 {
     "snmpClientP": {
         "attributes": {
-            "dn": "uni/fabric/snmppol-default/clgrp-Out-of-Band_Clients/client-[10.0.0.1]",
+            "dn": "uni/fabric/snmppol-default/clgrp-Out-of-Band_Clients/client-[198.18.1.61]",
             "name": "snmp-server1",
-            "addr": "10.0.0.1",
-            "rn": "client-10.0.0.1"
+            "addr": "198.18.1.61",
+            "rn": "client-198.18.1.61"
         },
         "children": []
     }
@@ -285,17 +404,17 @@ resource "aci_rest" "snmp_client_10_0_0_1" {
 	EOF
 }
 
-resource "aci_rest" "snmp_client_10_0_0_2" {
-	path		= "/api/node/mo/uni/fabric/snmppol-default/clgrp-Out-of-Band_Clients/client-[10.0.0.2].json"
+resource "aci_rest" "snmp_client_198_18_1_62" {
+	path		= "/api/node/mo/uni/fabric/snmppol-default/clgrp-Out-of-Band_Clients/client-[198.18.1.62].json"
 	class_name	= "snmpClientP"
 	payload		= <<EOF
 {
     "snmpClientP": {
         "attributes": {
-            "dn": "uni/fabric/snmppol-default/clgrp-Out-of-Band_Clients/client-[10.0.0.2]",
+            "dn": "uni/fabric/snmppol-default/clgrp-Out-of-Band_Clients/client-[198.18.1.62]",
             "name": "snmp-server2",
-            "addr": "10.0.0.2",
-            "rn": "client-10.0.0.2"
+            "addr": "198.18.1.62",
+            "rn": "client-198.18.1.62"
         },
         "children": []
     }
@@ -358,15 +477,15 @@ resource "aci_rest" "snmp_comm_will-this-work" {
 	EOF
 }
 
-resource "aci_rest" "snmp_trap_default_10_0_0_1" {
-	path		= "/api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[10.0.0.1].json"
+resource "aci_rest" "snmp_trap_default_198_18_1_61" {
+	path		= "/api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[198.18.1.61].json"
 	class_name	= "snmpTrapFwdServerP"
 	payload		= <<EOF
 {
     "snmpTrapFwdServerP": {
         "attributes": {
-            "dn": "uni/fabric/snmppol-default/trapfwdserver-[10.0.0.1]",
-            "addr": "10.0.0.1",
+            "dn": "uni/fabric/snmppol-default/trapfwdserver-[198.18.1.61]",
+            "addr": "198.18.1.61",
             "port": "162"
         },
         "children": []
@@ -375,7 +494,7 @@ resource "aci_rest" "snmp_trap_default_10_0_0_1" {
 	EOF
 }
 
-resource "aci_rest" "snmp_trap_dest_10_0_0_1" {
+resource "aci_rest" "snmp_trap_dest_198_18_1_61" {
 	path		= "/api/node/mo/uni/fabric/snmpgroup-SNMP-TRAP_dg.json"
 	class_name	= "snmpGroup"
 	payload		= <<EOF
@@ -391,13 +510,13 @@ resource "aci_rest" "snmp_trap_dest_10_0_0_1" {
             {
                 "snmpTrapDest": {
                     "attributes": {
-                        "dn": "uni/fabric/snmpgroup-SNMP-TRAP_dg/trapdest-10.0.0.1-port-162",
+                        "dn": "uni/fabric/snmpgroup-SNMP-TRAP_dg/trapdest-198.18.1.61-port-162",
                         "ver": "v2c",
-                        "host": "10.0.0.1",
+                        "host": "198.18.1.61",
                         "port": "162",
                         "secName": "read_access",
                         "v3SecLvl": "noauth",
-                        "rn": "trapdest-10.0.0.1-port-162"
+                        "rn": "trapdest-198.18.1.61-port-162"
                     },
                     "children": [
                         {
@@ -416,15 +535,15 @@ resource "aci_rest" "snmp_trap_dest_10_0_0_1" {
 	EOF
 }
 
-resource "aci_rest" "snmp_trap_default_10_0_0_2" {
-	path		= "/api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[10.0.0.2].json"
+resource "aci_rest" "snmp_trap_default_198_18_1_62" {
+	path		= "/api/node/mo/uni/fabric/snmppol-default/trapfwdserver-[198.18.1.62].json"
 	class_name	= "snmpTrapFwdServerP"
 	payload		= <<EOF
 {
     "snmpTrapFwdServerP": {
         "attributes": {
-            "dn": "uni/fabric/snmppol-default/trapfwdserver-[10.0.0.2]",
-            "addr": "10.0.0.2",
+            "dn": "uni/fabric/snmppol-default/trapfwdserver-[198.18.1.62]",
+            "addr": "198.18.1.62",
             "port": "162"
         },
         "children": []
@@ -433,7 +552,7 @@ resource "aci_rest" "snmp_trap_default_10_0_0_2" {
 	EOF
 }
 
-resource "aci_rest" "snmp_trap_dest_10_0_0_2" {
+resource "aci_rest" "snmp_trap_dest_198_18_1_62" {
 	path		= "/api/node/mo/uni/fabric/snmpgroup-SNMP-TRAP_dg.json"
 	class_name	= "snmpGroup"
 	payload		= <<EOF
@@ -449,13 +568,13 @@ resource "aci_rest" "snmp_trap_dest_10_0_0_2" {
             {
                 "snmpTrapDest": {
                     "attributes": {
-                        "dn": "uni/fabric/snmpgroup-SNMP-TRAP_dg/trapdest-10.0.0.2-port-162",
+                        "dn": "uni/fabric/snmpgroup-SNMP-TRAP_dg/trapdest-198.18.1.62-port-162",
                         "ver": "v3",
-                        "host": "10.0.0.2",
+                        "host": "198.18.1.62",
                         "port": "162",
                         "secName": "cisco_user1",
                         "v3SecLvl": "priv",
-                        "rn": "trapdest-10.0.0.2-port-162"
+                        "rn": "trapdest-198.18.1.62-port-162"
                     },
                     "children": [
                         {
@@ -531,25 +650,25 @@ resource "aci_rest" "snmp_user_cisco_user3" {
 	EOF
 }
 
-resource "aci_rest" "syslog_1_1_1_1" {
-	path		= "/api/node/mo/uni/fabric/slgroup-Syslog-dg_1.1.1.1.json"
+resource "aci_rest" "syslog_198_18_1_61" {
+	path		= "/api/node/mo/uni/fabric/slgroup-Syslog-dg_198.18.1.61.json"
 	class_name	= "syslogGroup"
 	payload		= <<EOF
 {
     "syslogGroup": {
         "attributes": {
-            "dn": "uni/fabric/slgroup-Syslog-dg_1.1.1.1",
+            "dn": "uni/fabric/slgroup-Syslog-dg_198.18.1.61",
             "includeMilliSeconds": "true",
             "includeTimeZone": "true",
-            "descr": "Syslog Destination Group 1.1.1.1 - Created by Brahma Startup Wizard",
-            "name": "Syslog-dg_1.1.1.1",
-            "rn": "slgroup-Syslog-dg_1.1.1.1"
+            "descr": "Syslog Destination Group 198.18.1.61 - Created by Brahma Startup Wizard",
+            "name": "Syslog-dg_198.18.1.61",
+            "rn": "slgroup-Syslog-dg_198.18.1.61"
         },
         "children": [
             {
                 "syslogConsole": {
                     "attributes": {
-                        "dn": "uni/fabric/slgroup-Syslog-dg_1.1.1.1/console",
+                        "dn": "uni/fabric/slgroup-Syslog-dg_198.18.1.61/console",
                         "adminState": "enabled",
                         "severity": "critical",
                         "rn": "console"
@@ -560,7 +679,7 @@ resource "aci_rest" "syslog_1_1_1_1" {
             {
                 "syslogFile": {
                     "attributes": {
-                        "dn": "uni/fabric/slgroup-Syslog-dg_1.1.1.1/file",
+                        "dn": "uni/fabric/slgroup-Syslog-dg_198.18.1.61/file",
                         "adminState": "enabled",
                         "severity": "information",
                         "rn": "file"
@@ -571,7 +690,7 @@ resource "aci_rest" "syslog_1_1_1_1" {
             {
                 "syslogProf": {
                     "attributes": {
-                        "dn": "uni/fabric/slgroup-Syslog-dg_1.1.1.1/prof",
+                        "dn": "uni/fabric/slgroup-Syslog-dg_198.18.1.61/prof",
                         "adminState": "enabled",
                         "rn": "prof"
                     },
@@ -581,14 +700,14 @@ resource "aci_rest" "syslog_1_1_1_1" {
             {
                 "syslogRemoteDest": {
                     "attributes": {
-                        "dn": "uni/fabric/slgroup-Syslog-dg_1.1.1.1/rdst-1.1.1.1",
-                        "host": "1.1.1.1",
-                        "name": "RmtDst-1.1.1.1",
+                        "dn": "uni/fabric/slgroup-Syslog-dg_198.18.1.61/rdst-198.18.1.61",
+                        "host": "198.18.1.61",
+                        "name": "RmtDst-198.18.1.61",
                         "adminState": "enabled",
                         "forwardingFacility": "local7",
                         "port": "514",
                         "severity": "warnings",
-                        "rn": "rdst-1.1.1.1"
+                        "rn": "rdst-198.18.1.61"
                     },
                     "children": [
                         {
@@ -608,22 +727,22 @@ resource "aci_rest" "syslog_1_1_1_1" {
 	EOF
 }
 
-resource "aci_rest" "aaaRadiusProvider_1_1_1_5" {
-	path		= "/api/node/mo/uni/userext/radiusext/radiusprovider-1.1.1.5.json"
+resource "aci_rest" "aaaRadiusProvider_198_18_1_71" {
+	path		= "/api/node/mo/uni/userext/radiusext/radiusprovider-198.18.1.71.json"
 	class_name	= "aaaRadiusProvider"
 	payload		= <<EOF
 {
     "aaaRadiusProvider": {
         "attributes": {
-            "dn": "uni/userext/radiusext/radiusprovider-1.1.1.5",
+            "dn": "uni/userext/radiusext/radiusprovider-198.18.1.71",
             "timeout": "5",
             "retries": "5",
             "monitorServer": "disabled",
             "key": "cisco1231",
             "authProtocol": "pap",
-            "name": "1.1.1.5",
-            "descr": "RADIUS Provider - 1.1.1.5.  Added by Brahma Startup Wizard.",
-            "rn": "radiusprovider-1.1.1.5"
+            "name": "198.18.1.71",
+            "descr": "RADIUS Provider - 198.18.1.71.  Added by Brahma Startup Wizard.",
+            "rn": "radiusprovider-198.18.1.71"
         },
         "children": [
             {
@@ -640,7 +759,7 @@ resource "aci_rest" "aaaRadiusProvider_1_1_1_5" {
 	EOF
 }
 
-resource "aci_rest" "Ext_Login_RADIUS_prov-1_1_1_5" {
+resource "aci_rest" "Ext_Login_RADIUS_prov-198_18_1_71" {
 	path		= "/api/node/mo/uni/userext.json"
 	class_name	= "aaaUserEp"
 	payload		= <<EOF
@@ -688,10 +807,10 @@ resource "aci_rest" "Ext_Login_RADIUS_prov-1_1_1_5" {
                                     {
                                         "aaaProviderRef": {
                                             "attributes": {
-                                                "dn": "uni/userext/radiusext/radiusprovidergroup-RAD_ISE/providerref-1.1.1.5",
+                                                "dn": "uni/userext/radiusext/radiusprovidergroup-RAD_ISE/providerref-198.18.1.71",
                                                 "order": "1",
-                                                "name": "1.1.1.5",
-                                                "descr": "Added RADIUS Server 1.1.1.5 - Brahma Startup Wizard"
+                                                "name": "198.18.1.71",
+                                                "descr": "Added RADIUS Server 198.18.1.71 - Brahma Startup Wizard"
                                             },
                                             "children": []
                                         }
@@ -708,22 +827,22 @@ resource "aci_rest" "Ext_Login_RADIUS_prov-1_1_1_5" {
 	EOF
 }
 
-resource "aci_rest" "aaaRadiusProvider_1_1_1_6" {
-	path		= "/api/node/mo/uni/userext/radiusext/radiusprovider-1.1.1.6.json"
+resource "aci_rest" "aaaRadiusProvider_198_18_1_72" {
+	path		= "/api/node/mo/uni/userext/radiusext/radiusprovider-198.18.1.72.json"
 	class_name	= "aaaRadiusProvider"
 	payload		= <<EOF
 {
     "aaaRadiusProvider": {
         "attributes": {
-            "dn": "uni/userext/radiusext/radiusprovider-1.1.1.6",
+            "dn": "uni/userext/radiusext/radiusprovider-198.18.1.72",
             "timeout": "5",
             "retries": "5",
             "monitorServer": "disabled",
             "key": "cisco123",
             "authProtocol": "pap",
-            "name": "1.1.1.6",
-            "descr": "RADIUS Provider - 1.1.1.6.  Added by Brahma Startup Wizard.",
-            "rn": "radiusprovider-1.1.1.6"
+            "name": "198.18.1.72",
+            "descr": "RADIUS Provider - 198.18.1.72.  Added by Brahma Startup Wizard.",
+            "rn": "radiusprovider-198.18.1.72"
         },
         "children": [
             {
@@ -740,7 +859,7 @@ resource "aci_rest" "aaaRadiusProvider_1_1_1_6" {
 	EOF
 }
 
-resource "aci_rest" "Ext_Login_RADIUS_prov-1_1_1_6" {
+resource "aci_rest" "Ext_Login_RADIUS_prov-198_18_1_72" {
 	path		= "/api/node/mo/uni/userext.json"
 	class_name	= "aaaUserEp"
 	payload		= <<EOF
@@ -788,10 +907,10 @@ resource "aci_rest" "Ext_Login_RADIUS_prov-1_1_1_6" {
                                     {
                                         "aaaProviderRef": {
                                             "attributes": {
-                                                "dn": "uni/userext/radiusext/radiusprovidergroup-RAD_ISE/providerref-1.1.1.6",
+                                                "dn": "uni/userext/radiusext/radiusprovidergroup-RAD_ISE/providerref-198.18.1.72",
                                                 "order": "2",
-                                                "name": "1.1.1.6",
-                                                "descr": "Added RADIUS Server 1.1.1.6 - Brahma Startup Wizard"
+                                                "name": "198.18.1.72",
+                                                "descr": "Added RADIUS Server 198.18.1.72 - Brahma Startup Wizard"
                                             },
                                             "children": []
                                         }
@@ -808,7 +927,7 @@ resource "aci_rest" "Ext_Login_RADIUS_prov-1_1_1_6" {
 	EOF
 }
 
-resource "aci_rest" "tacacs_TACACS_acct_1_1_1_5" {
+resource "aci_rest" "tacacs_TACACS_acct_198_18_1_71" {
 	path		= "/api/node/mo/uni/fabric/tacacsgroup-TACACS_acct.json"
 	class_name	= "tacacsGroup"
 	payload		= <<EOF
@@ -824,11 +943,11 @@ resource "aci_rest" "tacacs_TACACS_acct_1_1_1_5" {
             {
                 "tacacsTacacsDest": {
                     "attributes": {
-                        "dn": "uni/fabric/tacacsgroup-TACACS_acct/tacacsdest-1.1.1.5-port-49",
+                        "dn": "uni/fabric/tacacsgroup-TACACS_acct/tacacsdest-198.18.1.71-port-49",
                         "authProtocol": "pap",
-                        "host": "1.1.1.5",
+                        "host": "198.18.1.71",
                         "key": "cisco1231",
-                        "rn": "tacacsdest-1.1.1.5-port-49"
+                        "rn": "tacacsdest-198.18.1.71-port-49"
                     },
                     "children": [
                         {
@@ -873,22 +992,22 @@ resource "aci_rest" "tacacsSrc" {
 	EOF
 }
 
-resource "aci_rest" "aaaTacacsPlusProvider_1_1_1_5" {
-	path		= "/api/node/mo/uni/userext/tacacsext/tacacsplusprovider-1.1.1.5.json"
+resource "aci_rest" "aaaTacacsPlusProvider_198_18_1_71" {
+	path		= "/api/node/mo/uni/userext/tacacsext/tacacsplusprovider-198.18.1.71.json"
 	class_name	= "aaaTacacsPlusProvider"
 	payload		= <<EOF
 {
     "aaaTacacsPlusProvider": {
         "attributes": {
-            "dn": "uni/userext/tacacsext/tacacsplusprovider-1.1.1.5",
+            "dn": "uni/userext/tacacsext/tacacsplusprovider-198.18.1.71",
             "timeout": "5",
             "retries": "5",
             "monitorServer": "disabled",
             "key": "cisco1231",
             "authProtocol": "pap",
-            "name": "1.1.1.5",
-            "descr": "TACACS+ Provider - 1.1.1.5.  Added by Brahma Startup Wizard.",
-            "rn": "tacacsplusprovider-1.1.1.5"
+            "name": "198.18.1.71",
+            "descr": "TACACS+ Provider - 198.18.1.71.  Added by Brahma Startup Wizard.",
+            "rn": "tacacsplusprovider-198.18.1.71"
         },
         "children": [
             {
@@ -905,7 +1024,7 @@ resource "aci_rest" "aaaTacacsPlusProvider_1_1_1_5" {
 	EOF
 }
 
-resource "aci_rest" "Ext_Login_TACACS_prov-1_1_1_5" {
+resource "aci_rest" "Ext_Login_TACACS_prov-198_18_1_71" {
 	path		= "/api/node/mo/uni/userext.json"
 	class_name	= "aaaUserEp"
 	payload		= <<EOF
@@ -953,10 +1072,10 @@ resource "aci_rest" "Ext_Login_TACACS_prov-1_1_1_5" {
                                     {
                                         "aaaProviderRef": {
                                             "attributes": {
-                                                "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-ISE/providerref-1.1.1.5",
+                                                "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-ISE/providerref-198.18.1.71",
                                                 "order": "1",
-                                                "name": "1.1.1.5",
-                                                "descr": "Added TACACS Server 1.1.1.5 - Brahma Startup Wizard"
+                                                "name": "198.18.1.71",
+                                                "descr": "Added TACACS Server 198.18.1.71 - Brahma Startup Wizard"
                                             },
                                             "children": []
                                         }
@@ -973,7 +1092,7 @@ resource "aci_rest" "Ext_Login_TACACS_prov-1_1_1_5" {
 	EOF
 }
 
-resource "aci_rest" "tacacs_TACACS_acct_1_1_1_6" {
+resource "aci_rest" "tacacs_TACACS_acct_198_18_1_72" {
 	path		= "/api/node/mo/uni/fabric/tacacsgroup-TACACS_acct.json"
 	class_name	= "tacacsGroup"
 	payload		= <<EOF
@@ -989,11 +1108,11 @@ resource "aci_rest" "tacacs_TACACS_acct_1_1_1_6" {
             {
                 "tacacsTacacsDest": {
                     "attributes": {
-                        "dn": "uni/fabric/tacacsgroup-TACACS_acct/tacacsdest-1.1.1.6-port-49",
+                        "dn": "uni/fabric/tacacsgroup-TACACS_acct/tacacsdest-198.18.1.72-port-49",
                         "authProtocol": "pap",
-                        "host": "1.1.1.6",
+                        "host": "198.18.1.72",
                         "key": "cisco123",
-                        "rn": "tacacsdest-1.1.1.6-port-49"
+                        "rn": "tacacsdest-198.18.1.72-port-49"
                     },
                     "children": [
                         {
@@ -1012,22 +1131,22 @@ resource "aci_rest" "tacacs_TACACS_acct_1_1_1_6" {
 	EOF
 }
 
-resource "aci_rest" "aaaTacacsPlusProvider_1_1_1_6" {
-	path		= "/api/node/mo/uni/userext/tacacsext/tacacsplusprovider-1.1.1.6.json"
+resource "aci_rest" "aaaTacacsPlusProvider_198_18_1_72" {
+	path		= "/api/node/mo/uni/userext/tacacsext/tacacsplusprovider-198.18.1.72.json"
 	class_name	= "aaaTacacsPlusProvider"
 	payload		= <<EOF
 {
     "aaaTacacsPlusProvider": {
         "attributes": {
-            "dn": "uni/userext/tacacsext/tacacsplusprovider-1.1.1.6",
+            "dn": "uni/userext/tacacsext/tacacsplusprovider-198.18.1.72",
             "timeout": "5",
             "retries": "5",
             "monitorServer": "disabled",
             "key": "cisco123",
             "authProtocol": "pap",
-            "name": "1.1.1.6",
-            "descr": "TACACS+ Provider - 1.1.1.6.  Added by Brahma Startup Wizard.",
-            "rn": "tacacsplusprovider-1.1.1.6"
+            "name": "198.18.1.72",
+            "descr": "TACACS+ Provider - 198.18.1.72.  Added by Brahma Startup Wizard.",
+            "rn": "tacacsplusprovider-198.18.1.72"
         },
         "children": [
             {
@@ -1044,7 +1163,7 @@ resource "aci_rest" "aaaTacacsPlusProvider_1_1_1_6" {
 	EOF
 }
 
-resource "aci_rest" "Ext_Login_TACACS_prov-1_1_1_6" {
+resource "aci_rest" "Ext_Login_TACACS_prov-198_18_1_72" {
 	path		= "/api/node/mo/uni/userext.json"
 	class_name	= "aaaUserEp"
 	payload		= <<EOF
@@ -1092,10 +1211,10 @@ resource "aci_rest" "Ext_Login_TACACS_prov-1_1_1_6" {
                                     {
                                         "aaaProviderRef": {
                                             "attributes": {
-                                                "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-ISE/providerref-1.1.1.6",
+                                                "dn": "uni/userext/tacacsext/tacacsplusprovidergroup-ISE/providerref-198.18.1.72",
                                                 "order": "2",
-                                                "name": "1.1.1.6",
-                                                "descr": "Added TACACS Server 1.1.1.6 - Brahma Startup Wizard"
+                                                "name": "198.18.1.72",
+                                                "descr": "Added TACACS Server 198.18.1.72 - Brahma Startup Wizard"
                                             },
                                             "children": []
                                         }

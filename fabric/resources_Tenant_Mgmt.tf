@@ -12,9 +12,9 @@ resource "aci_application_profile" "inb_ap" {
 	name                   = "inb_ap"
 }
 
-resource "aci_application_epg" "inb_epg" {
+resource "aci_application_epg" "inb_default" {
 	application_profile_dn = aci_application_profile.inb_ap.id
-	name                   = "inb_epg"
+	name                   = "default"
 	description            = "Inband Mgmt EPG for APIC and Switch Management"
 }
 
@@ -97,14 +97,14 @@ resource "aci_contract_subject" "Mgmt_Out_Subj" {
 	rev_flt_ports				 = "no"
 }
 
-resource "aci_epg_to_contract" "inb_epg_provider" {
-    application_epg_dn = aci_application_epg.inb_epg.id
+resource "aci_epg_to_contract" "inb_default_provider" {
+    application_epg_dn = aci_application_epg.inb_default.id
     contract_dn  = aci_contract.mgmt_In_Ct.id
     contract_type = "provider"
 }
 
-resource "aci_epg_to_contract" "inb_epg_consumer" {
-    application_epg_dn = aci_application_epg.inb_epg.id
+resource "aci_epg_to_contract" "inb_default_consumer" {
+    application_epg_dn = aci_application_epg.inb_default.id
     contract_dn  = aci_contract.mgmt_Out_Ct.id
     contract_type = "consumer"
 }
