@@ -138,9 +138,9 @@ resource "aci_rest" "breakout" {
     "infraBrkoutPortGrp": {
         "attributes": {
             "dn": "uni/infra/funcprof/brkoutportgrp-${each.value.name}",
-            "brkoutMap": "${each.value.map}"
-            "name": "${each.value.name}"
-            "descr": "Breakout of ${each.value.descr}.  Configured by Brahma startup Wizard"
+            "brkoutMap": "${each.value.map}",
+            "name": "${each.value.name}",
+            "descr": "Breakout of ${each.value.description}.  Configured by Brahma startup Wizard",
             "rn": "brkoutportgrp-${each.value.name}"
         },
         "children": []

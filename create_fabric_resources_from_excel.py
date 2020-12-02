@@ -191,7 +191,8 @@ def resource_backup(encryption_key, backup_hour, backup_minute, remote_host, mgm
     
     # Define Variables for Template Creation - Backup Policy
     # Admin > Import/Export > Remote Locations : {New Location}
-    resrc_desc = 'remote_location_{}'.format(remote_host)
+    remote_host_ = remote_host.replace('.', '_')
+    resrc_desc = 'remote_location_{}'.format(remote_host_)
     class_name = 'fileRemotePath'
     rn_strings = "path-{}".format(remote_host)
     dn_strings = "uni/fabric/{}".format(rn_strings)
@@ -1088,7 +1089,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
             # Define Variables for Template Creation - Leaf Port Selector Interface Selectors
             # Fabric > Access Policies > Interfaces > Leaf interfaces > Profiles {Leaf Profile}: Associated Interface Selectors
             wr_file.write('resource "aci_rest" "%s_%s_IntProf" {\n' % (name, mod_count))
-            wr_file.write('\tfor_each         = var.port-selector-%s\n' %(port_count))
+            wr_file.write('\tfor_each         = var.port-blocks-%s\n' %(port_count))
             wr_file.write('\tpath             = "/api/node/mo/uni/infra/accportprof-%s_IntProf/hports-Eth%s-${each.value.name}-typ-range.json"\n' % (name, mod_count))
             wr_file.write('\tclass_name       = "infraHPortS"\n')
             wr_file.write('\tpayload          = <<EOF\n')
@@ -1099,7 +1100,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
             name_port = 'Eth%s-${each.value.name}' % (mod_count)
             childclass = 'infraPortBlk'
             child_name = 'block2'
-            child_port = '${each.value.name}'
+            child_port = '${each.value.port}'
             child_Rn = 'portblk-block2'
             child_Dn = 'uni/infra/accportprof-%s_IntProf/hports-Eth%s-${each.value.name}-typ-range/%s' % (name, mod_count, child_Rn)
             mod_num = '%s' % (mod_count)
@@ -1182,7 +1183,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
             # Fabric > Access Policies > Interfaces > Spine interfaces > Profiles {Spine Profile}: Associated Interface Selectors
             mod_count += 1
             wr_file.write('resource "aci_rest" "%s_%s_IntProf" {\n' % (name, mod_count))
-            wr_file.write('\tfor_each         = var.port-selector-%s\n' %(port_count))
+            wr_file.write('\tfor_each         = var.port-blocks-%s\n' %(port_count))
             wr_file.write('\tpath             = "/api/node/mo/uni/infra/spaccportprof-%s_IntProf/shports-Eth%s-${each.value.name}-typ-range.json"\n' % (name, mod_count))
             wr_file.write('\tclass_name       = "infraSHPortS"\n')
             wr_file.write('\tpayload          = <<EOF\n')
@@ -1193,7 +1194,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
             name_port = 'Eth%s-${each.value.name}' % (mod_count)
             childclass = 'infraPortBlk'
             child_name = 'block2'
-            child_port = '${each.value.name}'
+            child_port = '${each.value.port}'
             child_Rn = 'portblk-block2'
             child_Dn = 'uni/infra/spaccportprof-%s_IntProf/shports-Eth%s-${each.value.name}-typ-range/%s' % (name, mod_count, child_Rn)
             mod_num = '%s' % (mod_count)

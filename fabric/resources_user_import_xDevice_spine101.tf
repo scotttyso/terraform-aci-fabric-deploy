@@ -130,7 +130,7 @@ resource "aci_rest" "spine_policy_group_spine101_SwSel" {
 }
 
 resource "aci_rest" "spine101_1_IntProf" {
-	for_each         = var.port-selector-36
+	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth1-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
@@ -147,9 +147,9 @@ resource "aci_rest" "spine101_1_IntProf" {
                     "attributes": {
                         "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth1-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "1",
-                        "fromPort": "${each.value.name}",
+                        "fromPort": "${each.value.port}",
                         "toCard": "1",
-                        "toPort": "${each.value.name}",
+                        "toPort": "${each.value.port}",
                         "name": "block2",
                         "rn": "portblk-block2"
                     }
@@ -162,7 +162,7 @@ resource "aci_rest" "spine101_1_IntProf" {
 }
 
 resource "aci_rest" "spine101_2_IntProf" {
-	for_each         = var.port-selector-36
+	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth2-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
@@ -179,9 +179,9 @@ resource "aci_rest" "spine101_2_IntProf" {
                     "attributes": {
                         "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth2-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "2",
-                        "fromPort": "${each.value.name}",
+                        "fromPort": "${each.value.port}",
                         "toCard": "2",
-                        "toPort": "${each.value.name}",
+                        "toPort": "${each.value.port}",
                         "name": "block2",
                         "rn": "portblk-block2"
                     }
@@ -194,7 +194,7 @@ resource "aci_rest" "spine101_2_IntProf" {
 }
 
 resource "aci_rest" "spine101_3_IntProf" {
-	for_each         = var.port-selector-36
+	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth3-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
@@ -211,9 +211,9 @@ resource "aci_rest" "spine101_3_IntProf" {
                     "attributes": {
                         "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth3-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "3",
-                        "fromPort": "${each.value.name}",
+                        "fromPort": "${each.value.port}",
                         "toCard": "3",
-                        "toPort": "${each.value.name}",
+                        "toPort": "${each.value.port}",
                         "name": "block2",
                         "rn": "portblk-block2"
                     }
@@ -226,7 +226,7 @@ resource "aci_rest" "spine101_3_IntProf" {
 }
 
 resource "aci_rest" "spine101_4_IntProf" {
-	for_each         = var.port-selector-36
+	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth4-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
@@ -243,9 +243,9 @@ resource "aci_rest" "spine101_4_IntProf" {
                     "attributes": {
                         "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth4-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "4",
-                        "fromPort": "${each.value.name}",
+                        "fromPort": "${each.value.port}",
                         "toCard": "4",
-                        "toPort": "${each.value.name}",
+                        "toPort": "${each.value.port}",
                         "name": "block2",
                         "rn": "portblk-block2"
                     }
@@ -258,7 +258,7 @@ resource "aci_rest" "spine101_4_IntProf" {
 }
 
 resource "aci_rest" "spine101_5_IntProf" {
-	for_each         = var.port-selector-36
+	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth5-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
@@ -275,9 +275,9 @@ resource "aci_rest" "spine101_5_IntProf" {
                     "attributes": {
                         "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth5-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "5",
-                        "fromPort": "${each.value.name}",
+                        "fromPort": "${each.value.port}",
                         "toCard": "5",
-                        "toPort": "${each.value.name}",
+                        "toPort": "${each.value.port}",
                         "name": "block2",
                         "rn": "portblk-block2"
                     }
@@ -290,7 +290,7 @@ resource "aci_rest" "spine101_5_IntProf" {
 }
 
 resource "aci_rest" "spine101_6_IntProf" {
-	for_each         = var.port-selector-36
+	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth6-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
@@ -307,9 +307,9 @@ resource "aci_rest" "spine101_6_IntProf" {
                     "attributes": {
                         "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth6-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "6",
-                        "fromPort": "${each.value.name}",
+                        "fromPort": "${each.value.port}",
                         "toCard": "6",
-                        "toPort": "${each.value.name}",
+                        "toPort": "${each.value.port}",
                         "name": "block2",
                         "rn": "portblk-block2"
                     }
@@ -322,7 +322,7 @@ resource "aci_rest" "spine101_6_IntProf" {
 }
 
 resource "aci_rest" "spine101_7_IntProf" {
-	for_each         = var.port-selector-36
+	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth7-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
@@ -339,9 +339,9 @@ resource "aci_rest" "spine101_7_IntProf" {
                     "attributes": {
                         "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth7-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "7",
-                        "fromPort": "${each.value.name}",
+                        "fromPort": "${each.value.port}",
                         "toCard": "7",
-                        "toPort": "${each.value.name}",
+                        "toPort": "${each.value.port}",
                         "name": "block2",
                         "rn": "portblk-block2"
                     }
@@ -354,7 +354,7 @@ resource "aci_rest" "spine101_7_IntProf" {
 }
 
 resource "aci_rest" "spine101_8_IntProf" {
-	for_each         = var.port-selector-36
+	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth8-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
@@ -371,9 +371,9 @@ resource "aci_rest" "spine101_8_IntProf" {
                     "attributes": {
                         "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth8-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "8",
-                        "fromPort": "${each.value.name}",
+                        "fromPort": "${each.value.port}",
                         "toCard": "8",
-                        "toPort": "${each.value.name}",
+                        "toPort": "${each.value.port}",
                         "name": "block2",
                         "rn": "portblk-block2"
                     }

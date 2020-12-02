@@ -17,7 +17,7 @@ resource "aci_rest" "encryption_key" {
 	EOF
 }
 
-resource "aci_rest" "remote_location_lnx2.example.com" {
+resource "aci_rest" "remote_location_lnx2_example_com" {
 	path		= "/api/node/mo/uni/fabric/path-lnx2.example.com.json"
 	class_name	= "fileRemotePath"
 	payload		= <<EOF
@@ -70,7 +70,7 @@ resource "aci_rest" "backup_scheduler" {
                         "dn": "uni/fabric/schedp-Every24Hours/recurrwinp-Every24Hours",
                         "name": "Every24Hours",
                         "hour": "0",
-                        "minute": "0",
+                        "minute": "15",
                         "concurCap": "20",
                         "rn": "recurrwinp-Every24Hours"
                     },
@@ -449,7 +449,7 @@ resource "aci_rest" "snmp_comm_read_access" {
     "snmpCommunityP": {
         "attributes": {
             "dn": "uni/fabric/snmppol-default/community-read_access",
-            "descr": "is it needed, I don't know",
+            "descr": "Community String 1",
             "name": "read_access",
             "rn": "community-read_access"
         },
@@ -467,7 +467,7 @@ resource "aci_rest" "snmp_comm_will-this-work" {
     "snmpCommunityP": {
         "attributes": {
             "dn": "uni/fabric/snmppol-default/community-will-this-work",
-            "descr": "None",
+            "descr": "Community String 2",
             "name": "will-this-work",
             "rn": "community-will-this-work"
         },

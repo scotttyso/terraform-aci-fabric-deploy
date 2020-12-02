@@ -142,7 +142,7 @@ resource "aci_rest" "leaf_policy_group_leaf202_SwSel" {
 }
 
 resource "aci_rest" "leaf202_1_IntProf" {
-	for_each         = var.port-selector-54
+	for_each         = var.port-blocks-54
 	path             = "/api/node/mo/uni/infra/accportprof-leaf202_IntProf/hports-Eth1-${each.value.name}-typ-range.json"
 	class_name       = "infraHPortS"
 	payload          = <<EOF
@@ -159,9 +159,9 @@ resource "aci_rest" "leaf202_1_IntProf" {
                     "attributes": {
                         "dn": "uni/infra/accportprof-leaf202_IntProf/hports-Eth1-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "1",
-                        "fromPort": "${each.value.name}",
+                        "fromPort": "${each.value.port}",
                         "toCard": "1",
-                        "toPort": "${each.value.name}",
+                        "toPort": "${each.value.port}",
                         "name": "block2",
                         "rn": "portblk-block2"
                     }
