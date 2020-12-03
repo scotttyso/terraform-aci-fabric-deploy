@@ -86,23 +86,23 @@ resource "aci_rest" "maint_grp_spine101" {
 	EOF
 }
 
-resource "aci_spine_profile" "spine101" {
-	name = "spine101"
+resource "aci_spine_interface_profile" "spine101" {
+	name   = "spine101"
 }
 
-resource "aci_spine_interface_profile" "spine101" {
-	name = "spine101"
+resource "aci_spine_profile" "spine101" {
+	name   = "spine101"
 }
 
 resource "aci_spine_switch_association" "spine101" {
-	spine_profile_dn              = aci_spine_profile.spine101.id
-	name                          = "spine101"
-	spine_switch_association_type = "range"
+	spine_profile_dn               = aci_spine_profile.spine101.id
+	name                           = "spine101"
+	spine_switch_association_type  = "range"
 }
 
 resource "aci_spine_port_selector" "spine101" {
-	spine_profile_dn              = aci_spine_profile.spine101.id
-	tdn                           = aci_spine_interface_profile.spine101.id
+	spine_profile_dn   = aci_spine_profile.spine101.id
+	tdn                = aci_spine_interface_profilespine101.id
 }
 
 resource "aci_rest" "spine_policy_group_spine101" {

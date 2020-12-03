@@ -428,25 +428,19 @@ def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
     # Tenants > mgmt > Networking > Bridge Domains > inb: Policy > L3 Configurations > Subnets
     gwy_prefix = inb_ipv4.split('/', 2)
     gateway_v4 = str(inb_gwv4) + '/' + str(gwy_prefix[1])
-    resrc_type = 'aci_subnet'
-    resrc_desc = 'inb_subnet'
-    attr_1st = 'parent_dn\t= aci_bridge_domain.inb.id'
-    attr_2nd = 'ip\t\t\t= "{}"'.format(gateway_v4)
-    attr_3rd = 'scope\t\t= ["public"]'
-
-    # Write Output to Resource Files using Template
-    tf_templates.aci_terraform_attr3(resrc_type, resrc_desc, attr_1st, attr_2nd, attr_3rd, wr_file)
+    wr_file.write('resource "aci_subnet" "inb_subnet" {\n')
+    wr_file.write('\tparent_dn  = aci_bridge_domain.inb.id\n')
+    wr_file.write('\tip         = "%s"\n' % (gateway_v4))
+    wr_file.write('\tscope      = ["public"]\n')
+    wr_file.write('}\n\n')
 
     # Define Variables for Template Creation - Inband VLAN Pool
     # Fabric > Access Policies > Pools > VLAN > inband_vl-pool: Encap Blocks
-    resrc_type = 'aci_ranges'
-    resrc_desc = 'inb_vlan'
-    attr_1st = 'vlan_pool_dn	= "uni/infra/vlanns-[inband_vl-pool]-static"'
-    attr_2nd = '_from		    = "vlan-{}"'.format(inb_vlan)
-    attr_3rd = 'to		        = "vlan-{}"'.format(inb_vlan)
-
-    # Write Output to Resource Files using Template
-    tf_templates.aci_terraform_attr3(resrc_type, resrc_desc, attr_1st, attr_2nd, attr_3rd, wr_file)
+    wr_file.write('resource "aci_ranges" "inb_vlan" {\n')
+    wr_file.write('\tvlan_pool_dn   = "uni/infra/vlanns-[inband_vl-pool]-static"\n')
+    wr_file.write('\t_from          = "vlan-%s"\n' % (inb_vlan))
+    wr_file.write('\tto		        = "vlan-%s"\n' % (inb_vlan))
+    wr_file.write('}\n\n')
 
     # Define Variables for Template Creation - Inband Mgmt Default
     # Tenants > mgmt > Node Management EPGs > In-Band EPG
@@ -1099,16 +1093,16 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
         # Define Variables for Template Creation - Spine Selectors to Switch Selector
         # Fabric > Access Policies > Switches > Spine Switches > Profiles: {Spine Profile}: Spine Selectors
         wr_file.write('resource "aci_spine_switch_association" "%s" {\n' % (name))
-        wr_file.write('\tspine_profile_dn                = aci_spine_profile.%s.id\n' % (name))
+        wr_file.write('\tspine_profile_dn               = aci_spine_profile.%s.id\n' % (name))
         wr_file.write('\tname                           = "%s"\n' % (name))
-        wr_file.write('\tspine_switch_association_type   = "range"\n' % (name))
+        wr_file.write('\tspine_switch_association_type  = "range"\n')
         wr_file.write('}\n\n')
 
         # Define Variables for Template Creation - Spine Port Selector to Switch Selector
         # Fabric > Access Policies > Switches > Spine Switches > Profiles: {Spine Profile}: Associated Interface Selector Profile
         wr_file.write('resource "aci_spine_port_selector" "%s" {\n' % (name))
-        wr_file.write('\tspine_profile_dn                = aci_spine_profile.%s.id\n' % (name))
-        wr_file.write('\tdn                             = aci_spine_interface_profile%s.id"\n' % (name))
+        wr_file.write('\tspine_profile_dn   = aci_spine_profile.%s.id\n' % (name))
+        wr_file.write('\ttdn                = aci_spine_interface_profile%s.id\n' % (name))
         wr_file.write('}\n\n')
 
         # Define Variables for Template Creation - Spine Policy Group Association

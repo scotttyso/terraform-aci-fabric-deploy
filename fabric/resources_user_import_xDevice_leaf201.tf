@@ -145,4 +145,3 @@ resource "aci_access_port_block" "leaf201_1" {
 	to_card                    = "1"
 	to_port                    = each.value.port
 }
-

@@ -1,14 +1,14 @@
 # Use this Resource File to Register the inband management network for the Fabric
 
 resource "aci_subnet" "inb_subnet" {
-	parent_dn	= aci_bridge_domain.inb.id
-	ip			= "198.18.2.1/24"
-	scope		= ["public"]
+	parent_dn  = aci_bridge_domain.inb.id
+	ip         = "198.18.2.1/24"
+	scope      = ["public"]
 }
 
 resource "aci_ranges" "inb_vlan" {
-	vlan_pool_dn	= "uni/infra/vlanns-[inband_vl-pool]-static"
-	_from		    = "vlan-100"
+	vlan_pool_dn   = "uni/infra/vlanns-[inband_vl-pool]-static"
+	_from          = "vlan-100"
 	to		        = "vlan-100"
 }
 
