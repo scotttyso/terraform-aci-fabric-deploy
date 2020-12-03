@@ -1100,15 +1100,15 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
         # Define Variables for Template Creation - Spine Selectors to Switch Selector
         # Fabric > Access Policies > Switches > Spine Switches > Profiles: {Spine Profile}: Spine Selectors
         wr_file.write('resource "aci_spine_switch_association" "%s" {\n' % (name))
-        wr_file.write('\spine_profile_dn                = aci_spine_profile.%s.id\n' % (name))
+        wr_file.write('\tspine_profile_dn                = aci_spine_profile.%s.id\n' % (name))
         wr_file.write('\tname                           = "%s"\n' % (name))
-        wr_file.write('\spine_switch_association_type   = "range"\n' % (name))
+        wr_file.write('\tspine_switch_association_type   = "range"\n' % (name))
         wr_file.write('}\n\n')
 
         # Define Variables for Template Creation - Spine Port Selector to Switch Selector
         # Fabric > Access Policies > Switches > Spine Switches > Profiles: {Spine Profile}: Associated Interface Selector Profile
         wr_file.write('resource "aci_spine_port_selector" "%s" {\n' % (name))
-        wr_file.write('\spine_profile_dn                = aci_spine_profile.%s.id\n' % (name))
+        wr_file.write('\tspine_profile_dn                = aci_spine_profile.%s.id\n' % (name))
         wr_file.write('\tdn                             = aci_spine_interface_profile%s.id"\n' % (name))
         wr_file.write('}\n\n')
 
