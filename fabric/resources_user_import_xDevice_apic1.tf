@@ -1,4 +1,4 @@
-resource "aci_rest" "inb_mgmt_apic_apic1" {
+resource "aci_rest" "inb_mgmt_apic1" {
 	path		= "/api/node/mo/uni/tn-mgmt.json"
 	class_name	= "mgmtRsInBStNode"
 	payload		= <<EOF

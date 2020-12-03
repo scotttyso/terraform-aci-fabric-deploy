@@ -107,7 +107,7 @@ def resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_le
 
     # Define Variables for Template Creation - APIC Inband Management IP
     # Tenants > mgmt > Node Management Addresses > Static Node Management Addresses
-    resrc_desc = 'inb_mgmt_apic_{}'.format(name)
+    resrc_desc = 'inb_mgmt_{}'.format(name)
     class_name = 'mgmtRsInBStNode'
     tDn_string = "topology/pod-{}/node-{}".format(pod_id, node_id)
     dn_strings = "uni/tn-mgmt/mgmtp-default/inb-default/rsinBStNode-[topology/pod-{}/node-{}]".format(pod_id, node_id)
