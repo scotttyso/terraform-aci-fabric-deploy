@@ -108,6 +108,7 @@ def resource_vrf(tenant_name, vrf_name, vrf_desc, fltr_type):
     wr_file.write('}\n\n')
 
     wr_file.write('resource "aci_any" "%s_any" {\n' % (vrf_name))
+    wr_file.write('\tdepends_on                     = [aci_vrf.%s]\n' % (vrf_name))
     wr_file.write('\tvrf_dn                         = "uni/tn-%s/ctx-%s"\n' % (tenant_name, vrf_name))
     wr_file.write('\tdescription                    = "%s"\n' % (vrf_desc))
 
@@ -122,7 +123,7 @@ def resource_vrf(tenant_name, vrf_name, vrf_desc, fltr_type):
 
         # Define Variables for Template Creation - vzAny Contracts
         # Tenants > Networking > VRFs > {VRF Name} > EPG Collection for VRF: Provider/Consumer Contracts
-        path_attrs = '"/api/node/mo/uni/tn-{}/ctx-{}/any.json"'.format(tenant_name, vrf_name)
+        path_attrs = '"/api/node/mo/uni/tn-%s/ctx-%s/any.json"' % (tenant_name, vrf_name)
         class_name_1 = 'vzRsAnyToCons'
         class_name_2 = 'vzRsAnyToProv'
 
@@ -131,9 +132,9 @@ def resource_vrf(tenant_name, vrf_name, vrf_desc, fltr_type):
         data_out_2 = {class_name_2: {'attributes': {'tnVzBrCPName': 'default'}}}
 
         # Write Output to Resource Files using Template
-        resrc_desc = 'vzAny_{}_Cons'.format(vrf_name)
+        resrc_desc = 'vzAny_%s_Cons' % (vrf_name)
         tf_templates.aci_rest(resrc_desc, path_attrs, class_name_1, data_out_1, wr_file)
-        resrc_desc = 'vzAny_{}_Prov'.format(vrf_name)
+        resrc_desc = 'vzAny_%s_Prov' % (vrf_name)
         tf_templates.aci_rest(resrc_desc, path_attrs, class_name_2, data_out_2, wr_file)
 
 line_count = 0
@@ -151,7 +152,7 @@ for r in ws1.rows:
         elif type == 'tnt_vrf':
             tenant_name = str(r[1].value)
             tenant_desc = str(r[2].value)
-            vrf_name = '{}_vrf'.format(tenant_name)
+            vrf_name = '%s_vrf' % (tenant_name)
             vrf_desc = str(r[5].value)
             fltr_type = str(r[8].value)
 

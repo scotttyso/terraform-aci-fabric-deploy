@@ -18,6 +18,7 @@ resource "aci_rest" "snmp_ctx" {
 
 resource "aci_rest" "snmp_ctx_community" {
 	for_each        = var.snmp_ctx_community
+	depends_on      = [aci_tenant.mgmt]
 	path            = "/api/node/mo/uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx/community-${each.value.name}.json"
 	class_name      = "vzOOBBrCP"
 	payload         = <<EOF

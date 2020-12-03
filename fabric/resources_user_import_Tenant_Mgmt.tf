@@ -13,6 +13,7 @@ resource "aci_ranges" "inb_vlan" {
 }
 
 resource "aci_rest" "inb_mgmt_default_epg" {
+	depends_on		= [aci_vlan_pool.default]
 	path		= "/api/node/mo/uni/tn-mgmt/mgmtp-default/inb-default.json"
 	class_name	= "mgmtInB"
 	payload		= <<EOF

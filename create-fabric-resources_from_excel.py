@@ -102,23 +102,24 @@ def resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_le
     pod_id = str(pod_id)
 
     # Which File to Write Data to
-    apic_file = './fabric/resources_user_import_xDevice_{}.tf'.format(name)
+    apic_file = './fabric/resources_user_import_xDevice_%s.tf' % (name)
     wr_file = open(apic_file, 'w')
 
     # Define Variables for Template Creation - APIC Inband Management IP
     # Tenants > mgmt > Node Management Addresses > Static Node Management Addresses
-    resrc_desc = 'inb_mgmt_{}'.format(name)
+    resrc_desc = 'inb_mgmt_%s' % (name)
+    depends_on = 'aci_application_epg.inb_default,aci_rest.oob_mgmt_Out_Ct'
     class_name = 'mgmtRsInBStNode'
-    tDn_string = "topology/pod-{}/node-{}".format(pod_id, node_id)
-    dn_strings = "uni/tn-mgmt/mgmtp-default/inb-default/rsinBStNode-[topology/pod-{}/node-{}]".format(pod_id, node_id)
-    path_attrs = '"/api/node/mo/uni/tn-mgmt.json"'
+    tDn_string = 'topology/pod-%s/node-%s' % (pod_id, node_id)
+    dn_strings = 'uni/tn-mgmt/mgmtp-default/inb-default/rsinBStNode-[topology/pod-%s/node-%s]' % (pod_id, node_id)
+    path_attrs = '/api/node/mo/uni/tn-mgmt.json'
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'addr': inb_ipv4, 'gw': inb_gwv4, 'tDn': tDn_string}
     data_out = {class_name: {'attributes': base_atts, 'children': []}}
 
     # Write Output to Resource Files using Template
-    tf_templates.aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+    tf_templates.aci_rest_depends_on(resrc_desc, depends_on, path_attrs, class_name, data_out, wr_file)
 
     # Combine Input Port Information to read as List
     list_ports = [p1_leaf + ',' + p1_swpt,p2_leaf + ',' + p2_swpt]
@@ -134,17 +135,18 @@ def resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_le
 
         # Define Variables for Template Creation - APIC Port Group to Interface Selector
         # Fabric > Access Policies > Interfaces > Leaf Interfaces > Profiles > {Leaf Profile Name} > {Port Selector}: Interface Policy Group
-        resrc_desc = '{}_port_2_{}'.format(name, port_list_count)
+        resrc_desc = '%s_port_2_%s' % (name, port_list_count)
+        depends_on = 'aci_access_port_block.%s_%s' % (leaf, module)
         class_name = 'infraRsAccBaseGrp'
-        tDn_string = "uni/infra/funcprof/accportgrp-inband_ap"
-        path_attrs = '"/api/node/mo/uni/infra/accportprof-{}/hports-Eth{}-{}-typ-range/rsaccBaseGrp.json"'.format(leaf, module, port)
+        tDn_string = 'uni/infra/funcprof/accportgrp-inband_ap'
+        path_attrs = '/api/node/mo/uni/infra/accportprof-%s/hports-Eth%s-%s-typ-range/rsaccBaseGrp.json' % (leaf, module, port)
 
         # Format Variables for JSON Output
         base_atts = {'tDn': tDn_string}
         data_out = {class_name: {'attributes': base_atts, 'children': []}}
 
         # Write Output to Resource Files using Template
-        tf_templates.aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+        tf_templates.aci_rest_depends_on(resrc_desc, depends_on, path_attrs, class_name, data_out, wr_file)
 
     # Close the File created for this resource
     wr_file.close()
@@ -178,9 +180,9 @@ def resource_backup(encryption_key, backup_hour, backup_minute, remote_host, mgm
     # Define Variables for Template Creation - Backup Encryption Key
     # System > System Settings > Global AES Passphrase Encryption Settings
     resrc_desc = 'encryption_key'
-    class_name = "pkiExportEncryptionKey"
-    dn_strings = "uni/exportcryptkey"
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    class_name = 'pkiExportEncryptionKey'
+    dn_strings = 'uni/exportcryptkey'
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'strongEncryptionEnabled': 'true', 'passphrase': encryption_key}
@@ -192,13 +194,13 @@ def resource_backup(encryption_key, backup_hour, backup_minute, remote_host, mgm
     # Define Variables for Template Creation - Backup Policy
     # Admin > Import/Export > Remote Locations : {New Location}
     remote_host_ = remote_host.replace('.', '_')
-    resrc_desc = 'remote_location_{}'.format(remote_host_)
+    resrc_desc = 'remote_location_%s' % (remote_host_)
     class_name = 'fileRemotePath'
-    rn_strings = "path-{}".format(remote_host)
-    dn_strings = "uni/fabric/{}".format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    rn_strings = 'path-%s' % (remote_host)
+    dn_strings = 'uni/fabric/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
     child_1_class = 'fileRsARemoteHostToEpg'
-    child_1_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
+    child_1_tDn = 'uni/tn-mgmt/mgmtp-default/%s' % (mgmt_epg)
 
     # Format Variables for JSON Output
     if auth_type == 'usePassword':
@@ -221,12 +223,12 @@ def resource_backup(encryption_key, backup_hour, backup_minute, remote_host, mgm
     trigg_name = 'Every24Hours'
     resrc_desc = 'backup_scheduler'
     class_name = 'trigSchedP'
-    rn_strings = "schedp-{}".format(trigg_name)
-    dn_strings = "uni/fabric/{}".format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    rn_strings = 'schedp-%s' % (trigg_name)
+    dn_strings = 'uni/fabric/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
     child_1_class = 'trigRecurrWindowP'
-    child_1_Rn = 'recurrwinp-{}'.format(trigg_name)
-    child_1_Dn = 'uni/fabric/{}/{}'.format(rn_strings, child_1_Rn)
+    child_1_Rn = 'recurrwinp-%s' % (trigg_name)
+    child_1_Dn = 'uni/fabric/%s/%s' % (rn_strings, child_1_Rn)
     description = 'Create Backups Every 24 Hours - Brahma Startup Script.'
 
     # Format Variables for JSON Output
@@ -244,9 +246,9 @@ def resource_backup(encryption_key, backup_hour, backup_minute, remote_host, mgm
     backup_name = 'backup_every24Hours'
     resrc_desc = 'backup_Policy'
     class_name = 'configExportP'
-    rn_strings = "configexp-{}".format(backup_name)
-    dn_strings = "uni/fabric/{}".format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    rn_strings = 'configexp-%s' % (backup_name)
+    dn_strings = 'uni/fabric/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
     child_1_class = 'configRsExportScheduler'
     child_2_class = 'configRsRemotePath'
     description = 'Backup Configuration Every 24 Hours - Created by Brahma Startup Script'
@@ -277,11 +279,11 @@ def resource_bgp_as(bgp_as):
 
     # Define Variables for Template Creation - BGP Autonomous System Number
     # System > System Settings > BGP Route Reflector
-    resrc_desc = 'bgp_as_{}'.format(bgp_as)
-    class_name = "bgpAsP"
-    rn_strings = "as"
-    dn_strings = "uni/fabric/bgpInstP-default/{}".format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    resrc_desc = 'bgp_as_%s' % (bgp_as)
+    class_name = 'bgpAsP'
+    rn_strings = 'as'
+    dn_strings = 'uni/fabric/bgpInstP-default/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'asn': bgp_as, 'rn': rn_strings}
@@ -306,11 +308,11 @@ def resource_bgp_rr(node_id):
 
     # Define Variables for Template Creation - BGP Route Reflectors
     # System > System Settings > BGP Route Reflector
-    resrc_desc = 'bgp_rr_{}'.format(node_id)
+    resrc_desc = 'bgp_rr_%s' % (node_id)
     class_name = 'bgpRRNodePEp'
-    rn_strings = "node-{}".format(node_id)
-    dn_strings = "uni/fabric/bgpInstP-default/rr/node-{}".format(node_id)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    rn_strings = 'node-%s' % (node_id)
+    dn_strings = 'uni/fabric/bgpInstP-default/rr/node-%s' % (node_id)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'id': node_id, 'rn': rn_strings}
@@ -336,11 +338,11 @@ def resource_dns(dns_ipv4, prefer):
     # Define Variables for Template Creation - DNS Providers
     # Fabric > Fabric Policies > Policies > Global > DNS Profiles > default
     dns_ipv4_ = dns_ipv4.replace('.', '_')
-    resrc_desc = 'dns_{}'.format(dns_ipv4_)
+    resrc_desc = 'dns_%s' % (dns_ipv4_)
     class_name = 'dnsProv'
-    rn_strings = "prov-[{}]".format(dns_ipv4)
-    dn_strings = "uni/fabric/dnsp-default/{}".format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    rn_strings = 'prov-[%s]' % (dns_ipv4)
+    dn_strings = 'uni/fabric/dnsp-default/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'addr': dns_ipv4, 'preferred': prefer, 'rn': rn_strings}
@@ -365,10 +367,10 @@ def resource_dns_mgmt(mgmt_domain):
 
     # Define Variables for Template Creation - DNM Management Domain
     # Fabric > Fabric Policies > Policies > Global > DNS Profiles > default
-    resrc_desc = 'dns_epg_{}'.format(mgmt_epg)
+    resrc_desc = 'dns_epg_%s' % (mgmt_epg)
     class_name = 'dnsRsProfileToEpg'
-    tDn_string = "uni/tn-mgmt/mgmtp-default/{}".format(mgmt_epg)
-    path_attrs = '"/api/node/mo/uni/fabric/dnsp-default.json"'
+    tDn_string = 'uni/tn-mgmt/mgmtp-default/%s' % (mgmt_epg)
+    path_attrs = '/api/node/mo/uni/fabric/dnsp-default.json'
 
     # Format Variables for JSON Output
     base_atts = {'tDn': tDn_string}
@@ -394,11 +396,11 @@ def resource_domain(domain, prefer):
     # Define Variables for Template Creation - Domains
     # Fabric > Fabric Policies > Policies > Global > DNS Profiles > default
     domain_ = domain.replace('.', '_')
-    resrc_desc = 'domain_{}'.format(domain_)
+    resrc_desc = 'domain_%s' % (domain_)
     class_name = 'dnsDomain'
-    rn_strings = "dom-[{}]".format(domain)
-    dn_strings = "uni/fabric/dnsp-default/{}".format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    rn_strings = 'dom-[%s]' % (domain)
+    dn_strings = 'uni/fabric/dnsp-default/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'name': domain, 'isDefault': prefer, 'rn': rn_strings}
@@ -445,11 +447,12 @@ def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
     # Define Variables for Template Creation - Inband Mgmt Default
     # Tenants > mgmt > Node Management EPGs > In-Band EPG
     resrc_desc = 'inb_mgmt_default_epg'
+    depends_on = 'aci_vlan_pool.default'
     class_name = 'mgmtInB'
     dn_strings = 'uni/tn-mgmt/mgmtp-default/inb-default'
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
     descrption = 'Default Inband Mmgmt EPG Used by Brahma Startup Wizard.'
-    encapsulat = 'vlan-{}'.format(inb_vlan)
+    encapsulat = 'vlan-%s' % (inb_vlan)
     childclass = 'mgmtRsMgmtBD'
     child_Brdg = 'inb'
 
@@ -459,7 +462,7 @@ def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
     data_out = {class_name: {'attributes': base_atts, 'children': [{childclass: {'attributes': child_atts}}]}}
 
     # Write Output to Resource Files using Template
-    tf_templates.aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+    tf_templates.aci_rest_depends_on(resrc_desc, depends_on, path_attrs, class_name, data_out, wr_file)
 
     # Close the File created for this resource
     wr_file.close()
@@ -482,13 +485,13 @@ def resource_ntp(ntp_ipv4, prefer, mgmt_domain):
     # Define Variables for Template Creation - NTP Server
     # Fabric > Fabric Policies > Policies > Pod > Data and Time > Policy default
     ntp_ipv4_ = ntp_ipv4.replace('.', '_')
-    resrc_desc = 'ntp_{}'.format(ntp_ipv4_)
+    resrc_desc = 'ntp_%s' % (ntp_ipv4_)
     class_name = 'datetimeNtpProv'
-    rn_strings = 'ntpprov-{}'.format(ntp_ipv4)
-    dn_strings = 'uni/fabric/time-default/{}'.format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    rn_strings = 'ntpprov-%s' % (ntp_ipv4)
+    dn_strings = 'uni/fabric/time-default/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
     childclass = 'datetimeRsNtpProvToEpg'
-    child_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
+    child_tDn = 'uni/tn-mgmt/mgmtp-default/%s' % (mgmt_epg)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'name': ntp_ipv4, 'preferred': prefer, 'rn': rn_strings}
@@ -523,14 +526,14 @@ def resource_radius(login_domain, radius_ipv4, radius_port, radius_key, auth_pro
     # Define Variables for Template Creation - RADIUS Provider
     # Admin > AAA > Authentication: RADIUS
     radius_ipv4_ = radius_ipv4.replace('.', '_')
-    resrc_desc = 'aaaRadiusProvider_{}'.format(radius_ipv4_)
+    resrc_desc = 'aaaRadiusProvider_%s' % (radius_ipv4_)
     class_name = 'aaaRadiusProvider'
-    rn_strings = "radiusprovider-{}".format(radius_ipv4)
-    dn_strings = "uni/userext/radiusext/{}".format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
-    descrption = 'RADIUS Provider - {}.  Added by Brahma Startup Wizard.'.format(radius_ipv4)
+    rn_strings = 'radiusprovider-%s' % (radius_ipv4)
+    dn_strings = 'uni/userext/radiusext/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
+    descrption = 'RADIUS Provider - %s.  Added by Brahma Startup Wizard.' % (radius_ipv4)
     child_1_class = 'aaaRsSecProvToEpg'
-    child_1_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
+    child_1_tDn = 'uni/tn-mgmt/mgmtp-default/%s' % (mgmt_epg)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'timeout': proto_timeout, 'retries': proto_retry, 'monitorServer': 'disabled', 'key': radius_key, 
@@ -544,25 +547,25 @@ def resource_radius(login_domain, radius_ipv4, radius_port, radius_key, auth_pro
 
     # Define Variables for Template Creation - External Login Domain - RADIUS
     # Admin > AAA > Authentication: AAA > Login Domains
-    resrc_desc = 'Ext_Login_RADIUS_prov-{}'.format(radius_ipv4_)
+    resrc_desc = 'Ext_Login_RADIUS_prov-%s' % (radius_ipv4_)
     class_name = 'aaaUserEp'
-    dn_strings = "uni/userext"
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    dn_strings = 'uni/userext'
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
     child_1_class = 'aaaLoginDomain'
-    child_1_Rn = 'logindomain-{}'.format(login_domain)
-    child_1_Dn = 'uni/userext/{}'.format(child_1_Rn)
+    child_1_Rn = 'logindomain-%s' % (login_domain)
+    child_1_Dn = 'uni/userext/%s' % (child_1_Rn)
     sub_child_1_class = 'aaaDomainAuth'
     sub_child_1_Rn = 'domainauth'
-    sub_child_1_Dn = 'uni/userext/logindomain-{}/domainauth'.format(login_domain)
-    sub_child_1_desc = 'RADIUS Login Domain {}. Created by Brahma Wizard.'.format(login_domain)
+    sub_child_1_Dn = 'uni/userext/logindomain-%s/domainauth' % (login_domain)
+    sub_child_1_desc = 'RADIUS Login Domain %s. Created by Brahma Wizard.' % (login_domain)
     child_2_class = 'aaaRadiusEp'
     child_2_Dn = 'uni/userext/radiusext'
     sub_child_2_class = 'aaaRadiusProviderGroup'
-    sub_child_2_Dn = 'uni/userext/radiusext/radiusprovidergroup-{}'.format(login_domain)
+    sub_child_2_Dn = 'uni/userext/radiusext/radiusprovidergroup-%s' % (login_domain)
     basement_2_class = 'aaaProviderRef'
-    basement_2_dn = 'uni/userext/radiusext/radiusprovidergroup-{}/providerref-{}'.format(login_domain, radius_ipv4)
-    basement_order = '{}'.format(radius_order_count)
-    basement_descr = 'Added RADIUS Server {} - Brahma Startup Wizard'.format(radius_ipv4)
+    basement_2_dn = 'uni/userext/radiusext/radiusprovidergroup-%s/providerref-%s' % (login_domain, radius_ipv4)
+    basement_order = '%s' % (radius_order_count)
+    basement_descr = 'Added RADIUS Server %s - Brahma Startup Wizard' % (radius_ipv4)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings}
@@ -599,21 +602,21 @@ def resource_realm(auth_realm, login_domain, login_type):
 
     # Define Variables for Template Creation - Authentication Realms
     # Admin > AAA > Authentication: AAA > Policy
-    resrc_desc = 'auth-realm_{}'.format(auth_realm)
+    resrc_desc = 'auth-realm_%s' % (auth_realm)
     class_name = 'aaaAuthRealm'
-    dn_strings = "uni/userext/authrealm"
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    dn_strings = 'uni/userext/authrealm'
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
     if auth_realm == 'console':
         childclass = 'aaaConsoleAuth'
         child_Dn = 'uni/userext/authrealm/consoleauth'
     elif auth_realm == 'default':
         childclass = 'aaaDefaultAuth'
         child_Dn = 'uni/userext/authrealm/defaultauth'
-    realm_attr = '{}'.format(login_type)
+    realm_attr = '%s' % (login_type)
     if login_type == 'local':
         providergroup = ''
     else:
-        providergroup = '{}'.format(login_domain)
+        providergroup = '%s' % (login_domain)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings}
@@ -647,21 +650,21 @@ def resource_SmarthCallHome(smtp_port, smtp_relay, mgmt_domain, ch_fr_email, ch_
     # Admin > External Data Collectors >  Monitoring Destinations > Smart callhome
     resrc_desc = 'SmartCallHome_dg'
     class_name = 'callhomeSmartGroup'
-    rn_strings = "smartgroup-SmartCallHome_dg"
-    dn_strings = "uni/fabric/{}".format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    rn_strings = 'smartgroup-SmartCallHome_dg'
+    dn_strings = 'uni/fabric/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
     name = 'SmartCallHome_dg'
     child_1_class = 'callhomeProf'
     child_1_Rn = 'prof'
-    child_1_Dn = 'uni/fabric/smartgroup-SmartCallHome_dg/{}'.format(child_1_Rn)
+    child_1_Dn = 'uni/fabric/smartgroup-SmartCallHome_dg/%s' % (child_1_Rn)
     sub_child_class = 'callhomeSmtpServer'
     sub_child_Rn = 'smtp'
-    sub_child_Dn = 'uni/fabric/smartgroup-SmartCallHome_dg/prof/{}'.format(sub_child_Rn)
+    sub_child_Dn = 'uni/fabric/smartgroup-SmartCallHome_dg/prof/%s' % (sub_child_Rn)
     basement_class = 'fileRsARemoteHostToEpg'
-    basement_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
+    basement_tDn = 'uni/tn-mgmt/mgmtp-default/%s' % (mgmt_epg)
     child_2_class = 'callhomeSmartDest'
     child_2_Rn = 'smartdest-SCH_Receiver'
-    child_2_Dn = 'uni/fabric/smartgroup-SmartCallHome_dg/{}'.format(child_2_Rn)
+    child_2_Dn = 'uni/fabric/smartgroup-SmartCallHome_dg/%s' % (child_2_Rn)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'name': name, 'rn': rn_strings}
@@ -682,9 +685,9 @@ def resource_SmarthCallHome(smtp_port, smtp_relay, mgmt_domain, ch_fr_email, ch_
     # Fabric > Fabric Policies > Policies > Monitoring >  Common Policy > Callhome/Smart Callhome/SNMP/Syslog/TACACS > Smart Callhome
     resrc_desc = 'callhomeSmartSrc'
     class_name = 'callhomeSmartSrc'
-    rn_strings = "smartchsrc"
-    dn_strings = "uni/infra/moninfra-default/{}".format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    rn_strings = 'smartchsrc'
+    dn_strings = 'uni/infra/moninfra-default/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
     name = 'SmartCallHome_dg'
     child_1_class = 'callhomeRsSmartdestGroup'
     child_1_tDn = 'uni/fabric/smartgroup-SmartCallHome_dg'
@@ -716,11 +719,11 @@ def resource_snmp_client(client_name, client_ipv4, mgmt_domain):
     # Define Variables for Template Creation
     # Fabric > Fabric Policies > Policies > Pod >  SNMP > default
     client_ipv4_ = client_ipv4.replace('.', '_')
-    resrc_desc = 'snmp_client_{}'.format(client_ipv4_)
+    resrc_desc = 'snmp_client_%s' % (client_ipv4_)
     class_name = 'snmpClientP'
-    rn_strings = "client-{}".format(client_ipv4)
-    dn_strings = "uni/fabric/snmppol-default/clgrp-{}_Clients/client-[{}]".format(snmp_mgmt, client_ipv4)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    rn_strings = 'client-%s' % (client_ipv4)
+    dn_strings = 'uni/fabric/snmppol-default/clgrp-%s_Clients/client-[%s]' % (snmp_mgmt, client_ipv4)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'name': client_name, 'addr': client_ipv4, 'rn': rn_strings}
@@ -745,11 +748,11 @@ def resource_snmp_comm(community, description):
 
     # Define Variables for Template Creation - SNMP Communities
     # Fabric > Fabric Policies > Policies > Pod >  SNMP > default
-    resrc_desc = 'snmp_comm_{}'.format(community)
+    resrc_desc = 'snmp_comm_%s' % (community)
     class_name = 'snmpCommunityP'
-    rn_strings = "community-{}".format(community)
-    dn_strings = "uni/fabric/snmppol-default/{}".format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    rn_strings = 'community-%s' % (community)
+    dn_strings = 'uni/fabric/snmppol-default/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'descr': description, 'name': community, 'rn': rn_strings}
@@ -778,8 +781,8 @@ def resource_snmp_info(contact, location):
     # Fabric > Fabric Policies > Policies > Pod >  SNMP > default
     resrc_desc = 'snmp_info'
     class_name = 'snmpPol'
-    dn_strings = "uni/fabric/snmppol-default"
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    dn_strings = 'uni/fabric/snmppol-default'
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
     descrption = 'This is the default SNMP Policy'
 
     # Format Variables for JSON Output
@@ -815,10 +818,10 @@ def resource_snmp_trap(snmp_ipv4, snmp_port, snmp_vers, snmp_string, snmp_auth, 
     # Define Variables for Template Creation
     # Fabric > Fabric Policies > Policies > Pod >  SNMP > default
     snmp_ipv4_ = snmp_ipv4.replace('.', '_')
-    resrc_desc = 'snmp_trap_default_{}'.format(snmp_ipv4_)
+    resrc_desc = 'snmp_trap_default_%s' % (snmp_ipv4_)
     class_name = 'snmpTrapFwdServerP'
-    dn_strings = "uni/fabric/snmppol-default/trapfwdserver-[{}]".format(snmp_ipv4)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    dn_strings = 'uni/fabric/snmppol-default/trapfwdserver-[%s]' % (snmp_ipv4)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
 
     # Format Variables for JSON Output
     if snmp_port == '':
@@ -832,18 +835,18 @@ def resource_snmp_trap(snmp_ipv4, snmp_port, snmp_vers, snmp_string, snmp_auth, 
     
     # Define Variables for Template Creation - SNMP Trap Destination Group
     # Admin > External Data Collectors >  Monitoring Destinations > SNMP
-    resrc_desc = 'snmp_trap_dest_{}'.format(snmp_ipv4_)
+    resrc_desc = 'snmp_trap_dest_%s' % (snmp_ipv4_)
     class_name = 'snmpGroup'
-    rn_strings = "snmpgroup-SNMP-TRAP_dg"
-    dn_strings = "uni/fabric/{}".format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    rn_strings = 'snmpgroup-SNMP-TRAP_dg'
+    dn_strings = 'uni/fabric/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
     descrption = 'SNMP Trap Destination Group - Created by Brahma Startup Script'
     name = 'SNMP-TRAP_dg'
     childclass = 'snmpTrapDest'
-    child_Rn = 'trapdest-{}-port-{}'.format(snmp_ipv4, snmp_port)
-    child_Dn = 'uni/fabric/snmpgroup-SNMP-TRAP_dg/{}'.format(child_Rn)
+    child_Rn = 'trapdest-%s-port-%s' % (snmp_ipv4, snmp_port)
+    child_Dn = 'uni/fabric/snmpgroup-SNMP-TRAP_dg/%s' % (child_Rn)
     sub_child_class = 'fileRsARemoteHostToEpg'
-    sub_child_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
+    sub_child_tDn = 'uni/tn-mgmt/mgmtp-default/%s' % (mgmt_epg)
     
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'descr': descrption, 'name': name, 'rn': rn_strings}
@@ -880,10 +883,10 @@ def resource_snmp_user(snmp_user, priv_type, priv_key, auth_type, auth_key):
 
     # Define Variables for Template Creation - SNMP User
     # Fabric > Fabric Policies > Policies > Pod >  SNMP > default
-    resrc_desc = 'snmp_user_{}'.format(snmp_user)
+    resrc_desc = 'snmp_user_%s' % (snmp_user)
     class_name = 'snmpUserP'
-    dn_strings = "uni/fabric/snmppol-default/user-{}".format(snmp_user)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    dn_strings = 'uni/fabric/snmppol-default/user-%s' % (snmp_user)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
 
     # Format Variables for JSON Output
     if not priv_type == '':
@@ -936,7 +939,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
     node_id = str(node_id)
 
     # Which File to Write Data to
-    file_sw = './fabric/resources_user_import_xDevice_{}.tf'.format(name)
+    file_sw = './fabric/resources_user_import_xDevice_%s.tf' % (name)
     wr_file = open(file_sw, 'w')
 
     wr_file.write(f'# Use this Resource File to Register {name} with node id {node_id} to the Fabric\n')
@@ -967,11 +970,11 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
     if not oob_ipv4 == '':
         # Define Variables for Template Creation - OOB IPv4
         # Tenants > mgmt > Node Management Addresses > Static Node Management Addresses
-        resrc_desc = 'oob_mgmt_{}'.format(name)
+        resrc_desc = 'oob_mgmt_%s' % (name)
         class_name = 'mgmtRsOoBStNode'
-        dn_strings = "uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-{}/node-{}]".format(pod_id, node_id)
-        path_attrs = '"/api/node/mo/uni/tn-mgmt.json"'
-        tDn_string = 'topology/pod-{}/node-{}'.format(pod_id, node_id)
+        dn_strings = 'uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-%s/node-%s]' % (pod_id, node_id)
+        path_attrs = '/api/node/mo/uni/tn-mgmt.json'
+        tDn_string = 'topology/pod-%s/node-%s' % (pod_id, node_id)
 
         # Format Variables for JSON Output
         base_atts = {'dn': dn_strings, 'addr': oob_ipv4, 'gw': oob_gwv4, 'tDn': tDn_string, 'v6Addr': '::', 'v6Gw': '::'}
@@ -982,29 +985,30 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
 
     # Define Variables for Template Creation - Inband IPv4
     # Tenants > mgmt > Node Management Addresses > Static Node Management Addresses
-    resrc_desc = 'inb_mgmt_{}'.format(name)
+    resrc_desc = 'inb_mgmt_%s' % (name)
+    depends_on = 'aci_rest.inb_mgmt_default_epg'
     class_name = 'mgmtRsInBStNode'
-    dn_strings = "uni/tn-mgmt/mgmtp-default/inb-default/rsinBStNode-[topology/pod-{}/node-{}]".format(pod_id, node_id)
-    path_attrs = '"/api/node/mo/uni/tn-mgmt.json"'
-    tDn_string = 'topology/pod-{}/node-{}'.format(pod_id, node_id)
+    dn_strings = 'uni/tn-mgmt/mgmtp-default/inb-default/rsinBStNode-[topology/pod-%s/node-%s]' % (pod_id, node_id)
+    path_attrs = '/api/node/mo/uni/tn-mgmt.json'
+    tDn_string = 'topology/pod-%s/node-%s' % (pod_id, node_id)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'addr': inb_ipv4, 'gw': inb_gwv4, 'tDn': tDn_string, 'v6Addr': '::', 'v6Gw': '::'}
     data_out = {class_name: {'attributes': base_atts}}
 
     # Write Output to Resource Files using Template
-    tf_templates.aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+    tf_templates.aci_rest_depends_on(resrc_desc, depends_on, path_attrs, class_name, data_out, wr_file)
 
     # Define Variables for Template Creation - Maintenance Group
     # Admin > Firmware > Infrastructure > Nodes
-    resrc_desc = 'maint_grp_{}'.format(name)
+    resrc_desc = 'maint_grp_%s' % (name)
     class_name = 'maintMaintGrp'
-    dn_strings = 'uni/fabric/maintgrp-{}'.format(Maint_Grp)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    dn_strings = 'uni/fabric/maintgrp-%s' % (Maint_Grp)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
     childclass = 'fabricNodeBlk'
-    child_name = 'blk{}-{}'.format(node_id, node_id)
-    child_Rn = 'nodeblk-blk{}-{}'.format(node_id, node_id)
-    child_Dn = 'uni/fabric/maintgrp-{}/{}'.format(Maint_Grp, child_Rn)
+    child_name = 'blk%s-%s' % (node_id, node_id)
+    child_Rn = 'nodeblk-blk%s-%s' % (node_id, node_id)
+    child_Dn = 'uni/fabric/maintgrp-%s/%s' % (Maint_Grp, child_Rn)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings}
@@ -1041,11 +1045,12 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
 
         # Define Variables for Template Creation - Leaf Policy Group Association
         # Fabric > Access Policies > Switches > Leaf Switches > Profiles: {Leaf Profile}: Associate Policy Group
-        resrc_desc = 'leaf_policy_group_{}'.format(name)
+        resrc_desc = 'leaf_policy_group_%s' % (name)
+        depends_on = 'aci_leaf_profile.%s' % (name)
         class_name = 'infraLeafS'
-        rn_strings = "leaves-{}-typ-range".format(name)
-        dn_strings = "uni/infra/nprof-{}/{}".format(name, rn_strings)
-        path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+        rn_strings = 'leaves-%s-typ-range' % (name)
+        dn_strings = 'uni/infra/nprof-%s/%s' % (name, rn_strings)
+        path_attrs = '/api/node/mo/%s.json' % (dn_strings)
         child_1_class = 'infraRsAccNodePGrp'
         child_1_tDn = 'uni/infra/funcprof/accnodepgrp-default'
 
@@ -1056,7 +1061,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
         data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
     
         # Write Output to Resource Files using Template
-        tf_templates.aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+        tf_templates.aci_rest_depends_on(resrc_desc, depends_on, path_attrs, class_name, data_out, wr_file)
 
         mod_count = 0
         while mod_count < int(modules):
@@ -1068,6 +1073,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
             wr_file.write('\taccess_port_selector_type  = "range"\n')
             wr_file.write('}\n\n')
             wr_file.write('resource "aci_access_port_block" "%s_%s" {\n' % (name, mod_count))
+            wr_file.write('\tdepends_on                   = [aci_leaf_interface_profile.%s]\n' % (name))
             wr_file.write('\tfor_each                   = var.port-blocks-%s\n' %(port_count))
             wr_file.write('\taccess_port_selector_dn    = aci_access_port_selector.%s_%s[each.key].id\n' % (name, mod_count))
             wr_file.write('\tdescription                = each.value.description\n')
@@ -1102,16 +1108,17 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
         # Fabric > Access Policies > Switches > Spine Switches > Profiles: {Spine Profile}: Associated Interface Selector Profile
         wr_file.write('resource "aci_spine_port_selector" "%s" {\n' % (name))
         wr_file.write('\tspine_profile_dn   = aci_spine_profile.%s.id\n' % (name))
-        wr_file.write('\ttdn                = aci_spine_interface_profile%s.id\n' % (name))
+        wr_file.write('\ttdn                = aci_spine_interface_profile.%s.id\n' % (name))
         wr_file.write('}\n\n')
 
         # Define Variables for Template Creation - Spine Policy Group Association
         # Fabric > Access Policies > Switches > Spine Switches > Profiles: {Spine Profile}: Associate Policy Group
-        resrc_desc = 'spine_policy_group_{}'.format(name)
+        resrc_desc = 'spine_policy_group_%s' % (name)
+        depends_on = 'aci_spine_profile.%s' % (name)
         class_name = 'infraSpineS'
-        rn_strings = "spines-{}-typ-range".format(name)
-        dn_strings = "uni/infra/spprof-{}/{}".format(name, rn_strings)
-        path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+        rn_strings = 'spines-%s-typ-range' % (name)
+        dn_strings = 'uni/infra/spprof-%s/%s' % (name, rn_strings)
+        path_attrs = '/api/node/mo/%s.json' % (dn_strings)
         child_1_class = 'infraRsSpineAccNodePGrp'
         child_1_tDn = 'uni/infra/funcprof/spaccnodepgrp-default'
 
@@ -1122,7 +1129,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
         data_out = {class_name: {'attributes': base_atts, 'children': child_combined}}
     
         # Write Output to Resource Files using Template
-        tf_templates.aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+        tf_templates.aci_rest_depends_on(resrc_desc, depends_on, path_attrs, class_name, data_out, wr_file)
 
         mod_count = 0
         while mod_count < int(modules):
@@ -1130,7 +1137,8 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
             # Fabric > Access Policies > Interfaces > Spine interfaces > Profiles {Spine Profile}: Associated Interface Selectors
             mod_count += 1
             wr_file.write('resource "aci_rest" "%s_%s" {\n' % (name, mod_count))
-            wr_file.write('\tfor_each         = var.port-blocks-%s\n' %(port_count))
+            wr_file.write('\tdepends_on       = [aci_spine_interface_profile.%s]\n' % (name))
+            wr_file.write('\tfor_each         = var.port-blocks-%s\n' % (port_count))
             wr_file.write('\tpath             = "/api/node/mo/uni/infra/spaccportprof-%s/shports-Eth%s-${each.value.name}-typ-range.json"\n' % (name, mod_count))
             wr_file.write('\tclass_name       = "infraSHPortS"\n')
             wr_file.write('\tpayload          = <<EOF\n')
@@ -1185,38 +1193,38 @@ def resource_syslog(syslog_ipv4, syslog_port, mgmt_domain, severity, facility, l
     # Admin > External Data Collectors >  Monitoring Destinations > Syslog
     # Fabric > Fabric Policies > Policies > Monitoring >  Common Policy > Callhome/Smart Callhome/SNMP/Syslog/TACACS > Sylsog
     syslog_ipv4_ = syslog_ipv4.replace('.', '_')
-    resrc_desc = 'syslog_{}'.format(syslog_ipv4_)
+    resrc_desc = 'syslog_%s' % (syslog_ipv4_)
     class_name = 'syslogGroup'
-    rn_strings = "slgroup-Syslog-dg_{}".format(syslog_ipv4)
-    dn_strings = "uni/fabric/{}".format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
-    descrption = 'Syslog Destination Group {} - Created by Brahma Startup Wizard'.format(syslog_ipv4)
-    name = 'Syslog-dg_{}'.format(syslog_ipv4)
+    rn_strings = 'slgroup-Syslog-dg_%s' % (syslog_ipv4)
+    dn_strings = 'uni/fabric/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
+    descrption = 'Syslog Destination Group %s - Created by Brahma Startup Wizard' % (syslog_ipv4)
+    name = 'Syslog-dg_%s' % (syslog_ipv4)
     child_1_class = 'syslogConsole'
     child_1_Rn = 'console'
-    child_1_Dn = 'uni/fabric/slgroup-Syslog-dg_{}/{}'.format(syslog_ipv4, child_1_Rn)
-    child_1_sv = '{}'.format(console_level)
-    child_1_state = '{}'.format(console_state)
+    child_1_Dn = 'uni/fabric/slgroup-Syslog-dg_%s/%s' % (syslog_ipv4, child_1_Rn)
+    child_1_sv = '%s' % (console_level)
+    child_1_state = '%s' % (console_state)
     child_2_class = 'syslogFile'
     child_2_Rn = 'file'
-    child_2_Dn = 'uni/fabric/slgroup-Syslog-dg_{}/{}'.format(syslog_ipv4, child_2_Rn)
-    child_2_sv = '{}'.format(local_level)
-    child_2_state = '{}'.format(local_state)
+    child_2_Dn = 'uni/fabric/slgroup-Syslog-dg_%s/%s' % (syslog_ipv4, child_2_Rn)
+    child_2_sv = '%s' % (local_level)
+    child_2_state = '%s' % (local_state)
     child_3_class = 'syslogProf'
     child_3_Rn = 'prof'
-    child_3_Dn = 'uni/fabric/slgroup-Syslog-dg_{}/{}'.format(syslog_ipv4, child_3_Rn)
-    child_3_state = '{}'.format(local_state)
+    child_3_Dn = 'uni/fabric/slgroup-Syslog-dg_%s/%s' % (syslog_ipv4, child_3_Rn)
+    child_3_state = '%s' % (local_state)
     child_4_class = 'syslogRemoteDest'
-    child_4_Rn = 'rdst-{}'.format(syslog_ipv4)
-    child_4_Dn = 'uni/fabric/slgroup-Syslog-dg_{}/{}'.format(syslog_ipv4, child_4_Rn)
-    child_4_sv = '{}'.format(severity)
-    child_4_fwdf = '{}'.format(facility)
-    child_4_host = '{}'.format(syslog_ipv4)
-    child_4_name = 'RmtDst-{}'.format(syslog_ipv4)
-    child_4_port = '{}'.format(syslog_port)
+    child_4_Rn = 'rdst-%s' % (syslog_ipv4)
+    child_4_Dn = 'uni/fabric/slgroup-Syslog-dg_%s/%s' % (syslog_ipv4, child_4_Rn)
+    child_4_sv = '%s' % (severity)
+    child_4_fwdf = '%s' % (facility)
+    child_4_host = '%s' % (syslog_ipv4)
+    child_4_name = 'RmtDst-%s' % (syslog_ipv4)
+    child_4_port = '%s' % (syslog_port)
     child_4_state = 'enabled'
     sub_child_class = 'fileRsARemoteHostToEpg'
-    sub_child_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
+    sub_child_tDn = 'uni/tn-mgmt/mgmtp-default/%s' % (mgmt_epg)
     
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'includeMilliSeconds': 'true', 'includeTimeZone': 'true', 'descr': descrption, 'name': name, 'rn': rn_strings}
@@ -1257,17 +1265,17 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
     # Admin > External Data Collectors >  Monitoring Destinations > TACACS
     group_name = 'TACACS_acct'
     tacacs_ipv4_ = tacacs_ipv4.replace('.', '_')
-    resrc_desc = 'tacacs_{}_{}'.format(group_name, tacacs_ipv4_)
+    resrc_desc = 'tacacs_%s_%s' % (group_name, tacacs_ipv4_)
     class_name = 'tacacsGroup'
-    rn_strings = 'tacacsgroup-{}'.format(group_name)
-    dn_strings = 'uni/fabric/{}'.format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
-    descrption = 'TACACS Accounting Group {} - Created by Brahma Startup Wizard'.format(group_name)
+    rn_strings = 'tacacsgroup-%s' % (group_name)
+    dn_strings = 'uni/fabric/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
+    descrption = 'TACACS Accounting Group %s - Created by Brahma Startup Wizard' % (group_name)
     childclass = 'tacacsTacacsDest'
-    child_Rn = 'tacacsdest-{}-port-{}'.format(tacacs_ipv4, tacacs_port)
-    child_Dn = 'uni/fabric/tacacsgroup-{}/{}'.format(group_name, child_Rn)
+    child_Rn = 'tacacsdest-%s-port-%s' % (tacacs_ipv4, tacacs_port)
+    child_Dn = 'uni/fabric/tacacsgroup-%s/%s' % (group_name, child_Rn)
     sub_child_class = 'fileRsARemoteHostToEpg'
-    sub_child_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
+    sub_child_tDn = 'uni/tn-mgmt/mgmtp-default/%s' % (mgmt_epg)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'descr': descrption, 'name': group_name, 'rn': rn_strings}
@@ -1285,12 +1293,12 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
         # Fabric > Fabric Policies > Policies > Monitoring >  Common Policy > Callhome/Smart Callhome/SNMP/Syslog/TACACS > TACACS
         resrc_desc = 'tacacsSrc'
         class_name = 'tacacsSrc'
-        rn_strings = "tacacssrc-TACACS_Src"
-        dn_strings = "uni/fabric/moncommon/{}".format(rn_strings)
-        path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+        rn_strings = 'tacacssrc-TACACS_Src'
+        dn_strings = 'uni/fabric/moncommon/%s' % (rn_strings)
+        path_attrs = '/api/node/mo/%s.json' % (dn_strings)
         name_src = 'TACACS_Src'
         child_1_class = 'tacacsRsDestGroup'
-        child_1_tDn = 'uni/fabric/tacacsgroup-{}'.format(group_name)
+        child_1_tDn = 'uni/fabric/tacacsgroup-%s' % (group_name)
 
         # Format Variables for JSON Output
         base_atts = {'dn': dn_strings, 'name': name_src, 'rn': rn_strings}
@@ -1303,14 +1311,14 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
 
     # Define Variables for Template Creation - TACACS+ Provider
     # Admin > AAA > Authentication: TACACS
-    resrc_desc = 'aaaTacacsPlusProvider_{}'.format(tacacs_ipv4_)
+    resrc_desc = 'aaaTacacsPlusProvider_%s' % (tacacs_ipv4_)
     class_name = 'aaaTacacsPlusProvider'
-    rn_strings = "tacacsplusprovider-{}".format(tacacs_ipv4)
-    dn_strings = "uni/userext/tacacsext/{}".format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
-    descrption = 'TACACS+ Provider - {}.  Added by Brahma Startup Wizard.'.format(tacacs_ipv4)
+    rn_strings = 'tacacsplusprovider-%s' % (tacacs_ipv4)
+    dn_strings = 'uni/userext/tacacsext/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
+    descrption = 'TACACS+ Provider - %s.  Added by Brahma Startup Wizard.' % (tacacs_ipv4)
     child_1_class = 'aaaRsSecProvToEpg'
-    child_1_tDn = 'uni/tn-mgmt/mgmtp-default/{}'.format(mgmt_epg)
+    child_1_tDn = 'uni/tn-mgmt/mgmtp-default/%s' % (mgmt_epg)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings, 'timeout': proto_timeout, 'retries': proto_retry, 'monitorServer': 'disabled', 'key': tacacs_key, 
@@ -1324,25 +1332,25 @@ def resource_tacacs(login_domain, tacacs_ipv4, tacacs_port, tacacs_key, auth_pro
 
     # Define Variables for Template Creation - External Login Domain - TACACS+
     # Admin > AAA > Authentication: AAA > Login Domains
-    resrc_desc = 'Ext_Login_TACACS_prov-{}'.format(tacacs_ipv4_)
+    resrc_desc = 'Ext_Login_TACACS_prov-%s' % (tacacs_ipv4_)
     class_name = 'aaaUserEp'
-    dn_strings = "uni/userext"
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    dn_strings = 'uni/userext'
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
     child_1_class = 'aaaLoginDomain'
-    child_1_Rn = 'logindomain-{}'.format(login_domain)
-    child_1_Dn = 'uni/userext/{}'.format(child_1_Rn)
+    child_1_Rn = 'logindomain-%s' % (login_domain)
+    child_1_Dn = 'uni/userext/%s' % (child_1_Rn)
     sub_child_1_class = 'aaaDomainAuth'
     sub_child_1_Rn = 'domainauth'
-    sub_child_1_Dn = 'uni/userext/logindomain-{}/domainauth'.format(login_domain)
-    sub_child_1_desc = 'TACACS+ Login Domain {}. Created by Brahma Wizard.'.format(login_domain)
+    sub_child_1_Dn = 'uni/userext/logindomain-%s/domainauth' % (login_domain)
+    sub_child_1_desc = 'TACACS+ Login Domain %s. Created by Brahma Wizard.' % (login_domain)
     child_2_class = 'aaaTacacsPlusEp'
     child_2_Dn = 'uni/userext/tacacsext'
     sub_child_2_class = 'aaaTacacsPlusProviderGroup'
-    sub_child_2_Dn = 'uni/userext/tacacsext/tacacsplusprovidergroup-{}'.format(login_domain)
+    sub_child_2_Dn = 'uni/userext/tacacsext/tacacsplusprovidergroup-%s' % (login_domain)
     basement_2_class = 'aaaProviderRef'
-    basement_2_dn = 'uni/userext/tacacsext/tacacsplusprovidergroup-{}/providerref-{}'.format(login_domain, tacacs_ipv4)
-    basement_order = '{}'.format(tacacs_order_count)
-    basement_descr = 'Added TACACS Server {} - Brahma Startup Wizard'.format(tacacs_ipv4)
+    basement_2_dn = 'uni/userext/tacacsext/tacacsplusprovidergroup-%s/providerref-%s' % (login_domain, tacacs_ipv4)
+    basement_order = '%s' % (tacacs_order_count)
+    basement_descr = 'Added TACACS Server %s - Brahma Startup Wizard' % (tacacs_ipv4)
 
     # Format Variables for JSON Output
     base_atts = {'dn': dn_strings}
@@ -1373,22 +1381,22 @@ def resource_vpc_pair(vpc_id, name, node_id_1, node_id_2):
         exit()
 
     # Which File to Write Data to
-    file_vpc = './fabric/resources_user_import_vpc_{}.tf'.format(name)
+    file_vpc = './fabric/resources_user_import_vpc_%s.tf' % (name)
     wr_file = open(file_vpc, 'w')
 
     # Define Variables for Template Creation - VPC Pair
     # Fabric > Access Policies > Policies > Switch > Virtual Port Channel default
-    resrc_desc = 'vpc_Pair_{}'.format(name)
+    resrc_desc = 'vpc_Pair_%s' % (name)
     class_name = 'fabricExplicitGEp'
-    rn_strings = "expgep-{}".format(name)
-    dn_strings = "uni/fabric/protpol/{}".format(rn_strings)
-    path_attrs = '"/api/node/mo/{}.json"'.format(dn_strings)
+    rn_strings = 'expgep-%s' % (name)
+    dn_strings = 'uni/fabric/protpol/%s' % (rn_strings)
+    path_attrs = '/api/node/mo/%s.json' % (dn_strings)
     child_1_class = 'fabricNodePEp'
-    child_1_Rn = 'nodepep-{}'.format(node_id_1)
-    child_1_Dn = 'uni/fabric/protpol/{}/{}'.format(rn_strings, child_1_Rn)
+    child_1_Rn = 'nodepep-%s' % (node_id_1)
+    child_1_Dn = 'uni/fabric/protpol/%s/%s' % (rn_strings, child_1_Rn)
     child_2_class = 'fabricNodePEp'
-    child_2_Rn = 'nodepep-{}'.format(node_id_2)
-    child_2_Dn = 'uni/fabric/protpol/{}/{}'.format(rn_strings, child_2_Rn)
+    child_2_Rn = 'nodepep-%s' % (node_id_2)
+    child_2_Dn = 'uni/fabric/protpol/%s/%s' % (rn_strings, child_2_Rn)
     child_3_class = 'fabricRsVpcInstPol'
 
     # Format Variables for JSON Output
@@ -1686,6 +1694,7 @@ if not os.stat('./fabric/snmp_comms.txt').st_size == 0:
 
     wr_file.write('resource "aci_rest" "snmp_ctx_community" {\n')
     wr_file.write('\tfor_each        = var.snmp_ctx_community\n')
+    wr_file.write('\tdepends_on      = [aci_tenant.mgmt]\n')
     wr_file.write('\tpath            = "/api/node/mo/uni/tn-${each.value.tenant}/ctx-${each.value.ctx}/snmpctx/community-${each.value.name}.json"\n')
     wr_file.write('\tclass_name      = "vzOOBBrCP"\n')
     wr_file.write('\tpayload         = <<EOF\n')

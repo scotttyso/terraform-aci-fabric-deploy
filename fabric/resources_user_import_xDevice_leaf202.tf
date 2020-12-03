@@ -41,6 +41,7 @@ resource "aci_rest" "oob_mgmt_leaf202" {
 }
 
 resource "aci_rest" "inb_mgmt_leaf202" {
+	depends_on		= [aci_rest.inb_mgmt_default_epg]
 	path		= "/api/node/mo/uni/tn-mgmt.json"
 	class_name	= "mgmtRsInBStNode"
 	payload		= <<EOF
@@ -105,6 +106,7 @@ resource "aci_leaf_profile" "leaf202" {
 }
 
 resource "aci_rest" "leaf_policy_group_leaf202" {
+	depends_on		= [aci_leaf_profile.leaf202]
 	path		= "/api/node/mo/uni/infra/nprof-leaf202/leaves-leaf202-typ-range.json"
 	class_name	= "infraLeafS"
 	payload		= <<EOF
@@ -136,6 +138,7 @@ resource "aci_access_port_selector" "leaf202_1" {
 }
 
 resource "aci_access_port_block" "leaf202_1" {
+	depends_on                   = [aci_leaf_interface_profile.leaf202]
 	for_each                   = var.port-blocks-54
 	access_port_selector_dn    = aci_access_port_selector.leaf202_1[each.key].id
 	description                = each.value.description

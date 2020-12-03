@@ -55,21 +55,24 @@ resource "aci_vlan_pool" "default" {
 }
 
 resource "aci_l3_domain_profile" "default" {
+	depends_on 				  = [aci_vlan_pool.default]
 	for_each    			  = var.profile_l3dom
 	name        			  = each.value.name
 	relation_infra_rs_vlan_ns = "uni/infra/vlanns-[${each.value.vl_pool}]-static"
 }
 
 resource "aci_physical_domain" "default" {
+	depends_on 	= [aci_vlan_pool.default]
 	for_each    = var.profile_physdom
 	name        = each.value.name
 	relation_infra_rs_vlan_ns = "uni/infra/vlanns-[${each.value.vl_pool}]-static"
 }
 
 resource "aci_ranges" "default" {
-  vlan_pool_dn	= "uni/infra/vlanns-[msite_vl-pool]-static"
-  _from		= "vlan-4"
-  to		= "vlan-4"
+	depends_on 		= [aci_vlan_pool.default]
+	vlan_pool_dn	= "uni/infra/vlanns-[msite_vl-pool]-static"
+	_from			= "vlan-4"
+	to				= "vlan-4"
 }
 
 resource "aci_rest" "stp-policies" {
@@ -90,6 +93,7 @@ resource "aci_rest" "stp-policies" {
 }
 
 resource "aci_leaf_access_port_policy_group" "inband_apg" {
+	depends_on 					  = [aci_rest.stp-policies,aci_fabric_if_pol.default]
 	description 				  = "Inband port-group policy"
 	name 						  = "inband_ap"
 	relation_infra_rs_h_if_pol	  = "uni/infra/hintfpol-inherit_Auto"
@@ -100,6 +104,7 @@ resource "aci_leaf_access_port_policy_group" "inband_apg" {
 }
 
 resource "aci_leaf_access_port_policy_group" "access_host_apg" {
+	depends_on 					  = [aci_rest.stp-policies,aci_fabric_if_pol.default]
 	description 				  = "Template for a Host Access Port"
 	name 						  = "access_host_ap"
 	relation_infra_rs_h_if_pol	  = "uni/infra/hintfpol-inherit_Auto"

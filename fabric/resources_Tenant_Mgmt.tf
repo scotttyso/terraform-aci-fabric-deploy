@@ -223,6 +223,7 @@ resource "aci_rest" "oob-default_Priority" {
 }
 
 resource "aci_rest" "inb_epg_provided" {
+	depends_on = [aci_rest.inb_mgmt_default_epg,aci_rest.oob_mgmt_Out_Ct]
 	path       = "/api/node/mo/uni/tn-mgmt/mgmtp-default/inb-default.json"
 	class_name = "fvRsProv"
 	payload    = <<EOF
@@ -239,6 +240,7 @@ resource "aci_rest" "inb_epg_provided" {
 }
 
 resource "aci_rest" "inb_epg_consumed" {
+	depends_on = [aci_rest.inb_mgmt_default_epg,aci_rest.oob_mgmt_Out_Ct]
 	path       = "/api/node/mo/uni/tn-mgmt/mgmtp-default/inb-default.json"
 	class_name = "fvRsCons"
 	payload    = <<EOF

@@ -41,6 +41,7 @@ resource "aci_rest" "oob_mgmt_spine101" {
 }
 
 resource "aci_rest" "inb_mgmt_spine101" {
+	depends_on		= [aci_rest.inb_mgmt_default_epg]
 	path		= "/api/node/mo/uni/tn-mgmt.json"
 	class_name	= "mgmtRsInBStNode"
 	payload		= <<EOF
@@ -102,10 +103,11 @@ resource "aci_spine_switch_association" "spine101" {
 
 resource "aci_spine_port_selector" "spine101" {
 	spine_profile_dn   = aci_spine_profile.spine101.id
-	tdn                = aci_spine_interface_profilespine101.id
+	tdn                = aci_spine_interface_profile.spine101.id
 }
 
 resource "aci_rest" "spine_policy_group_spine101" {
+	depends_on		= [aci_spine_profile.spine101]
 	path		= "/api/node/mo/uni/infra/spprof-spine101/spines-spine101-typ-range.json"
 	class_name	= "infraSpineS"
 	payload		= <<EOF
@@ -130,6 +132,7 @@ resource "aci_rest" "spine_policy_group_spine101" {
 }
 
 resource "aci_rest" "spine101_1" {
+	depends_on       = [aci_spine_interface_profile.spine101]
 	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth1-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
@@ -162,6 +165,7 @@ resource "aci_rest" "spine101_1" {
 }
 
 resource "aci_rest" "spine101_2" {
+	depends_on       = [aci_spine_interface_profile.spine101]
 	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth2-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
@@ -194,6 +198,7 @@ resource "aci_rest" "spine101_2" {
 }
 
 resource "aci_rest" "spine101_3" {
+	depends_on       = [aci_spine_interface_profile.spine101]
 	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth3-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
@@ -226,6 +231,7 @@ resource "aci_rest" "spine101_3" {
 }
 
 resource "aci_rest" "spine101_4" {
+	depends_on       = [aci_spine_interface_profile.spine101]
 	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth4-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
@@ -258,6 +264,7 @@ resource "aci_rest" "spine101_4" {
 }
 
 resource "aci_rest" "spine101_5" {
+	depends_on       = [aci_spine_interface_profile.spine101]
 	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth5-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
@@ -290,6 +297,7 @@ resource "aci_rest" "spine101_5" {
 }
 
 resource "aci_rest" "spine101_6" {
+	depends_on       = [aci_spine_interface_profile.spine101]
 	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth6-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
@@ -322,6 +330,7 @@ resource "aci_rest" "spine101_6" {
 }
 
 resource "aci_rest" "spine101_7" {
+	depends_on       = [aci_spine_interface_profile.spine101]
 	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth7-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
@@ -354,6 +363,7 @@ resource "aci_rest" "spine101_7" {
 }
 
 resource "aci_rest" "spine101_8" {
+	depends_on       = [aci_spine_interface_profile.spine101]
 	for_each         = var.port-blocks-36
 	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth8-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
