@@ -968,8 +968,7 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
     wr_file.write('\tnode_type = "%s"\n' % (node_type))
     wr_file.write('\trole      = "%s"\n' % (switch_role))
     wr_file.write('\tpod_id    = "%s"\n' % (pod_id))
-    wr_file.write('}\n')
-    wr_file.write('\n')
+    wr_file.write('}\n\n')
 
     if not oob_ipv4 == '':
         # Define Variables for Template Creation - OOB IPv4

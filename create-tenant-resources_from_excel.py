@@ -74,12 +74,10 @@ def resource_tenant(tenant_name, tenant_descr):
     
     # Build Template and Populate Template
     wr_file = wr_tenants
-    resource_type = 'aci_tenant'
-    resource_desc = tenant_name
-    attr_1 = 'name        = "%s"' % (tenant_name)
-    attr_2 = 'description = "%s"' % (tenant_descr)
-    tf_templates.aci_terraform_attr2(resource_type, resource_desc, attr_1, attr_2, wr_file)
-
+    wr_file.write('resource "aci_tenant" "%s" {\n' % (tenant_name))
+    wr_file.write('\tdescription    = "%s"\n' % (tenant_descr))
+    wr_file.write('\tname           = "%s"\n' % (tenant_name))
+    wr_file.write('}\n\n')
 
 def resource_vrf(tenant_name, vrf_name, vrf_desc, fltr_type):
     try:
@@ -97,32 +95,30 @@ def resource_vrf(tenant_name, vrf_name, vrf_desc, fltr_type):
     wr_file = wr_vrfs
 
     # Add VRF to Resource File
-    resource_type = 'aci_vrf'
-    resource_desc = '%s' % (vrf_name)
-    attr_1 = 'tenant_dn							= "uni/tn-%s"' % (tenant_name)
-    attr_2 = 'name        						= "%s"' % (vrf_name)
-    attr_3 = 'bd_enforced_enable				    = "yes"'
-    attr_4 = 'ip_data_plane_learning			    = "enabled"'
-    attr_5 = 'pc_enf_pref						    = "enforced"'
-    attr_6 = 'pc_enf_dir						    = "ingress"'
-    attr_7 = 'relation_fv_rs_ctx_mon_pol		    = "uni/tn-common/monepg-default"'
-    attr_8 = 'relation_fv_rs_ctx_to_ep_ret		= "uni/tn-common/epRPol-default"'
-    attr_9 = 'relation_fv_rs_vrf_validation_pol	= "uni/tn-common/vrfvalidationpol-default"'
-    tf_templates.aci_terraform_attr9(resource_type, resource_desc, attr_1, attr_2,  attr_3, attr_4, attr_5, attr_6,  attr_7, attr_8, attr_9, wr_file)
+    wr_file.write('resource "aci_vrf" "%s" {\n' % (vrf_name))
+    wr_file.write('\ttenant_dn                          = "uni/tn-%s"\n' % (tenant_name))
+    wr_file.write('\tname                               = "%s"\n' % (vrf_name))
+    wr_file.write('\tbd_enforced_enable                 = "yes"\n')
+    wr_file.write('\tip_data_plane_learning			    = "enabled"\n')
+    wr_file.write('\tpc_enf_pref						= "enforced"\n')
+    wr_file.write('\tpc_enf_dir						    = "ingress"\n')
+    wr_file.write('\trelation_fv_rs_ctx_mon_pol		    = "uni/tn-common/monepg-default"\n')
+    wr_file.write('\trelation_fv_rs_ctx_to_ep_ret		= "uni/tn-common/epRPol-default"\n')
+    wr_file.write('\trelation_fv_rs_vrf_validation_pol  = "uni/tn-common/vrfvalidationpol-default"\n')
+    wr_file.write('}\n\n')
 
-    resource_type = 'aci_any'
-    resource_desc = "%s_pc" % (vrf_name)
-    attr_1 = 'vrf_dn 				        = "uni/tn-%s/ctx-%s"' % (tenant_name, vrf_name)
-    attr_2 = 'description 				= "%s"' % (vrf_desc)
+    wr_file.write('resource "aci_any" "%s_any" {\n' % (vrf_name))
+    wr_file.write('\tvrf_dn                         = "uni/tn-%s/ctx-%s"\n' % (tenant_name, vrf_name))
+    wr_file.write('\tdescription                    = "%s"\n' % (vrf_desc))
+
     if fltr_type == 'pg':
-        attr_3 = 'pref_gr_memb                = "enabled"'
-        tf_templates.aci_terraform_attr3(resource_type, resource_desc, attr_1, attr_2,  attr_3, wr_file)
+        wr_file.write('\tpref_gr_memb  				= "enabled"\n')
+        wr_file.write('}\n\n')
     elif fltr_type == 'vzAny':
-        attr_3 = 'match_t      				= "AtleastOne"'
-        #attr_4 = '#relation_vz_rs_any_to_cons	= [data.aci_contract.default.id]'
-        #attr_5 = '#relation_vz_rs_any_to_prov	= [data.aci_contract.default.id]'
-        #tf_templates.aci_terraform_attr5(resource_type, resource_desc, attr_1, attr_2,  attr_3, attr_4, attr_5, wr_file)
-        tf_templates.aci_terraform_attr3(resource_type, resource_desc, attr_1, attr_2,  attr_3, wr_file)
+        wr_file.write('\tmatch_t      				= "AtleastOne"\n')
+        #wr_file.write('\trelation_vz_rs_any_to_cons = [data.aci_contract.default.id]\n')
+        #wr_file.write('\trelation_vz_rs_any_to_prov	= [data.aci_contract.default.id]\n')
+        wr_file.write('}\n\n')
 
         # Define Variables for Template Creation - vzAny Contracts
         # Tenants > Networking > VRFs > {VRF Name} > EPG Collection for VRF: Provider/Consumer Contracts
