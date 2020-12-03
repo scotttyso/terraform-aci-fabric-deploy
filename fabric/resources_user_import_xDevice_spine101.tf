@@ -86,33 +86,33 @@ resource "aci_rest" "maint_grp_spine101" {
 	EOF
 }
 
-resource "aci_spine_profile" "spine101_SwSel" {
-	name = "spine101_SwSel"
+resource "aci_spine_profile" "spine101" {
+	name = "spine101"
 }
 
-resource "aci_spine_interface_profile" "spine101_IntProf" {
-	name = "spine101_IntProf"
+resource "aci_spine_interface_profile" "spine101" {
+	name = "spine101"
 }
 
 resource "aci_spine_switch_association" "spine101" {
-	spine_profile_dn              = aci_spine_profile.spine101_SwSel.id
+	spine_profile_dn              = aci_spine_profile.spine101.id
 	name                          = "spine101"
 	spine_switch_association_type = "range"
 }
 
 resource "aci_spine_port_selector" "spine101" {
-	spine_profile_dn              = aci_spine_profile.spine101_SwSel.id
-	tdn                           = aci_spine_interface_profile.spine101_IntProf.id
+	spine_profile_dn              = aci_spine_profile.spine101.id
+	tdn                           = aci_spine_interface_profile.spine101.id
 }
 
-resource "aci_rest" "spine_policy_group_spine101_SwSel" {
-	path		= "/api/node/mo/uni/infra/spprof-spine101_SwSel/spines-spine101-typ-range.json"
+resource "aci_rest" "spine_policy_group_spine101" {
+	path		= "/api/node/mo/uni/infra/spprof-spine101/spines-spine101-typ-range.json"
 	class_name	= "infraSpineS"
 	payload		= <<EOF
 {
     "infraSpineS": {
         "attributes": {
-            "dn": "uni/infra/spprof-spine101_SwSel/spines-spine101-typ-range"
+            "dn": "uni/infra/spprof-spine101/spines-spine101-typ-range"
         },
         "children": [
             {
@@ -129,15 +129,15 @@ resource "aci_rest" "spine_policy_group_spine101_SwSel" {
 	EOF
 }
 
-resource "aci_rest" "spine101_1_IntProf" {
+resource "aci_rest" "spine101_1" {
 	for_each         = var.port-blocks-36
-	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth1-${each.value.name}-typ-range.json"
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth1-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
 {
     "infraSHPortS": {
         "attributes": {
-            "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth1-${each.value.name}-typ-range",
+            "dn": "uni/infra/spaccportprof-spine101/shports-Eth1-${each.value.name}-typ-range",
             "name": "Eth1-${each.value.name}",
             "rn": "shports-Eth1-${each.value.name}-typ-range"
         },
@@ -145,7 +145,7 @@ resource "aci_rest" "spine101_1_IntProf" {
             {
                 "infraPortBlk": {
                     "attributes": {
-                        "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth1-${each.value.name}-typ-range/portblk-block2",
+                        "dn": "uni/infra/spaccportprof-spine101/shports-Eth1-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "1",
                         "fromPort": "${each.value.port}",
                         "toCard": "1",
@@ -161,15 +161,15 @@ resource "aci_rest" "spine101_1_IntProf" {
 	EOF
 }
 
-resource "aci_rest" "spine101_2_IntProf" {
+resource "aci_rest" "spine101_2" {
 	for_each         = var.port-blocks-36
-	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth2-${each.value.name}-typ-range.json"
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth2-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
 {
     "infraSHPortS": {
         "attributes": {
-            "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth2-${each.value.name}-typ-range",
+            "dn": "uni/infra/spaccportprof-spine101/shports-Eth2-${each.value.name}-typ-range",
             "name": "Eth2-${each.value.name}",
             "rn": "shports-Eth2-${each.value.name}-typ-range"
         },
@@ -177,7 +177,7 @@ resource "aci_rest" "spine101_2_IntProf" {
             {
                 "infraPortBlk": {
                     "attributes": {
-                        "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth2-${each.value.name}-typ-range/portblk-block2",
+                        "dn": "uni/infra/spaccportprof-spine101/shports-Eth2-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "2",
                         "fromPort": "${each.value.port}",
                         "toCard": "2",
@@ -193,15 +193,15 @@ resource "aci_rest" "spine101_2_IntProf" {
 	EOF
 }
 
-resource "aci_rest" "spine101_3_IntProf" {
+resource "aci_rest" "spine101_3" {
 	for_each         = var.port-blocks-36
-	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth3-${each.value.name}-typ-range.json"
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth3-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
 {
     "infraSHPortS": {
         "attributes": {
-            "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth3-${each.value.name}-typ-range",
+            "dn": "uni/infra/spaccportprof-spine101/shports-Eth3-${each.value.name}-typ-range",
             "name": "Eth3-${each.value.name}",
             "rn": "shports-Eth3-${each.value.name}-typ-range"
         },
@@ -209,7 +209,7 @@ resource "aci_rest" "spine101_3_IntProf" {
             {
                 "infraPortBlk": {
                     "attributes": {
-                        "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth3-${each.value.name}-typ-range/portblk-block2",
+                        "dn": "uni/infra/spaccportprof-spine101/shports-Eth3-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "3",
                         "fromPort": "${each.value.port}",
                         "toCard": "3",
@@ -225,15 +225,15 @@ resource "aci_rest" "spine101_3_IntProf" {
 	EOF
 }
 
-resource "aci_rest" "spine101_4_IntProf" {
+resource "aci_rest" "spine101_4" {
 	for_each         = var.port-blocks-36
-	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth4-${each.value.name}-typ-range.json"
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth4-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
 {
     "infraSHPortS": {
         "attributes": {
-            "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth4-${each.value.name}-typ-range",
+            "dn": "uni/infra/spaccportprof-spine101/shports-Eth4-${each.value.name}-typ-range",
             "name": "Eth4-${each.value.name}",
             "rn": "shports-Eth4-${each.value.name}-typ-range"
         },
@@ -241,7 +241,7 @@ resource "aci_rest" "spine101_4_IntProf" {
             {
                 "infraPortBlk": {
                     "attributes": {
-                        "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth4-${each.value.name}-typ-range/portblk-block2",
+                        "dn": "uni/infra/spaccportprof-spine101/shports-Eth4-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "4",
                         "fromPort": "${each.value.port}",
                         "toCard": "4",
@@ -257,15 +257,15 @@ resource "aci_rest" "spine101_4_IntProf" {
 	EOF
 }
 
-resource "aci_rest" "spine101_5_IntProf" {
+resource "aci_rest" "spine101_5" {
 	for_each         = var.port-blocks-36
-	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth5-${each.value.name}-typ-range.json"
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth5-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
 {
     "infraSHPortS": {
         "attributes": {
-            "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth5-${each.value.name}-typ-range",
+            "dn": "uni/infra/spaccportprof-spine101/shports-Eth5-${each.value.name}-typ-range",
             "name": "Eth5-${each.value.name}",
             "rn": "shports-Eth5-${each.value.name}-typ-range"
         },
@@ -273,7 +273,7 @@ resource "aci_rest" "spine101_5_IntProf" {
             {
                 "infraPortBlk": {
                     "attributes": {
-                        "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth5-${each.value.name}-typ-range/portblk-block2",
+                        "dn": "uni/infra/spaccportprof-spine101/shports-Eth5-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "5",
                         "fromPort": "${each.value.port}",
                         "toCard": "5",
@@ -289,15 +289,15 @@ resource "aci_rest" "spine101_5_IntProf" {
 	EOF
 }
 
-resource "aci_rest" "spine101_6_IntProf" {
+resource "aci_rest" "spine101_6" {
 	for_each         = var.port-blocks-36
-	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth6-${each.value.name}-typ-range.json"
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth6-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
 {
     "infraSHPortS": {
         "attributes": {
-            "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth6-${each.value.name}-typ-range",
+            "dn": "uni/infra/spaccportprof-spine101/shports-Eth6-${each.value.name}-typ-range",
             "name": "Eth6-${each.value.name}",
             "rn": "shports-Eth6-${each.value.name}-typ-range"
         },
@@ -305,7 +305,7 @@ resource "aci_rest" "spine101_6_IntProf" {
             {
                 "infraPortBlk": {
                     "attributes": {
-                        "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth6-${each.value.name}-typ-range/portblk-block2",
+                        "dn": "uni/infra/spaccportprof-spine101/shports-Eth6-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "6",
                         "fromPort": "${each.value.port}",
                         "toCard": "6",
@@ -321,15 +321,15 @@ resource "aci_rest" "spine101_6_IntProf" {
 	EOF
 }
 
-resource "aci_rest" "spine101_7_IntProf" {
+resource "aci_rest" "spine101_7" {
 	for_each         = var.port-blocks-36
-	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth7-${each.value.name}-typ-range.json"
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth7-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
 {
     "infraSHPortS": {
         "attributes": {
-            "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth7-${each.value.name}-typ-range",
+            "dn": "uni/infra/spaccportprof-spine101/shports-Eth7-${each.value.name}-typ-range",
             "name": "Eth7-${each.value.name}",
             "rn": "shports-Eth7-${each.value.name}-typ-range"
         },
@@ -337,7 +337,7 @@ resource "aci_rest" "spine101_7_IntProf" {
             {
                 "infraPortBlk": {
                     "attributes": {
-                        "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth7-${each.value.name}-typ-range/portblk-block2",
+                        "dn": "uni/infra/spaccportprof-spine101/shports-Eth7-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "7",
                         "fromPort": "${each.value.port}",
                         "toCard": "7",
@@ -353,15 +353,15 @@ resource "aci_rest" "spine101_7_IntProf" {
 	EOF
 }
 
-resource "aci_rest" "spine101_8_IntProf" {
+resource "aci_rest" "spine101_8" {
 	for_each         = var.port-blocks-36
-	path             = "/api/node/mo/uni/infra/spaccportprof-spine101_IntProf/shports-Eth8-${each.value.name}-typ-range.json"
+	path             = "/api/node/mo/uni/infra/spaccportprof-spine101/shports-Eth8-${each.value.name}-typ-range.json"
 	class_name       = "infraSHPortS"
 	payload          = <<EOF
 {
     "infraSHPortS": {
         "attributes": {
-            "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth8-${each.value.name}-typ-range",
+            "dn": "uni/infra/spaccportprof-spine101/shports-Eth8-${each.value.name}-typ-range",
             "name": "Eth8-${each.value.name}",
             "rn": "shports-Eth8-${each.value.name}-typ-range"
         },
@@ -369,7 +369,7 @@ resource "aci_rest" "spine101_8_IntProf" {
             {
                 "infraPortBlk": {
                     "attributes": {
-                        "dn": "uni/infra/spaccportprof-spine101_IntProf/shports-Eth8-${each.value.name}-typ-range/portblk-block2",
+                        "dn": "uni/infra/spaccportprof-spine101/shports-Eth8-${each.value.name}-typ-range/portblk-block2",
                         "fromCard": "8",
                         "fromPort": "${each.value.port}",
                         "toCard": "8",

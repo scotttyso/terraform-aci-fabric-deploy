@@ -265,9 +265,8 @@ data = ['Type','Tenant','VRF Name','IPv4 Address','Description']
 ws5.append(data)
 for cell in ws5["1:1"]:
     cell.style = 'wsh2'
-data = ['Type','New Host','New Interface','Current Host','Current Interface','Port Type','port-channel ID','VPC Id','MTU','Switchport Mode',\
-    'Access or Native VLAN','Trunk Allowed VLANs','CDP Enabled','LLDP Receive','LLDP Transmit','BPDU Guard','Port-Channel Description',\
-    'Port Description']
+data = ['Type','Leaf Profile','Node Id','Current Host','Current Interface','port-channel ID','VPC Id','MTU','Switchport Mode','Access or Native VLAN',\
+        'Trunk Allowed VLANs','CDP Enabled','LLDP Receive','LLDP Transmit','BPDU Guard','Port-Channel Description','Port Description']
 ws6.append(data)
 for cell in ws6["1:1"]:
     cell.style = 'wsh2'
@@ -456,10 +455,10 @@ for line in lines:
                             else:
                                 swav = x[6]
                             if x[2] == 'n/a':
-                                po_type = 'pc'
+                                type = 'pcg_add'
                             else:
-                                po_type = 'vpc'
-                            data = ['intf_add','','',str_host,str_intf,po_type,str_poch,x[2],x[3],x[4],swav,x[7],str_cdp_,str_lldr,
+                                type = 'vpc_add'
+                            data = [type,'','',str_host,str_intf,str_poch,x[2],x[3],x[4],swav,x[7],str_cdp_,str_lldr,
                                     str_lldt,str_bpdg,desc,str_desc]
                             ws6.append(data)
                             rc = '{}:{}'.format(ws6_row_count, ws6_row_count)
@@ -470,12 +469,12 @@ for line in lines:
                                     cell.style = 'ws_odd'
                             ws6_row_count += 1
                 else:
-                    po_type = 'ap'
+                    type = 'apg_add'
                     if str_swmd == 'access':
                         swav = str_swav
                     else:
                         swav = str_tknv
-                    data = ['intf_add','','',str_host,str_intf,po_type,str_poch,str_vpc_,str_mtu_,str_swmd,swav,str_tkvl,str_cdp_,str_lldr,
+                    data = [type,'','',str_host,str_intf,str_poch,str_vpc_,str_mtu_,str_swmd,swav,str_tkvl,str_cdp_,str_lldr,
                             str_lldt,str_bpdg,'n/a',str_desc]
                     ws6.append(data)
                     rc = '{}:{}'.format(ws6_row_count, ws6_row_count)

@@ -17,7 +17,7 @@ resource "aci_rest" "inb_mgmt_apic_apic1" {
 }
 
 resource "aci_rest" "apic1_port_2_1" {
-	path		= "/api/node/mo/uni/infra/accportprof-leaf201_IntProf/hports-Eth1-48-typ-range/rsaccBaseGrp.json"
+	path		= "/api/node/mo/uni/infra/accportprof-leaf201/hports-Eth1-48-typ-range/rsaccBaseGrp.json"
 	class_name	= "infraRsAccBaseGrp"
 	payload		= <<EOF
 {
@@ -32,7 +32,7 @@ resource "aci_rest" "apic1_port_2_1" {
 }
 
 resource "aci_rest" "apic1_port_2_2" {
-	path		= "/api/node/mo/uni/infra/accportprof-leaf202_IntProf/hports-Eth1-48-typ-range/rsaccBaseGrp.json"
+	path		= "/api/node/mo/uni/infra/accportprof-leaf202/hports-Eth1-48-typ-range/rsaccBaseGrp.json"
 	class_name	= "infraRsAccBaseGrp"
 	payload		= <<EOF
 {

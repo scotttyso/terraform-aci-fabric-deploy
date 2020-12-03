@@ -3,3 +3,8 @@ resource "aci_tenant" "default" {
 	description = each.value.description
 	name        = each.value.name
 }
+
+data "aci_contract" "default" {
+	tenant_dn	= "uni/tn-common"
+	name		= "default"
+}

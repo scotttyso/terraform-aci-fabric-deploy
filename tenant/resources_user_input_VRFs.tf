@@ -34,8 +34,34 @@ resource "aci_any" "dmz_vrf_pc" {
 	vrf_dn 				        = "uni/tn-common/ctx-dmz_vrf"
 	description 				= "None"
 	match_t      				= "AtleastOne"
-	#relation_vz_rs_any_to_cons	= [data.aci_contract.default.id]
-	#relation_vz_rs_any_to_prov	= [data.aci_contract.default.id]
+}
+
+resource "aci_rest" "vzAny_dmz_vrf_Cons" {
+	path		= "/api/node/mo/uni/tn-common/ctx-dmz_vrf/any.json"
+	class_name	= "vzRsAnyToCons"
+	payload		= <<EOF
+{
+    "vzRsAnyToCons": {
+        "attributes": {
+            "tnVzBrCPName": "default"
+        }
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "vzAny_dmz_vrf_Prov" {
+	path		= "/api/node/mo/uni/tn-common/ctx-dmz_vrf/any.json"
+	class_name	= "vzRsAnyToProv"
+	payload		= <<EOF
+{
+    "vzRsAnyToProv": {
+        "attributes": {
+            "tnVzBrCPName": "default"
+        }
+    }
+}
+	EOF
 }
 
 resource "aci_vrf" "Prod1_vrf" {
@@ -72,7 +98,33 @@ resource "aci_any" "Prod2_vrf_pc" {
 	vrf_dn 				        = "uni/tn-common/ctx-Prod2_vrf"
 	description 				= "vrf2 description"
 	match_t      				= "AtleastOne"
-	#relation_vz_rs_any_to_cons	= [data.aci_contract.default.id]
-	#relation_vz_rs_any_to_prov	= [data.aci_contract.default.id]
+}
+
+resource "aci_rest" "vzAny_Prod2_vrf_Cons" {
+	path		= "/api/node/mo/uni/tn-common/ctx-Prod2_vrf/any.json"
+	class_name	= "vzRsAnyToCons"
+	payload		= <<EOF
+{
+    "vzRsAnyToCons": {
+        "attributes": {
+            "tnVzBrCPName": "default"
+        }
+    }
+}
+	EOF
+}
+
+resource "aci_rest" "vzAny_Prod2_vrf_Prov" {
+	path		= "/api/node/mo/uni/tn-common/ctx-Prod2_vrf/any.json"
+	class_name	= "vzRsAnyToProv"
+	payload		= <<EOF
+{
+    "vzRsAnyToProv": {
+        "attributes": {
+            "tnVzBrCPName": "default"
+        }
+    }
+}
+	EOF
 }
 

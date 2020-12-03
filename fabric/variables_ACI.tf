@@ -7,5 +7,5 @@ variable "aciPass" {
 }
 
 variable "aciUrl" {
-  default = "https://brahma-apic1.rich.ciscolabs.com"
+  default = "https://brahma-apic2.rich.ciscolabs.com"
 }
