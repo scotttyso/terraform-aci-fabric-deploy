@@ -93,26 +93,29 @@ resource "aci_rest" "stp-policies" {
 }
 
 resource "aci_leaf_access_port_policy_group" "inband_apg" {
-	depends_on 					  = [aci_rest.stp-policies,aci_fabric_if_pol.default]
-	description 				  = "Inband port-group policy"
-	name 						  = "inband_ap"
-	relation_infra_rs_h_if_pol	  = "uni/infra/hintfpol-inherit_Auto"
-	relation_infra_rs_mcp_if_pol  = "uni/infra/mcpIfP-mcp_Enabled"
-	relation_infra_rs_lldp_if_pol = "uni/infra/lldpIfP-lldp_Enabled"
-    relation_infra_rs_stp_if_pol  = "uni/infra/ifPol-BPDU_fg"
-	relation_infra_rs_att_ent_p	  = "uni/infra/attentp-access_aep"
+	depends_on 					  		= [aci_rest.stp-policies,aci_fabric_if_pol.default]
+	description 				  		= "Inband port-group policy"
+	name 						  		= "inband_apg"
+	relation_infra_rs_att_ent_p	  		= "uni/infra/attentp-inband_aep"
+	relation_infra_rs_cdp_if_pol  		= "uni/infra/cdpIfP-cdp_Disabled"
+	relation_infra_rs_h_if_pol	  		= "uni/infra/hintfpol-inherit_Auto"
+	relation_infra_rs_lldp_if_pol 		= "uni/infra/lldpIfP-lldp_Enabled"
+	relation_infra_rs_mcp_if_pol  		= "uni/infra/mcpIfP-mcp_Enabled"
+	relation_infra_rs_mon_if_infra_pol	= "uni/infra/moninfra-default"
+    relation_infra_rs_stp_if_pol  		= "uni/infra/ifPol-BPDU_fg"
 }
 
 resource "aci_leaf_access_port_policy_group" "access_host_apg" {
-	depends_on 					  = [aci_rest.stp-policies,aci_fabric_if_pol.default]
-	description 				  = "Template for a Host Access Port"
-	name 						  = "access_host_ap"
-	relation_infra_rs_h_if_pol	  = "uni/infra/hintfpol-inherit_Auto"
-	relation_infra_rs_cdp_if_pol  = "uni/infra/cdpIfP-cdp_Disabled"
-	relation_infra_rs_mcp_if_pol  = "uni/infra/mcpIfP-mcp_Enabled"
-	relation_infra_rs_lldp_if_pol = "uni/infra/lldpIfP-lldp_Enabled"
-    relation_infra_rs_stp_if_pol  = "uni/infra/ifPol-BPDU_fg"
-	relation_infra_rs_att_ent_p	  = "uni/infra/attentp-access_aep"
+	depends_on 					  		= [aci_rest.stp-policies,aci_fabric_if_pol.default]
+	description 				  		= "Template for a Host Access Port"
+	name 						  		= "access_host_apg"
+	relation_infra_rs_att_ent_p	  		= "uni/infra/attentp-access_aep"
+	relation_infra_rs_cdp_if_pol  		= "uni/infra/cdpIfP-cdp_Enabled"
+	relation_infra_rs_h_if_pol	  		= "uni/infra/hintfpol-inherit_Auto"
+	relation_infra_rs_lldp_if_pol 		= "uni/infra/lldpIfP-lldp_Enabled"
+	relation_infra_rs_mcp_if_pol  		= "uni/infra/mcpIfP-mcp_Enabled"
+	relation_infra_rs_mon_if_infra_pol	= "uni/infra/moninfra-default"
+    relation_infra_rs_stp_if_pol  		= "uni/infra/ifPol-BPDU_fg"
 }
 
 resource "aci_rest" "breakout_4x10g" {

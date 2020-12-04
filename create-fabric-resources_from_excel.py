@@ -1076,7 +1076,6 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
             wr_file.write('\tdepends_on                   = [aci_leaf_interface_profile.%s]\n' % (name))
             wr_file.write('\tfor_each                   = var.port-blocks-%s\n' %(port_count))
             wr_file.write('\taccess_port_selector_dn    = aci_access_port_selector.%s_%s[each.key].id\n' % (name, mod_count))
-            wr_file.write('\tdescription                = each.value.description\n')
             wr_file.write('\tname                       = "Eth%s-${each.value.name}"\n' % (mod_count))
             wr_file.write('\tfrom_card                  = "%s"\n' % (mod_count))
             wr_file.write('\tfrom_port                  = each.value.port\n')

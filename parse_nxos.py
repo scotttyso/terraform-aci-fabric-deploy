@@ -24,7 +24,9 @@ re_ivln = re.compile(r'^interface Vlan(\d+)$\n')
 re_ldpr = re.compile('^  lldp transmit$\n')
 re_ldpt = re.compile('^  lldp receive$\n')
 re_mtu_ = re.compile(r'^  mtu (\d+)$\n')
+re_nego = re.compile('^  ((no negotiate auto|negotiate auto))$\n')
 re_poch = re.compile(r'^  channel-group (\d+) mode ((active|on|passive))$\n')
+re_sped = re.compile('^  speed ((auto|[0-9]+))$\n')
 re_swav = re.compile(r'^  switchport access vlan (\d+)$\n')
 re_swma = re.compile('^  switchport mode access$\n')
 re_swmt = re.compile('^  switchport mode trunk$\n')
@@ -71,35 +73,36 @@ def function_vlan_to_bd(vlan):
         bd = 'v' + vlan + '_bd'
         return bd
 
-def func_wr_poch(str_host, str_intf, str_vpc_, str_mtu_, str_swmd, str_swav, str_tknv, str_tkvl, str_desc):
-    wr_poch.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(str_host, str_intf, str_vpc_, str_mtu_, str_swmd, str_swav, str_tknv, str_tkvl, str_desc))
+def func_wr_poch(str_host, str_intf, str_vpc_, str_mtu_, str_sped, str_swmd, str_swav, str_tknv, str_tkvl, str_desc):
+    wr_poch.write('%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (str_host, str_intf, str_vpc_, str_mtu_, str_sped,
+                   str_swmd, str_swav, str_tknv, str_tkvl, str_desc))
 
 def function_wr_name(vlan,name):
     if vlan < 10:
-        wr_name.write('v000{}_bd\t{}\n'.format(vlan, name))
+        wr_name.write('v000%s_bd\t%s\n' % (vlan, name))
     elif vlan < 100:
         vlan = str(vlan)
-        wr_name.write('v00{}_bd\t{}\n'.format(vlan, name))
+        wr_name.write('v00%s_bd\t%s\n' % (vlan, name))
     elif vlan < 1000:
         vlan = str(vlan)
-        wr_name.write('v0{}_bd\t{}\n'.format(vlan, name))
+        wr_name.write('v0%s_bd\t%s\n' % (vlan, name))
     else:
         vlan = str(vlan)
-        wr_name.write('v{}_bd\t{}\n'.format(vlan, name))
+        wr_name.write('v%s_bd\t%s\n' % (vlan, name))
 
 def function_wr_vlan(vlan):
     if vlan < 10:
         vlan = str(vlan)
-        wr_vlan.write('v000{}_bd\n'.format(vlan))
+        wr_vlan.write('v000%s_bd\n' % (vlan))
     elif vlan < 100:
         vlan = str(vlan)
-        wr_vlan.write('v00{}_bd\n'.format(vlan))
+        wr_vlan.write('v00%s_bd\n' % (vlan))
     elif vlan < 1000:
         vlan = str(vlan)
-        wr_vlan.write('v0{}_bd\n'.format(vlan))
+        wr_vlan.write('v0%s_bd\n' % (vlan))
     else:
         vlan = str(vlan)
-        wr_vlan.write('v{}_bd\n'.format(vlan))
+        wr_vlan.write('v%s_bd\n' % (vlan))
 
 # Start by Creating Default Variables
 str_bpdg = 'no'
@@ -116,8 +119,10 @@ str_ivln = ''
 str_lldr = 'no'
 str_lldt = 'no'
 str_mtu_ = ''
+str_nego = 'negotiate auto'
 str_poch = 'n/a'
 str_pomd = 'n/a'
+str_sped = 'auto'
 str_swav = 'n/a'
 str_swmd = 'access'
 str_swpt = 'no'
@@ -229,21 +234,20 @@ ws6.column_dimensions['A'].width = 10
 ws6.column_dimensions['B'].width = 20
 ws6.column_dimensions['C'].width = 20
 ws6.column_dimensions['D'].width = 20
-ws6.column_dimensions['E'].width = 20
-ws6.column_dimensions['F'].width = 10
-ws6.column_dimensions['G'].width = 18
+ws6.column_dimensions['E'].width = 15
+ws6.column_dimensions['F'].width = 12
+ws6.column_dimensions['G'].width = 10
 ws6.column_dimensions['H'].width = 10
-ws6.column_dimensions['I'].width = 10
-ws6.column_dimensions['J'].width = 15
-ws6.column_dimensions['K'].width = 17
+ws6.column_dimensions['I'].width = 15
+ws6.column_dimensions['J'].width = 14
+ws6.column_dimensions['K'].width = 13
 ws6.column_dimensions['L'].width = 40
 ws6.column_dimensions['M'].width = 12
-ws6.column_dimensions['N'].width = 12
+ws6.column_dimensions['N'].width = 10
 ws6.column_dimensions['O'].width = 12
-ws6.column_dimensions['P'].width = 12
+ws6.column_dimensions['P'].width = 10
 ws6.column_dimensions['Q'].width = 40
 ws6.column_dimensions['R'].width = 40
-
 
 data = ['Type','Tenant Name','Description']
 ws1.append(data)
@@ -265,7 +269,7 @@ data = ['Type','Tenant','VRF Name','IPv4 Address','Description']
 ws5.append(data)
 for cell in ws5["1:1"]:
     cell.style = 'wsh2'
-data = ['Type','Leaf Profile','Node Id','Current Host','Current Interface','port-channel ID','VPC Id','MTU','Switchport Mode','Access or Native VLAN',\
+data = ['Type','Leaf Profile','Node Id','Current Host','Current Interface','port-channel ID','VPC Id','MTU','Speed','Switchport Mode','Access or Native VLAN',\
         'Trunk Allowed VLANs','CDP Enabled','LLDP Receive','LLDP Transmit','BPDU Guard','Port-Channel Description','Port Description']
 ws6.append(data)
 for cell in ws6["1:1"]:
@@ -307,7 +311,7 @@ for line in lines:
     elif re.fullmatch(reipv6m, line):
         data = ['vrf_add','',str_vrfc,str_desc]
         ws2.append(data)
-        rc = '{}:{}'.format(ws2_row_count, ws2_row_count)
+        rc = '%s:%s' % (ws2_row_count, ws2_row_count)
         for cell in ws2[rc]:
             if ws2_row_count % 2 == 0:
                 cell.style = 'ws_even'
@@ -326,6 +330,14 @@ for line in lines:
     elif re.fullmatch(re_mtu_, line):
         # Matched the Interface MTU... Now Parse for Data Export
         str_mtu_ = re.fullmatch(re_mtu_, line).group(1)
+        line_count += 1
+    elif re.fullmatch(re_sped, line):
+        # Matched the Interface Speed... Now Parse for Data Export
+        str_sped = re.fullmatch(re_sped, line).group(1)
+        line_count += 1
+    elif re.fullmatch(re_nego, line):
+        # Matched the Interface Negotiate Mode... Now Parse for Data Export
+        str_nego = re.fullmatch(re_nego, line).group(1)
         line_count += 1
     elif re.fullmatch(re_vrf_, line):
         # Matched a VRF Context... Now Parse for Data Export
@@ -350,13 +362,13 @@ for line in lines:
     elif re.fullmatch(re_dhcp, line):
         # Matched an IPv4 DHCP Relay definition... Now Parse for Data Export
         str_dhcp = re.fullmatch(re_dhcp, line).group(1)
-        wr_dhcp.write('{},{}\n'.format(str_vrf_, str_dhcp))
+        wr_dhcp.write('%s,%s\n' % (str_vrf_, str_dhcp))
         line_count += 1
     elif re.fullmatch(re_intf, line):
         str_intf = re.fullmatch(re_intf, line).group(1)
         line_count += 1
     elif re.fullmatch(re_bpdu, line):
-        str_bpdg = 'yes'
+        str_bpdg = 'BPDU_fg'
         line_count += 1
     elif re.fullmatch(re_cdpe, line):
         str_cdp_ = 'yes'
@@ -410,14 +422,14 @@ for line in lines:
                 gtwy = str(str_ipv4)
             data = ['subnet_add','',str_vrf_,bd,gtwy,'primary','','',str_desc]
             ws4.append(data)
-            rc = '{}:{}'.format(ws4_row_count, ws4_row_count)
+            rc = '%s:%s' % (ws4_row_count, ws4_row_count)
             for cell in ws4[rc]:
                 if ws4_row_count % 2 == 0:
                     cell.style = 'ws_even'
                 else:
                     cell.style = 'ws_odd'
             ws4_row_count += 1
-            wr_vrf.write('{},{}\n'.format(bd, str_vrf_))
+            wr_vrf.write('%s,%s\n' % (bd, str_vrf_))
             if str_ipv4s:
                 if str_hsv4s:
                     a,b = str_ipv4s.split('/')
@@ -426,7 +438,7 @@ for line in lines:
                     gtwy = str(str_ipv4)
                 data = ['subnet_add','',str_vrf_,bd,gtwy,'secondary','','',str_desc]
                 ws4.append(data)
-                rc = '{}:{}'.format(ws4_row_count, ws4_row_count)
+                rc = '%s:%s' % (ws4_row_count, ws4_row_count)
                 for cell in ws4[rc]:
                     if ws4_row_count % 2 == 0:
                         cell.style = 'ws_even'
@@ -436,7 +448,11 @@ for line in lines:
             line_count += 1
         elif 'channel' in str_intf:
             if str_swpt == 'yes':
-                func_wr_poch(str_host, str_intf, str_vpc_, str_mtu_, str_swmd, str_swav, str_tknv, str_tkvl, str_desc)
+                mtu1 = 9000
+                mtu2 = int(str_mtu_)
+                if mtu2 >= mtu1:
+                    str_mtu_ = '9000'
+                func_wr_poch(str_host, str_intf, str_vpc_, str_mtu_, str_sped, str_swmd, str_swav, str_tknv, str_tkvl, str_desc)
         elif 'Ethernet' in str_intf:
             if ethn_count == 0:
                 wr_poch.close()
@@ -444,6 +460,38 @@ for line in lines:
                 po_lines = read_poch.readlines()
                 ethn_count += 1
             if str_swpt == 'yes':
+                mtu1 = 9000
+                mtu2 = int(str_mtu_)
+                if mtu2 >= mtu1:
+                    str_mtu_ = '9000'
+                if str_nego == 'no negotiate auto':
+                    str_nego = 'noNeg'
+                else:
+                    str_nego = 'Auto'
+                if str_sped == '100':
+                    str_sped = '100M_%s' % (str_nego)
+                elif str_sped == '1000':
+                    str_sped = '1G_%s' % (str_nego)
+                elif str_sped == '2500':
+                    str_sped = '2.5G_%s' % (str_nego)
+                elif str_sped == '5000':
+                    str_sped = '5G_%s' % (str_nego)
+                elif str_sped == '10000':
+                    str_sped = '10G_%s' % (str_nego)
+                elif str_sped == '25000':
+                    str_sped = '25G_%s' % (str_nego)
+                elif str_sped == '40000':
+                    str_sped = '40G_%s' % (str_nego)
+                elif str_sped == '50000':
+                    str_sped = '50G_%s' % (str_nego)
+                elif str_sped == '100000':
+                    str_sped = '100G_%s' % (str_nego)
+                elif str_sped == '200000':
+                    str_sped = '200G_%s' % (str_nego)
+                elif str_sped == '400000':
+                    str_sped = '400G_%s' % (str_nego)
+                else:
+                    str_sped = 'inherit_%s' % (str_nego)
                 if re.search(r'(\d+|peer)', str_poch):
                     for line in po_lines:
                         x = line.split('\t')
@@ -458,10 +506,10 @@ for line in lines:
                                 type = 'pcg_add'
                             else:
                                 type = 'vpc_add'
-                            data = [type,'','',str_host,str_intf,str_poch,x[2],x[3],x[4],swav,x[7],str_cdp_,str_lldr,
+                            data = [type,'','',str_host,str_intf,str_poch,x[2],x[3],str_sped,x[5],swav,x[8],str_cdp_,str_lldr,
                                     str_lldt,str_bpdg,desc,str_desc]
                             ws6.append(data)
-                            rc = '{}:{}'.format(ws6_row_count, ws6_row_count)
+                            rc = '%s:%s' % (ws6_row_count, ws6_row_count)
                             for cell in ws6[rc]:
                                 if ws6_row_count % 2 == 0:
                                     cell.style = 'ws_even'
@@ -474,10 +522,10 @@ for line in lines:
                         swav = str_swav
                     else:
                         swav = str_tknv
-                    data = [type,'','',str_host,str_intf,str_poch,str_vpc_,str_mtu_,str_swmd,swav,str_tkvl,str_cdp_,str_lldr,
+                    data = [type,'','',str_host,str_intf,str_poch,str_vpc_,str_mtu_,str_sped,str_swmd,swav,str_tkvl,str_cdp_,str_lldr,
                             str_lldt,str_bpdg,'n/a',str_desc]
                     ws6.append(data)
-                    rc = '{}:{}'.format(ws6_row_count, ws6_row_count)
+                    rc = '%s:%s' % (ws6_row_count, ws6_row_count)
                     for cell in ws6[rc]:
                         if ws6_row_count % 2 == 0:
                             cell.style = 'ws_even'
@@ -499,8 +547,10 @@ for line in lines:
         str_lldr = 'no'
         str_lldt = 'no'
         str_mtu_ = ''
+        str_nego = 'negotiate auto'
         str_poch = 'n/a'
         str_pomd = 'n/a'
+        str_sped = 'auto'
         str_swav = 'n/a'
         str_swmd = 'access'
         str_swpt = 'no'
@@ -537,10 +587,10 @@ for lineg1 in vlan_lines:
         if lineg1 in lineg2:
             matched +=1
     if matched == 0:
-        bg_list3.write('{}\n'.format(lineg1))
+        bg_list3.write('%s\n' % (lineg1))
 for line in name_lines:
     line.strip()
-    bg_list3.write('{}'.format(line))
+    bg_list3.write('%s' % (line))
 
 bg_list1.close()
 bg_list2.close()
@@ -567,16 +617,15 @@ for line in range(len(bddm)):
             vrf_bd = y[1]
     if vrf_bd == '':
         vrf_bd = 'default'
-    data = ['bd_add','',vrf_bd,bd,'yes',descr]
+    data = ['bd_nca','',vrf_bd,bd,'yes',descr]
     ws3.append(data)
-    rc = '{}:{}'.format(ws3_row_count, ws3_row_count)
+    rc = '%s:%s' % (ws3_row_count, ws3_row_count)
     for cell in ws3[rc]:
         if ws3_row_count % 2 == 0:
             cell.style = 'ws_even'
         else:
             cell.style = 'ws_odd'
     ws3_row_count += 1
-    #bg_list4.write('bd_add,extend_out,{}'.format(bddm[line]))
 
 bg_list3.close()
 vrf_list.close()
@@ -590,7 +639,7 @@ for line in read_relays:
     vrf,relay_ip = line.split(',')
     data = ['dhcp_relay','',vrf,relay_ip]
     ws5.append(data)
-    rc = '{}:{}'.format(ws5_row_count, ws5_row_count)
+    rc = '%s:%s' % (ws5_row_count, ws5_row_count)
     for cell in ws5[rc]:
         if ws5_row_count % 2 == 0:
             cell.style = 'ws_even'
@@ -603,7 +652,7 @@ os.system(remove_extra_files)
 
 #for row in range(2,ws4.max_row+1):
 #    for column in 'CD':
-#        cell_name = "{}{}".format(column,row)
+#        cell_name = "%s%s" % (column,row)
 #        #print(cell_name)
 #        print(ws4[cell_name].value)
 
@@ -611,7 +660,7 @@ os.system(remove_extra_files)
 wb.save(dest_file)
 
 if not str_host == '':
-    rename_excel = 'mv export.xlsx {}_export.xlsx'.format(str_host)
+    rename_excel = 'mv export.xlsx %s_export.xlsx' % (str_host)
     os.system(rename_excel)
 
 #End Script
