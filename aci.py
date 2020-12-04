@@ -81,6 +81,7 @@ def vlan_list_full(vlan_list):
     return full_vlan_list
 
 def function_vlan_to_netcentric(vlan):
+    vlan = int(vlan)
     if vlan < 10:
         vlan = str(vlan)
         netcentric = 'v000' + vlan

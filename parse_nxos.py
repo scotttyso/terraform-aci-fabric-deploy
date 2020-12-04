@@ -215,7 +215,8 @@ ws3.column_dimensions['B'].width = 20
 ws3.column_dimensions['C'].width = 20
 ws3.column_dimensions['D'].width = 20
 ws3.column_dimensions['E'].width = 15
-ws3.column_dimensions['F'].width = 40
+ws3.column_dimensions['F'].width = 22
+ws3.column_dimensions['G'].width = 40
 ws4.column_dimensions['A'].width = 15
 ws4.column_dimensions['B'].width = 20
 ws4.column_dimensions['C'].width = 20
@@ -238,16 +239,17 @@ ws6.column_dimensions['E'].width = 15
 ws6.column_dimensions['F'].width = 12
 ws6.column_dimensions['G'].width = 10
 ws6.column_dimensions['H'].width = 10
-ws6.column_dimensions['I'].width = 15
-ws6.column_dimensions['J'].width = 14
-ws6.column_dimensions['K'].width = 13
-ws6.column_dimensions['L'].width = 40
-ws6.column_dimensions['M'].width = 12
-ws6.column_dimensions['N'].width = 10
-ws6.column_dimensions['O'].width = 12
-ws6.column_dimensions['P'].width = 10
-ws6.column_dimensions['Q'].width = 40
+ws6.column_dimensions['I'].width = 10
+ws6.column_dimensions['J'].width = 15
+ws6.column_dimensions['K'].width = 14
+ws6.column_dimensions['L'].width = 13
+ws6.column_dimensions['M'].width = 40
+ws6.column_dimensions['N'].width = 12
+ws6.column_dimensions['O'].width = 10
+ws6.column_dimensions['P'].width = 12
+ws6.column_dimensions['Q'].width = 10
 ws6.column_dimensions['R'].width = 40
+ws6.column_dimensions['S'].width = 40
 
 data = ['Type','Tenant Name','Description']
 ws1.append(data)
@@ -257,7 +259,7 @@ data = ['Type','Tenant','VRF Name','Description']
 ws2.append(data)
 for cell in ws2["1:1"]:
     cell.style = 'wsh2'
-data = ['Type','Tenant','VRF Name','Bridge Domain','Extend Outside ACI','Description']
+data = ['Type','Tenant','VRF Name','Bridge Domain','Extend Outside ACI','Preferred or vzAny','Description']
 ws3.append(data)
 for cell in ws3["1:1"]:
     cell.style = 'wsh2'
@@ -269,7 +271,7 @@ data = ['Type','Tenant','VRF Name','IPv4 Address','Description']
 ws5.append(data)
 for cell in ws5["1:1"]:
     cell.style = 'wsh2'
-data = ['Type','Leaf Profile','Node Id','Current Host','Current Interface','port-channel ID','VPC Id','MTU','Speed','Switchport Mode','Access or Native VLAN',\
+data = ['Type','Leaf Profile','Node Id','Current Host','Current Interface','port-channel ID','Pod','VPC Id','MTU','Speed','Switchport Mode','Access or Native VLAN',\
         'Trunk Allowed VLANs','CDP Enabled','LLDP Receive','LLDP Transmit','BPDU Guard','Port-Channel Description','Port Description']
 ws6.append(data)
 for cell in ws6["1:1"]:
@@ -415,6 +417,7 @@ for line in lines:
         # Found blank line, which means the end of the interface, time to create the output
         if str_ipv4 and str_ivln:
             bd = function_vlan_to_bd(str_ivln)
+            bd = bd.strip()
             if str_hsv4:
                 a,b = str_ipv4.split('/')
                 gtwy = str(str_hsv4) + '/' + str(b)
@@ -609,6 +612,8 @@ for line in range(len(bddm)):
     else:
         bd = bddm[line]
         descr = ''
+    bd = bd.strip()
+    descr = descr.strip()
     vrf_bd = ''
     for x in vrfl:
         x = x.strip()
@@ -617,7 +622,7 @@ for line in range(len(bddm)):
             vrf_bd = y[1]
     if vrf_bd == '':
         vrf_bd = 'default'
-    data = ['bd_nca','',vrf_bd,bd,'yes',descr]
+    data = ['nca_bd','',vrf_bd,bd,'yes',descr]
     ws3.append(data)
     rc = '%s:%s' % (ws3_row_count, ws3_row_count)
     for cell in ws3[rc]:
