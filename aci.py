@@ -74,8 +74,8 @@ def vlan_list_full(vlan_list):
             a = int(a)
             b = int(b)
             vrange = range(a,b+1)
-            vrange = str(vrange)
-            full_vlan_list.append(vrange)
+            for vl in vrange:
+                full_vlan_list.append(vl)
         elif re.fullmatch('^\\d{1,4}$', v):
             full_vlan_list.append(v)
     return full_vlan_list
