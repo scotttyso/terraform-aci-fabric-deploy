@@ -47,13 +47,13 @@ ws8 = wb['Access Interfaces']
 # resources_user_import_bds.tf will include Bridge Domains, DHCP Relay and Subnets
 # resources_user_import_epgs.tf will include Apps and EPGs
 # resources_user_import_intf.tf
-file_apps = './tenant/resources_user_import_apps.tf'
-file_bds = './tenant/resources_user_import_bds.tf'
-file_epgs = './tenant/resources_user_import_epgs.tf'
-file_portgps = './tenant/resources_user_import_int_portgrps.tf'
-file_tenants = './tenant/resources_user_input_Tenants.tf'
-file_vrfs = './tenant/resources_user_input_VRFs.tf'
-file_vlans = './tenant/resources_user_input_VLANs.tf'
+file_apps = './fabric/resources_user_import_apps.tf'
+file_bds = './fabric/resources_user_import_bds.tf'
+file_epgs = './fabric/resources_user_import_epgs.tf'
+file_portgps = './fabric/resources_user_import_int_portgrps.tf'
+file_tenants = './fabric/resources_user_input_Tenants.tf'
+file_vrfs = './fabric/resources_user_input_VRFs.tf'
+file_vlans = './fabric/resources_user_input_VLANs.tf'
 wr_apps = open(file_apps, 'w+')
 wr_epgs = open(file_epgs, 'w+')
 wr_bds = open(file_bds, 'w+')
@@ -73,7 +73,7 @@ def add_epg_and_vlan(add_type, pod, switch_ipr, node_id, int_select, port, epg, 
     wr_epgs.seek(0)
     if epg in wr_epgs.read():
         wr_vlans.seek(0)
-        vl = 'vlan_pool_add_%s' % (vlan)
+        vl = 'st_vlan_pool_add_%s' % (vlan)
         if not vl in wr_vlans.read():
             st_vlan_pool(vlan, wr_vlans)
         st_to_epg = '%s_%s_%s' % (switch_ipr, int_select, epg)
@@ -145,6 +145,7 @@ def assign_int_descr(switch_ipr, int_select, wr_file):
             wr_file.write('\tdepends_on                 = [aci_access_sub_port_block.%s_%s]\n' % (switch_ipr, int_select))
             wr_file.write('\taccess_port_selector_dn    = aci_access_port_selector.%s_%s.id\n' % (switch_ipr, int_select))
             wr_file.write('\tdescription                = "%s"\n' % (descr))
+            wr_file.write('\tname                       = "block2"\n')
             wr_file.write('}\n\n')
 
 def convert_selector_to_port(int_select):
@@ -172,14 +173,14 @@ def convert_selector_to_port(int_select):
             port = xa
     return port
 
-def net_centric_epg(tenant, epg, enforcement, descr, wr_file):
+def net_centric_epg(tenant, bd_name, epg, enforcement, descr, wr_file):
     wr_file.write('resource "aci_application_epg" "%s" {\n' % (epg))
     wr_file.write('\tdepends_on              = [aci_application_profile.%s_nets]\n' % (tenant))
-    wr_file.write('\tapplication_profile_dn = aci_application_profile.%s_net_app.id\n' % (tenant))
+    wr_file.write('\tapplication_profile_dn = aci_application_profile.%s_nets.id\n' % (tenant))
     wr_file.write('\tname                   = "%s"\n' % (epg))
     wr_file.write('\tdescription            = "%s"\n' % (descr))
     wr_file.write('\tflood_on_encap         = "disabled"\n')
-    wr_file.write('\tfwd_ctrl               = "none"\n')
+    #wr_file.write('\tfwd_ctrl               = "none"\n')
     wr_file.write('\thas_mcast_source       = "no"\n')
     wr_file.write('\tis_attr_based_epg      = "no"\n')
     wr_file.write('\tmatch_t                = "AtleastOne"\n')
@@ -188,6 +189,7 @@ def net_centric_epg(tenant, epg, enforcement, descr, wr_file):
         wr_file.write('\tpref_gr_memb           = "include"\n')
     wr_file.write('\tprio                   = "unspecified"\n')
     wr_file.write('\tshutdown               = "no"\n')
+    wr_file.write('\trelation_fv_rs_bd      = aci_bridge_domain.%s.id\n' % (bd_name))
     wr_file.write('}\n\n')
 
 def pg_to_int_select(switch_ipr, int_select, rtDn, wr_file):
@@ -216,10 +218,10 @@ def port_static_path(add_type, pod, switch_ipr, node_id, int_select, port, epg, 
         tDn = 'topology/pod-%s/protpaths-%s-%s/pathep-[%s]' % (pod, node_1, node_2, port)
 
     afile.write('resource "aci_epg_to_static_path" "%s_%s_%s" {\n' % (switch_ipr, int_select, epg))
-    afile.write('\tdepends_on           = [aci_application_epg.%s,aci_range.st_vlan_pool_%s]\n' % (epg, vlan))
+    afile.write('\tdepends_on           = [aci_application_epg.%s,aci_ranges.st_vlan_pool_add_%s]\n' % (epg, vlan))
     afile.write('\tapplication_epg_dn   = aci_application_epg.%s.id\n' % (epg))
     afile.write('\ttdn                  = "%s"\n' % (tDn))
-    afile.write('\tencap                = "vlan-%s"\n' % (acc_vlan))
+    afile.write('\tencap                = "vlan-%s"\n' % (vlan))
     afile.write('\tmode                 = "%s"\n' % (vl_mode))
     afile.write('}\n\n')
     
@@ -252,19 +254,19 @@ def resource_bds(add_type, tenant, vrf, bd_name, extend, enforcement, descr):
     wr_file.write('\tbridge_domain_type          = "regular"\n')
     wr_file.write('\tunk_mac_ucast_act           = "%s"\n' % (unkmac))
     wr_file.write('\tunk_mcast_act               = "%s"\n' % (unkmcast))
-    wr_file.write('\trelation_fv_rs_ctx          = aci_vrf.%s\n' % (vrf))
+    wr_file.write('\trelation_fv_rs_ctx          = aci_vrf.%s.id\n' % (vrf))
     wr_file.write('}\n\n')
 
     if add_type == 'nca_bd':
         wr_file = wr_epgs
         name = bd_name.split('_')
         epg = '%s_epg' % (name[0])
-        net_centric_epg(tenant, epg, enforcement, descr, wr_file)
+        net_centric_epg(tenant, bd_name, epg, enforcement, descr, wr_file)
 
-def resource_epgs(add_type, tenant, epg_name, enforcement, descr):
+def resource_epgs(add_type, tenant, bd_name, epg_name, enforcement, descr):
     if add_type == 'nca_epg':
         wr_file = wr_epgs
-        net_centric_epg(tenant, epg_name, enforcement, descr, wr_file)
+        net_centric_epg(tenant, bd_name, epg_name, enforcement, descr, wr_file)
 
 def resource_pgs_access(add_type, switch_ipr, int_select, node_id, pg_name, aep, mtu, speed, swpt_mode, acc_vlan, trunk_vlans, cdp, lldp, bpdu, descr):
 
@@ -290,6 +292,7 @@ def resource_pgs_access(add_type, switch_ipr, int_select, node_id, pg_name, aep,
         wr_file.seek(0) # Read the file from the beginning
         if pg_name in wr_file.read():
             pg_count =+ 1
+        bpdu
     if pg_count == 0:
         wr_file.write('resource "aci_leaf_access_port_policy_group" "%s" {\n' % (pg_name))
         wr_file.write('\tdescription 				       = "%s"\n' % (descr))
@@ -300,7 +303,8 @@ def resource_pgs_access(add_type, switch_ipr, int_select, node_id, pg_name, aep,
         wr_file.write('\trelation_infra_rs_lldp_if_pol      = "uni/infra/lldpIfP-%s"\n' % (lldp))
         wr_file.write('\trelation_infra_rs_mcp_if_pol       = "uni/infra/mcpIfP-mcp_Enabled"\n')
         wr_file.write('\trelation_infra_rs_mon_if_infra_pol = "uni/infra/moninfra-default"\n')
-        wr_file.write('\trelation_infra_rs_stp_if_pol       = "uni/infra/ifPol-%s"\n' % (bpdu))
+        if not bpdu == '':
+            wr_file.write('\trelation_infra_rs_stp_if_pol       = "uni/infra/ifPol-%s"\n' % (bpdu))
         wr_file.write('}\n\n')
     
     wr_file.seek(0) # Read the file from the beginning
@@ -310,13 +314,13 @@ def resource_pgs_access(add_type, switch_ipr, int_select, node_id, pg_name, aep,
         pg_to_int_select(switch_ipr, int_select, rtDn, wr_file)
 
     # Add Description to Interface Selector for Policy Group if Needed
-    assign_int_descr(switch_ipr, int_select, wr_file)
+    # assign_int_descr(switch_ipr, int_select, wr_file)
 
     # Need to modify the port name from Eth1-1 to eth1/1 in example
     port = convert_selector_to_port(int_select)
 
     # Define File for adding static Path Binding and Open for Appending resources
-    file_stbind = './tenant/resources_user_static_bindings_%s.tf' % (switch_ipr)
+    file_stbind = './fabric/resources_user_static_bindings_%s.tf' % (switch_ipr)
     afile = open(file_stbind, 'a+')
 
     # Add Access VLAN or Native VLAN for Trunk
@@ -364,7 +368,7 @@ def resource_pgs_brkout(int_select, switch_role, module, model, node_id, switch_
 
     brk_split = brkout_pg.split('x')
     brk_count = int(brk_split[0])
-    loop_count = 0
+    loop_count = 1
     while loop_count <= brk_count:
         brkout_select = int_select + '-' + str(loop_count)
         xa = int_select.replace('Eth', 'eth')
@@ -396,7 +400,7 @@ def resource_pgs_brkout(int_select, switch_role, module, model, node_id, switch_
                 wr_file.write('resource "aci_access_sub_port_block" "%s_%s" {\n' % (switch_ipr, brkout_select))
                 wr_file.write('\tdepends_on                 = [aci_leaf_interface_profile.%s]\n' % (switch_ipr))
                 wr_file.write('\taccess_port_selector_dn    = aci_access_port_selector.%s_%s.id\n' % (switch_ipr, brkout_select))
-                wr_file.write('\tname                       = "block%s"\n' % (loop_count))
+                wr_file.write('\tname                       = "block2"\n')
                 wr_file.write('\tfrom_card                  = "%s"\n' % (module))
                 wr_file.write('\tfrom_port                  = "%s"\n' % (port))
                 wr_file.write('\tfrom_sub_port              = "%s"\n' % (subport))
@@ -445,11 +449,12 @@ def resource_pgs_bundle(add_type, switch_ipr, int_select, node_id, pg_name, aep,
         wr_file.write('\trelation_infra_rs_att_ent_p	       = "uni/infra/attentp-%s"\n' % (aep))
         wr_file.write('\trelation_infra_rs_cdp_if_pol       = "uni/infra/cdpIfP-%s"\n' % (cdp))
         wr_file.write('\trelation_infra_rs_h_if_pol	       = "uni/infra/hintfpol-%s"\n' % (speed))
-        wr_file.write('\trelation_infra_rs_lacp_pol         = "uni/infra/lldpIfP-%s"\n' % (lacp))
+        wr_file.write('\trelation_infra_rs_lacp_pol         = "uni/infra/lacplagp-%s"\n' % (lacp))
         wr_file.write('\trelation_infra_rs_lldp_if_pol      = "uni/infra/lldpIfP-%s"\n' % (lldp))
         wr_file.write('\trelation_infra_rs_mcp_if_pol       = "uni/infra/mcpIfP-mcp_Enabled"\n')
         wr_file.write('\trelation_infra_rs_mon_if_infra_pol = "uni/infra/moninfra-default"\n')
-        wr_file.write('\trelation_infra_rs_stp_if_pol       = "uni/infra/ifPol-%s"\n' % (bpdu))
+        if not bpdu == '':
+            wr_file.write('\trelation_infra_rs_stp_if_pol       = "uni/infra/ifPol-%s"\n' % (bpdu))
         wr_file.write('}\n\n')
     
     wr_file.seek(0) # Read the file from the beginning
@@ -459,10 +464,10 @@ def resource_pgs_bundle(add_type, switch_ipr, int_select, node_id, pg_name, aep,
         pg_to_int_select(switch_ipr, int_select, rtDn, wr_file)
 
     # Add Description to Interface Selector for Policy Group if Needed
-    assign_int_descr(switch_ipr, int_select, wr_file)
+    # assign_int_descr(switch_ipr, int_select, wr_file)
 
     # Define File for adding static Path Binding and Open for Appending resources
-    file_stbind = './tenant/resources_user_static_bindings_%s.tf' % (switch_ipr)
+    file_stbind = './fabric/resources_user_static_bindings_%s.tf' % (switch_ipr)
     afile = open(file_stbind, 'a+')
 
     # Add Access VLAN or Native VLAN for Trunk
@@ -504,10 +509,10 @@ def resource_tenant(tenant_name, tenant_descr):
     wr_file.write('}\n\n')
 
     wr_file = wr_apps
-    wr_file.write('resource "aci_application_profile" "%s_net_app" {\n' % (tenant_name))
+    wr_file.write('resource "aci_application_profile" "%s_nets" {\n' % (tenant_name))
     wr_file.write('\tdepends_on = [aci_tenant.%s]\n' % (tenant_name))
     wr_file.write('\ttenant_dn  = aci_tenant.%s.id\n' % (tenant_name))
-    wr_file.write('\tname       = "net_app"\n')
+    wr_file.write('\tname       = "nets"\n')
     #wr_file.write('\tprio       = "level1"\n')
     wr_file.write('}\n\n')
 
@@ -570,7 +575,7 @@ def resource_vrf(tenant_name, vrf_name, vrf_desc, fltr_type):
         tf_templates.aci_rest(resrc_desc, path_attrs, class_name_2, data_out_2, wr_file)
 
 def st_vlan_pool(vlan, wr_file):
-    wr_file.write('resource "aci_ranges" "vlan_pool_add_%s" {\n' % (vlan))
+    wr_file.write('resource "aci_ranges" "st_vlan_pool_add_%s" {\n' % (vlan))
     wr_file.write('\tvlan_pool_dn   = "uni/infra/vlanns-[access_vl-pool]-static"\n')
     wr_file.write('\t_from          = "vlan-%s"\n' % (vlan))
     wr_file.write('\tto		       = "vlan-%s"\n' % (vlan))
@@ -675,11 +680,12 @@ for r in ws7.rows:
             add_type = str(r[0].value)
             tenant = str(r[1].value)
             epg_name = str(r[3].value)
+            bd_name = str(r[7].value)
             enforcement = str(r[4].value)
             descr = str(r[6].value)
 
             # Create Resource Records for Bridge Domains and Possibly EPGs
-            resource_epgs(add_type, tenant, epg_name, enforcement, descr)
+            #resource_epgs(add_type, tenant, epg_name, enforcement, descr)
             line_count += 1
         else:
             line_count += 1

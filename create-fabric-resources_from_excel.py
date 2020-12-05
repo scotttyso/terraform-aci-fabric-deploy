@@ -439,6 +439,7 @@ def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
     # Define Variables for Template Creation - Inband VLAN Pool
     # Fabric > Access Policies > Pools > VLAN > inband_vl-pool: Encap Blocks
     wr_file.write('resource "aci_ranges" "inb_vlan" {\n')
+    wr_file.write('\tdepends_on     = aci_vlan_pool.default\n')
     wr_file.write('\tvlan_pool_dn   = "uni/infra/vlanns-[inband_vl-pool]-static"\n')
     wr_file.write('\t_from          = "vlan-%s"\n' % (inb_vlan))
     wr_file.write('\tto		        = "vlan-%s"\n' % (inb_vlan))

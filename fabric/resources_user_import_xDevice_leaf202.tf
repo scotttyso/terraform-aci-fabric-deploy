@@ -141,7 +141,6 @@ resource "aci_access_port_block" "leaf202_1" {
 	depends_on                   = [aci_leaf_interface_profile.leaf202]
 	for_each                   = var.port-blocks-54
 	access_port_selector_dn    = aci_access_port_selector.leaf202_1[each.key].id
-	description                = each.value.description
 	name                       = "Eth1-${each.value.name}"
 	from_card                  = "1"
 	from_port                  = each.value.port
