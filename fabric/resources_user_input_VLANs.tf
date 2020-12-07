@@ -88,6 +88,48 @@ resource "aci_ranges" "st_vlan_pool_add_169" {
 	to		       = "vlan-169"
 }
 
+resource "aci_ranges" "st_vlan_pool_add_201" {
+	vlan_pool_dn   = "uni/infra/vlanns-[access_vl-pool]-static"
+	_from          = "vlan-201"
+	to		       = "vlan-201"
+}
+
+resource "aci_ranges" "st_vlan_pool_add_202" {
+	vlan_pool_dn   = "uni/infra/vlanns-[access_vl-pool]-static"
+	_from          = "vlan-202"
+	to		       = "vlan-202"
+}
+
+resource "aci_ranges" "st_vlan_pool_add_203" {
+	vlan_pool_dn   = "uni/infra/vlanns-[access_vl-pool]-static"
+	_from          = "vlan-203"
+	to		       = "vlan-203"
+}
+
+resource "aci_ranges" "st_vlan_pool_add_204" {
+	vlan_pool_dn   = "uni/infra/vlanns-[access_vl-pool]-static"
+	_from          = "vlan-204"
+	to		       = "vlan-204"
+}
+
+resource "aci_ranges" "st_vlan_pool_add_205" {
+	vlan_pool_dn   = "uni/infra/vlanns-[access_vl-pool]-static"
+	_from          = "vlan-205"
+	to		       = "vlan-205"
+}
+
+resource "aci_ranges" "st_vlan_pool_add_206" {
+	vlan_pool_dn   = "uni/infra/vlanns-[access_vl-pool]-static"
+	_from          = "vlan-206"
+	to		       = "vlan-206"
+}
+
+resource "aci_ranges" "st_vlan_pool_add_207" {
+	vlan_pool_dn   = "uni/infra/vlanns-[access_vl-pool]-static"
+	_from          = "vlan-207"
+	to		       = "vlan-207"
+}
+
 resource "aci_ranges" "st_vlan_pool_add_811" {
 	vlan_pool_dn   = "uni/infra/vlanns-[access_vl-pool]-static"
 	_from          = "vlan-811"

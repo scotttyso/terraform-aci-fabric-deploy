@@ -7,6 +7,7 @@ resource "aci_subnet" "inb_subnet" {
 }
 
 resource "aci_ranges" "inb_vlan" {
+	depends_on     = [aci_vlan_pool.default]
 	vlan_pool_dn   = "uni/infra/vlanns-[inband_vl-pool]-static"
 	_from          = "vlan-100"
 	to		        = "vlan-100"

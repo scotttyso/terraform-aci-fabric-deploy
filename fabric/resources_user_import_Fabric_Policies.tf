@@ -387,6 +387,7 @@ resource "aci_rest" "domain_cisco_com" {
 }
 
 resource "aci_rest" "snmp_client_198_18_1_61" {
+	depends_on		= [aci_rest.snmp_cg]
 	path		= "/api/node/mo/uni/fabric/snmppol-default/clgrp-Out-of-Band_Clients/client-[198.18.1.61].json"
 	class_name	= "snmpClientP"
 	payload		= <<EOF
@@ -405,6 +406,7 @@ resource "aci_rest" "snmp_client_198_18_1_61" {
 }
 
 resource "aci_rest" "snmp_client_198_18_1_62" {
+	depends_on		= [aci_rest.snmp_cg]
 	path		= "/api/node/mo/uni/fabric/snmppol-default/clgrp-Out-of-Band_Clients/client-[198.18.1.62].json"
 	class_name	= "snmpClientP"
 	payload		= <<EOF

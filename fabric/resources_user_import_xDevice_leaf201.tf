@@ -133,7 +133,7 @@ resource "aci_rest" "leaf_policy_group_leaf201" {
 resource "aci_access_port_selector" "leaf201_1" {
 	for_each                   = var.port-blocks-54
 	leaf_interface_profile_dn  = aci_leaf_interface_profile.leaf201.id
-	name                       = "Eth1-${each.value.name}"
+	name                       = "Eth1${each.value.name}"
 	access_port_selector_type  = "range"
 }
 
@@ -141,7 +141,7 @@ resource "aci_access_port_block" "leaf201_1" {
 	depends_on                   = [aci_leaf_interface_profile.leaf201]
 	for_each                   = var.port-blocks-54
 	access_port_selector_dn    = aci_access_port_selector.leaf201_1[each.key].id
-	name                       = "Eth1-${each.value.name}"
+	name                       = "Eth1${each.value.name}"
 	from_card                  = "1"
 	from_port                  = each.value.port
 	to_card                    = "1"

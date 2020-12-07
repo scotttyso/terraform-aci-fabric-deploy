@@ -1,7 +1,37 @@
-resource "aci_attachable_access_entity_profile" "default" {
-	for_each    = var.policies_aep
-	description = each.value.description
-	name        = each.value.name
+#resource "aci_attachable_access_entity_profile" "default" {
+#	for_each    			= var.policies_aep
+#	depends_on 				= [aci_physical_domain.default]
+#	description 			= each.value.description
+#	name        			= each.value.name
+#	relation_infra_rs_dom_p	= [each.value.domain]
+#}
+
+resource "aci_attachable_access_entity_profile" "access_aep" {
+	depends_on 				= [aci_physical_domain.default["access"]]
+	description 			= "Base AEP Policy.  Used for Host/Device Connectivity to Fabric"
+	name        			= "access_aep"
+	relation_infra_rs_dom_p	= [aci_physical_domain.default["access"].id]
+}
+
+resource "aci_attachable_access_entity_profile" "inband_aep" {
+	depends_on 				= [aci_physical_domain.default["Inband"],aci_l3_domain_profile.default["Inband"]]
+	description 			= "Base AEP Policy.  Used for inband Device connectivity to Fabric"
+	name        			= "inband_aep"
+	relation_infra_rs_dom_p	= [aci_physical_domain.default["Inband"].id,aci_l3_domain_profile.default["Inband"].id]
+}
+
+resource "aci_attachable_access_entity_profile" "l3out_aep" {
+	depends_on 				= [aci_l3_domain_profile.default["l3out"]]
+	description 			= "Base AEP Policy.  Used to Connect ACI Fabric to External Networks"
+	name        			= "l3out_aep"
+	relation_infra_rs_dom_p	= [aci_l3_domain_profile.default["l3out"].id]
+}
+
+resource "aci_attachable_access_entity_profile" "msite_aep" {
+	depends_on 				= [aci_l3_domain_profile.default["msite"]]
+	description 			= "Base AEP Policy.  Used to Connect ACI Fabrics to MultiSite Network"
+	name        			= "msite_aep"
+	relation_infra_rs_dom_p	= [aci_l3_domain_profile.default["msite"].id]
 }
 
 resource "aci_cdp_interface_policy" "default" {

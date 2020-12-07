@@ -196,13 +196,15 @@ ws2 = wb.create_sheet(title = "VRF")
 ws3 = wb.create_sheet(title = "Bridge Domain")
 ws4 = wb.create_sheet(title = "Subnet")
 ws5 = wb.create_sheet(title = "DHCP Relay")
-ws6 = wb.create_sheet(title = "Migrate Interfaces")
+ws6 = wb.create_sheet(title = "Access Interfaces")
+ws7 = wb.create_sheet(title = "Static Port Mappings")
 
 ws2 = wb["VRF"]
 ws3 = wb["Bridge Domain"]
 ws4 = wb["Subnet"]
 ws5 = wb["DHCP Relay"]
-ws6 = wb["Migrate Interfaces"]
+ws6 = wb["Access Interfaces"]
+ws6 = wb["Static Port Mappings"]
 ws1.column_dimensions['A'].width = 15
 ws1.column_dimensions['B'].width = 20
 ws1.column_dimensions['C'].width = 40
@@ -245,11 +247,6 @@ ws6.column_dimensions['K'].width = 14
 ws6.column_dimensions['L'].width = 13
 ws6.column_dimensions['M'].width = 40
 ws6.column_dimensions['N'].width = 12
-ws6.column_dimensions['O'].width = 10
-ws6.column_dimensions['P'].width = 12
-ws6.column_dimensions['Q'].width = 10
-ws6.column_dimensions['R'].width = 40
-ws6.column_dimensions['S'].width = 40
 
 data = ['Type','Tenant Name','Description']
 ws1.append(data)
@@ -271,8 +268,8 @@ data = ['Type','Tenant','VRF Name','IPv4 Address','Description']
 ws5.append(data)
 for cell in ws5["1:1"]:
     cell.style = 'wsh2'
-data = ['Type','Leaf Profile','Node Id','Current Host','Current Interface','port-channel ID','Pod','VPC Id','MTU','Speed','Switchport Mode','Access or Native VLAN',\
-        'Trunk Allowed VLANs','CDP Enabled','LLDP Receive','LLDP Transmit','BPDU Guard','Port-Channel Description','Port Description']
+data = ['Type','Current Host','Current Interface','Access Entity Profile','Policy Group Name','LACP Policy','MTU','Speed',\
+        'CDP Enabled','LLDP Receive','LLDP Transmit','BPDU Guard','Port-Channel Description','Port Description']
 ws6.append(data)
 for cell in ws6["1:1"]:
     cell.style = 'wsh2'

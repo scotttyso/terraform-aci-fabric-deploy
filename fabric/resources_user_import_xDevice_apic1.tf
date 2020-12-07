@@ -25,7 +25,7 @@ resource "aci_rest" "apic1_port_2_1" {
 {
     "infraRsAccBaseGrp": {
         "attributes": {
-            "tDn": "uni/infra/funcprof/accportgrp-inband_ap"
+            "tDn": "uni/infra/funcprof/accportgrp-inband_apg"
         },
         "children": []
     }
@@ -41,7 +41,7 @@ resource "aci_rest" "apic1_port_2_2" {
 {
     "infraRsAccBaseGrp": {
         "attributes": {
-            "tDn": "uni/infra/funcprof/accportgrp-inband_ap"
+            "tDn": "uni/infra/funcprof/accportgrp-inband_apg"
         },
         "children": []
     }

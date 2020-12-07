@@ -131,15 +131,18 @@ def resource_apic_inb(name, node_id, pod_id, inb_ipv4, inb_gwv4, inb_vlan, p1_le
         port_x = var_list[1]
         port_split = port_x.split('/')
         module = port_split[0]
-        port = port_split[1]
+        if int(port_split[0]) > 99:
+            port = '_%s' % (port_split[1])
+        else:
+            port = '-%s' % (port_split[1])
 
         # Define Variables for Template Creation - APIC Port Group to Interface Selector
         # Fabric > Access Policies > Interfaces > Leaf Interfaces > Profiles > {Leaf Profile Name} > {Port Selector}: Interface Policy Group
         resrc_desc = '%s_port_2_%s' % (name, port_list_count)
         depends_on = 'aci_access_port_block.%s_%s' % (leaf, module)
         class_name = 'infraRsAccBaseGrp'
-        tDn_string = 'uni/infra/funcprof/accportgrp-inband_ap'
-        path_attrs = '/api/node/mo/uni/infra/accportprof-%s/hports-Eth%s-%s-typ-range/rsaccBaseGrp.json' % (leaf, module, port)
+        tDn_string = 'uni/infra/funcprof/accportgrp-inband_apg'
+        path_attrs = '/api/node/mo/uni/infra/accportprof-%s/hports-Eth%s%s-typ-range/rsaccBaseGrp.json' % (leaf, module, port)
 
         # Format Variables for JSON Output
         base_atts = {'tDn': tDn_string}
@@ -439,7 +442,7 @@ def resource_inband(inb_ipv4, inb_gwv4, inb_vlan):
     # Define Variables for Template Creation - Inband VLAN Pool
     # Fabric > Access Policies > Pools > VLAN > inband_vl-pool: Encap Blocks
     wr_file.write('resource "aci_ranges" "inb_vlan" {\n')
-    wr_file.write('\tdepends_on     = aci_vlan_pool.default\n')
+    wr_file.write('\tdepends_on     = [aci_vlan_pool.default]\n')
     wr_file.write('\tvlan_pool_dn   = "uni/infra/vlanns-[inband_vl-pool]-static"\n')
     wr_file.write('\t_from          = "vlan-%s"\n' % (inb_vlan))
     wr_file.write('\tto		        = "vlan-%s"\n' % (inb_vlan))
@@ -721,6 +724,7 @@ def resource_snmp_client(client_name, client_ipv4, mgmt_domain):
     # Fabric > Fabric Policies > Policies > Pod >  SNMP > default
     client_ipv4_ = client_ipv4.replace('.', '_')
     resrc_desc = 'snmp_client_%s' % (client_ipv4_)
+    depends_on = 'aci_rest.snmp_cg'
     class_name = 'snmpClientP'
     rn_strings = 'client-%s' % (client_ipv4)
     dn_strings = 'uni/fabric/snmppol-default/clgrp-%s_Clients/client-[%s]' % (snmp_mgmt, client_ipv4)
@@ -731,7 +735,7 @@ def resource_snmp_client(client_name, client_ipv4, mgmt_domain):
     data_out = {class_name: {'attributes': base_atts, 'children': []}}
 
     # Write Output to Resource Files using Template
-    tf_templates.aci_rest(resrc_desc, path_attrs, class_name, data_out, wr_file)
+    tf_templates.aci_rest_depends_on(resrc_desc, depends_on, path_attrs, class_name, data_out, wr_file)
 
 def resource_snmp_comm(community, description):
     try:
@@ -1070,14 +1074,14 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
             wr_file.write('resource "aci_access_port_selector" "%s_%s" {\n' % (name, mod_count))
             wr_file.write('\tfor_each                   = var.port-blocks-%s\n' %(port_count))
             wr_file.write('\tleaf_interface_profile_dn  = aci_leaf_interface_profile.%s.id\n' % (name))
-            wr_file.write('\tname                       = "Eth%s-${each.value.name}"\n' % (mod_count))
+            wr_file.write('\tname                       = "Eth%s${each.value.name}"\n' % (mod_count))
             wr_file.write('\taccess_port_selector_type  = "range"\n')
             wr_file.write('}\n\n')
             wr_file.write('resource "aci_access_port_block" "%s_%s" {\n' % (name, mod_count))
             wr_file.write('\tdepends_on                   = [aci_leaf_interface_profile.%s]\n' % (name))
             wr_file.write('\tfor_each                   = var.port-blocks-%s\n' %(port_count))
             wr_file.write('\taccess_port_selector_dn    = aci_access_port_selector.%s_%s[each.key].id\n' % (name, mod_count))
-            wr_file.write('\tname                       = "Eth%s-${each.value.name}"\n' % (mod_count))
+            wr_file.write('\tname                       = "Eth%s${each.value.name}"\n' % (mod_count))
             wr_file.write('\tfrom_card                  = "%s"\n' % (mod_count))
             wr_file.write('\tfrom_port                  = each.value.port\n')
             wr_file.write('\tto_card                    = "%s"\n' % (mod_count))
@@ -1139,19 +1143,19 @@ def resource_switch(serial, name, node_id, node_type, pod_id, switch_role, Switc
             wr_file.write('resource "aci_rest" "%s_%s" {\n' % (name, mod_count))
             wr_file.write('\tdepends_on       = [aci_spine_interface_profile.%s]\n' % (name))
             wr_file.write('\tfor_each         = var.port-blocks-%s\n' % (port_count))
-            wr_file.write('\tpath             = "/api/node/mo/uni/infra/spaccportprof-%s/shports-Eth%s-${each.value.name}-typ-range.json"\n' % (name, mod_count))
+            wr_file.write('\tpath             = "/api/node/mo/uni/infra/spaccportprof-%s/shports-Eth%s${each.value.name}-typ-range.json"\n' % (name, mod_count))
             wr_file.write('\tclass_name       = "infraSHPortS"\n')
             wr_file.write('\tpayload          = <<EOF\n')
 
             class_name = 'infraSHPortS'
-            rn_strings = 'shports-Eth%s-${each.value.name}-typ-range' % (mod_count)
+            rn_strings = 'shports-Eth%s${each.value.name}-typ-range' % (mod_count)
             dn_strings = 'uni/infra/spaccportprof-%s/%s' % (name, rn_strings)
-            name_port = 'Eth%s-${each.value.name}' % (mod_count)
+            name_port = 'Eth%s${each.value.name}' % (mod_count)
             childclass = 'infraPortBlk'
             child_name = 'block2'
             child_port = '${each.value.port}'
             child_Rn = 'portblk-block2'
-            child_Dn = 'uni/infra/spaccportprof-%s/shports-Eth%s-${each.value.name}-typ-range/%s' % (name, mod_count, child_Rn)
+            child_Dn = 'uni/infra/spaccportprof-%s/shports-Eth%s${each.value.name}-typ-range/%s' % (name, mod_count, child_Rn)
             mod_num = '%s' % (mod_count)
 
             # Format Variables for JSON Output

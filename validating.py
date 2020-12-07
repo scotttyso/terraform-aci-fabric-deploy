@@ -33,6 +33,14 @@ def bgp_as(line_count, bgp_as):
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 
+def brkout_pg(line_count, brkout_pg):
+    if not re.search('(2x100g_pg|4x100g_pg|4x10g_pg|4x25g_pg|8x50g_pg)', brkout_pg):
+        print(f'\n-----------------------------------------------------------------------------\n')
+        print(f'   Error on Row {line_count}. Breakout Port Group is Invalid.  Valid Values are:')
+        print(f'   2x100g_pg, 4x100g_pg, 4x10g_pg, 4x25g_pg, and 8x50g_pg.  Exiting....')
+        print(f'\n-----------------------------------------------------------------------------\n')
+        exit()
+
 def domain(line_count, domain):
     if not validators.domain(domain):
         print(f'\n-----------------------------------------------------------------------------\n')
@@ -48,6 +56,56 @@ def email(line_count, email):
         print(f'   Please Validate the email and retry.  Exiting....')
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
+
+def error_enforce(line_count, vrf):
+    print(f'\n-----------------------------------------------------------------------------\n')
+    print(f'   Error on Row {line_count}. VRF {vrf}, Enforcement was not defined in the')
+    print(f'   VRF Worksheet.  Exiting....')
+    print(f'\n-----------------------------------------------------------------------------\n')
+    exit()
+
+def error_enforcement(line_count, epg, ws2, ws3):
+    print(f'\n-----------------------------------------------------------------------------\n')
+    print(f'   Error on Row {line_count} of Worksheet {ws3}. Enforcement on the EPG {epg}')
+    print(f'   is set to enforced but the VRF is unenforced in {ws2}.  Exiting....')
+    print(f'\n-----------------------------------------------------------------------------\n')
+    exit()
+
+def error_int_selector(line_count, ws, int_select):
+    print(f'\n-----------------------------------------------------------------------------\n')
+    print(f'   Error on Row {line_count} of Worksheet {ws}. Interface Selector {int_select}')
+    print(f'   was not found in the terraform state file.  Exiting....')
+    print(f'\n-----------------------------------------------------------------------------\n')
+    exit()
+
+
+def error_switch(line_count, ws, switch_ipr):
+    print(f'\n-----------------------------------------------------------------------------\n')
+    print(f'   Error on Row {line_count} of Worksheet {ws}. Interface Profile {switch_ipr}')
+    print(f'   was not found in the terraform state file.  Exiting....')
+    print(f'\n-----------------------------------------------------------------------------\n')
+    exit()
+
+def error_tenant(line_count, tenant, ws1, ws2):
+    print(f'\n-----------------------------------------------------------------------------\n')
+    print(f'   Error on Row {line_count} of Worksheet {ws2}. Tenant {tenant} was not found')
+    print(f'   in the {ws1} Worksheet.  Exiting....')
+    print(f'\n-----------------------------------------------------------------------------\n')
+    exit()
+
+def error_vlan_to_epg(line_count, vlan, ws):
+    print(f'\n-----------------------------------------------------------------------------\n')
+    print(f'   Error on Row {line_count}. Did not Find EPG corresponding to VLAN {vlan}')
+    print(f'   in Worksheet {ws}.  Exiting....')
+    print(f'\n-----------------------------------------------------------------------------\n')
+    exit()
+
+def error_vrf(line_count, vrf):
+    print(f'\n-----------------------------------------------------------------------------\n')
+    print(f'   Error on Row {line_count}. VRF {vrf} was not found in the VRF Worksheet.')
+    print(f'   Exiting....')
+    print(f'\n-----------------------------------------------------------------------------\n')
+    exit()
 
 def encryption_key(line_count, encryption_key):
     if not validators.length(encryption_key, min=16, max=32):
