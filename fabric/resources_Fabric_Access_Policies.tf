@@ -123,7 +123,7 @@ resource "aci_rest" "stp-policies" {
 }
 
 resource "aci_leaf_access_port_policy_group" "inband_apg" {
-	depends_on 					  		= [aci_rest.stp-policies,aci_fabric_if_pol.default]
+	depends_on 					  		= [aci_rest.stp-policies,aci_fabric_if_pol.default,aci_attachable_access_entity_profile.inband_aep]
 	description 				  		= "Inband port-group policy"
 	name 						  		= "inband_apg"
 	relation_infra_rs_att_ent_p	  		= "uni/infra/attentp-inband_aep"
@@ -136,7 +136,7 @@ resource "aci_leaf_access_port_policy_group" "inband_apg" {
 }
 
 resource "aci_leaf_access_port_policy_group" "access_host_apg" {
-	depends_on 					  		= [aci_rest.stp-policies,aci_fabric_if_pol.default]
+	depends_on 					  		= [aci_rest.stp-policies,aci_fabric_if_pol.default,aci_attachable_access_entity_profile.access_aep]
 	description 				  		= "Template for a Host Access Port"
 	name 						  		= "access_host_apg"
 	relation_infra_rs_att_ent_p	  		= "uni/infra/attentp-access_aep"

@@ -170,16 +170,18 @@ def convert_selector_to_port(int_select):
             port = xa
     return port
 
-def loop_static_path_vlan_lists(line_count, add_type, pod, switch_ipr, node_id, pg_name, swpt_mode, native_vlan, trunk_vlans):
+def loop_static_path_vlan_lists(line_count, add_type, pod, node_id, pg_name, swpt_mode, native_vlan, trunk_vlans):
+
     # Need to get VLAN to EPG Mapping from "BD, App, EPG" Worksheet for Native VLAN
-    if not native_vlan == '':
-        vlan = native_vlan
+    vlan = str(native_vlan)
+    if re.search(r'\d+', vlan):
+        vlan = int(vlan)
         vl_mode = 'native'
         tenant,app,epg = vlan_to_epg_mapping(line_count,vlan)
         if tenant == '' or app == '' or epg == '':
             validating.error_vlan_to_epg(line_count, vlan, ws3)
         else:
-            resource_static_path(line_count, add_type, pod, switch_ipr, node_id, pg_name, tenant, app, epg, vlan, vl_mode)
+            resource_static_path(line_count, add_type, pod, node_id, pg_name, tenant, app, epg, vlan, vl_mode)
 
             # Add VLAN to STatic VLAN Pool if it Doesn't Exist
             wr_file = wr_vlans
@@ -190,21 +192,23 @@ def loop_static_path_vlan_lists(line_count, add_type, pod, switch_ipr, node_id, 
 
     # If this is a Trunk Port get VLAN to EPG Mapping from "BD, App, EPG"
     # If Exists then create Static Paths
-    if swpt_mode == 'trunk':
+    if swpt_mode == 'trunk' and not trunk_vlans == 'None' :
         vlan_list = aci.vlan_list_full(trunk_vlans)
         for v in vlan_list:
-            vlan = (v)
-            vl_mode = 'regular'
-            tenant,app,epg = vlan_to_epg_mapping(line_count,vlan)
-            if not tenant == '' and not app == '' and not epg == '':
-                resource_static_path(line_count, add_type, pod, switch_ipr, node_id, pg_name, tenant, app, epg, vlan, vl_mode)
+            vlan = str(v)
+            if re.fullmatch(r'\d+', vlan):
+                vlan = int(vlan)
+                vl_mode = 'regular'
+                tenant,app,epg = vlan_to_epg_mapping(line_count,vlan)
+                if not tenant == '' and not app == '' and not epg == '':
+                    resource_static_path(line_count, add_type, pod, node_id, pg_name, tenant, app, epg, vlan, vl_mode)
 
-                # Add VLAN to STatic VLAN Pool if it Doesn't Exist
-                wr_file = wr_vlans
-                wr_file.seek(0)
-                vlan_descr = 'st_vlan_pool_add_%s' % (vlan)
-                if not vlan_descr in wr_file.read():
-                    resource_static_vlan_pool(vlan, wr_file)
+                    # Add VLAN to STatic VLAN Pool if it Doesn't Exist
+                    wr_file = wr_vlans
+                    wr_file.seek(0)
+                    vlan_descr = 'st_vlan_pool_add_%s' % (vlan)
+                    if not vlan_descr in wr_file.read():
+                        resource_static_vlan_pool(vlan, wr_file)
     
 def resource_app(tenant, app, priority):
     # Add Application Profile to App Resource File
@@ -299,7 +303,7 @@ def resource_epg(tenant, bd, app, epg, priority, qos_policy, enforcement, enf_ty
 def resource_pg_to_int_select(switch_ipr, int_select, rtDn, wr_file):
     # Define Variables for Template Creation - Policy Group to Interface Selector
     # Fabric > Access Policies > Interfaces > Leaf Interfaces > Profiles > {Leaf Interface Profile} > Port Selector
-    resrc_desc = '%s_%s_pg' % (switch_ipr, int_select)
+    resrc_desc = 'pg_%s_%s' % (switch_ipr, int_select)
     class_name = 'infraRsAccBaseGrp'
     tDn_string = 'uni/infra/funcprof/%s' % (rtDn)
     path_attrs = '/api/node/mo/uni/infra/accportprof-%s/hports-%s-typ-range/rsaccBaseGrp.json' % (switch_ipr, int_select)
@@ -320,12 +324,12 @@ def resource_pgs_access(add_type, switch_ipr, int_select, pg_name, aep, mtu, spe
     if re.search(pg_regex, pg_name):
         pg_count =+ 1
     else:
-        rsc_pg = '"aci_leaf_access_port_policy_group" "%s"' % (pg_name)
+        rsc_pg = '"aci_leaf_access_port_policy_group" "access_%s"' % (pg_name)
         wr_file.seek(0) # Read the file from the beginning
         if rsc_pg in wr_portgps.read():
             pg_count =+ 1
     if pg_count == 0:
-        wr_file.write('resource "aci_leaf_access_port_policy_group" "%s" {\n' % (pg_name))
+        wr_file.write('resource "aci_leaf_access_port_policy_group" "access_%s" {\n' % (pg_name))
         wr_file.write('\tdescription 				       = "%s"\n' % (descr))
         wr_file.write('\tname 						       = "%s"\n' % (pg_name))
         wr_file.write('\trelation_infra_rs_att_ent_p	       = "uni/infra/attentp-%s"\n' % (aep))
@@ -413,7 +417,7 @@ def resource_pgs_brkout(switch_ipr, int_select, switch_role, model, module, brko
                 wr_file.write('}\n\n')
         loop_count += 1
 
-def resource_pgs_bundle(add_type, switch_ipr_1, int_select, aep, pg_name, lacp, mtu, speed, cdp, lldp, bpdu, pc_descr, descr):
+def resource_pgs_bundle(add_type, switch_ipr_1, int_select, aep, pg_name, lag_type, lacp, mtu, speed, cdp, lldp, bpdu, pc_descr, descr):
     # Check if Interface Policy Group Exists and if Not Create it
     wr_portgps.seek(0)
 
@@ -421,13 +425,13 @@ def resource_pgs_bundle(add_type, switch_ipr_1, int_select, aep, pg_name, lacp, 
     wr_file = wr_portgps
 
     pg_count = 0
-    rsc_pg = '"aci_leaf_access_bundle_policy_group" "%s"' % (pg_name)
+    rsc_pg = '"aci_leaf_access_bundle_policy_group" "bundle_%s"' % (pg_name)
     if rsc_pg in wr_file.read():
         pg_count =+ 1
 
     # If Interface Policy Group Doesn't Exist Create it
     if pg_count == 0:
-        wr_file.write('resource "aci_leaf_access_bundle_policy_group" "%s" {\n' % (pg_name))
+        wr_file.write('resource "aci_leaf_access_bundle_policy_group" "bundle_%s" {\n' % (pg_name))
         wr_file.write('\tdescription 				       = "%s"\n' % (pc_descr))
         wr_file.write('\tname 						       = "%s"\n' % (pg_name))
         wr_file.write('\tlag_t 						       = "%s"\n' % (lag_type))
@@ -443,7 +447,7 @@ def resource_pgs_bundle(add_type, switch_ipr_1, int_select, aep, pg_name, lacp, 
         wr_file.write('}\n\n')
     
     wr_file.seek(0) # Read the file from the beginning
-    pg_str = '%s_%s_pg' % (switch_ipr, int_select)
+    pg_str = 'pg_%s_%s' % (switch_ipr, int_select)
     if not pg_str in wr_file.read():
         rtDn = 'accbundle-%s' % (pg_name)
         resource_pg_to_int_select(switch_ipr, int_select, rtDn, wr_file)
@@ -451,7 +455,19 @@ def resource_pgs_bundle(add_type, switch_ipr_1, int_select, aep, pg_name, lacp, 
     # Add Description to Interface Selector for Policy Group if Needed
     # assign_int_descr(switch_ipr, int_select, wr_file)
 
-def resource_static_path(line_count, add_type, pod, switch_ipr, node_id, pg_name, tenant, app, epg, vlan, vl_mode):
+def resource_subnets(bd, gateway_v4, scope):
+    # Define File for Gateway Resource Files
+    wr_file = wr_bds
+
+    # Define Variables for Template Creation - Bridge Domain Subnets
+    # Tenants > {Tenant} > Networking > Bridge Domains > {Bridge Domain}: Policy > L3 Configurations > Subnets
+    wr_file.write('resource "aci_subnet" "%s_%s" {\n' % (bd, gateway_v4))
+    wr_file.write('\tparent_dn  = aci_bridge_domain.%s.id\n' % (bd))
+    wr_file.write('\tip         = "%s"\n' % (gateway_v4))
+    wr_file.write('\tscope      = ["public"]\n')
+    wr_file.write('}\n\n')
+
+def resource_static_path(line_count, add_type, pod, node_id, pg_name, tenant, app, epg, vlan, vl_mode):
     if add_type == 'static_vpc':
         if not ',' in node_id:
             print(f'\n-----------------------------------------------------------------------------\n')
@@ -463,8 +479,7 @@ def resource_static_path(line_count, add_type, pod, switch_ipr, node_id, pg_name
         x = node_id.split(',')
         node_1 = x[0]
         node_2 = x[1]
-        y = switch_ipr.split(',')
-        switch_ipr = y[0]
+        node_id = node_1
     try:
         # Validate User Inputs
         if add_type == 'static_vpc':
@@ -479,28 +494,17 @@ def resource_static_path(line_count, add_type, pod, switch_ipr, node_id, pg_name
         print(f'\n-----------------------------------------------------------------------------\n')
         exit()
 
-        if add_type == 'static_vpc':
-            xz = switch_ipr.split(',')
-            sw1 = xz[0]
-            sw2 = xz[1]
-            if not '{}_count'.format(sw1) in locals():
-                x = '{}_count'.format(sw1)
-                x = 0
-            if '{}_count'.format(sw1) == 0:
-                x += 1
-                delete_file = 'rm ./fabric/resources_user_static_bindings_%s.tf' % (sw1)
-                os.system(delete_file)
-        else:
-            if not '{}_count'.format(switch_ipr) in locals():
-                x = '{}_count'.format(switch_ipr)
-                x = 0
-            if '{}_count'.format(switch_ipr) == 0:
-                x += 1
-                delete_file = 'rm ./fabric/resources_user_static_bindings_%s.tf' % (switch_ipr)
-                os.system(delete_file)
+    if not '{}_count'.format(node_id) in locals():
+        x = '{}_count'.format(node_id)
+        x = 0
+    if '{}_count'.format(node_id) == 0:
+        x += 1
+        delete_file = 'rm ./fabric/resources_user_static_bindings_%s.tf' % (node_id)
+        os.system(delete_file)
 
 
 
+    node_name = node_id
     # Create tDn attribute based on Type of Port being Configured
     if add_type == 'static_apg':
         # Need to modify the port name from Eth1-1 to eth1/1 in example
@@ -511,14 +515,12 @@ def resource_static_path(line_count, add_type, pod, switch_ipr, node_id, pg_name
     elif 'pcg' in add_type:
         tDn = 'topology/pod-%s/paths-%s/pathep-[%s]' % (pod, node_id, pg_name)
     elif 'vpc' in add_type:
-        x = node_id.split(',')
-        node_1 = x[0]
-        node_2 = x[1]
         tDn = 'topology/pod-%s/protpaths-%s-%s/pathep-[%s]' % (pod, node_1, node_2, pg_name)
-        node_id = node_id.replace(',', '_')
+        node_id = '%s_%s' % (node_1, node_2)
+        node_name = node_1
 
     # Define File for adding static Path Binding and Open for Appending resources
-    file_stbind = './fabric/resources_user_static_bindings_%s.tf' % (switch_ipr)
+    file_stbind = './fabric/resources_user_static_bindings_%s.tf' % (node_name)
     afile = open(file_stbind, 'a+')
 
     # Verify if Static Binding Currently Exists or Not
@@ -829,6 +831,36 @@ for r in ws4.rows:
 
 line_count = 1
 # Loop Through User Defined Tenants in Worksheet "Tenant"
+for r in ws5.rows:
+    if any(r):
+        add_type = str(r[0].value)
+        if add_type == 'add_subnet':
+            bd = str(r[1].value)
+            gateway_v4 = str(r[2].value)
+            scope = str(r[3].value)
+            l3out = str(r[4].value)
+
+            #resource_subnets(bd, gateway_v4, scope, l3out)
+            line_count += 1
+        elif add_type == 'brk_out':
+            switch_ipr = str(r[1].value)
+            int_select = str(r[2].value)
+            switch_role = str(r[3].value)
+            model = str(r[4].value)
+            module = str(r[5].value)
+            brkout_pg = str(r[6].value)
+            descr = str(r[13].value)
+ 
+             # Create Resource Records for Port Groups
+            resource_pgs_brkout(switch_ipr, int_select, switch_role, model, module, brkout_pg, descr)
+            line_count += 1
+        else:
+            line_count += 1
+    else:
+        line_count += 1
+
+line_count = 1
+# Loop Through User Defined Tenants in Worksheet "Tenant"
 for r in ws7.rows:
     if any(r):
         add_type = str(r[0].value)
@@ -858,18 +890,14 @@ for r in ws7.rows:
             elif bpdu == 'no':
                 bpdu = ''
             if '_pcg' in add_type:
-                lag_type = 'node'
-            elif '_vpc' in add_type:
                 lag_type = 'link'
+            elif '_vpc' in add_type:
+                lag_type = 'node'
             
             if add_type == 'add_apg':
                 resource_pgs_access(add_type, switch_ipr, int_select, pg_name, aep, mtu, speed, cdp, lldp, bpdu, descr)
-            elif add_type == 'add_pcg':
-                xs = switch_ipr.split(',')
-                switch_ipr_1 = xs[0]
-                switch_ipr_2 = xs[1]
-                resource_pgs_bundle(add_type, switch_ipr_1, int_select, aep, pg_name, lacp, mtu, speed, cdp, lldp, bpdu, pc_descr, descr)
-                resource_pgs_bundle(add_type, switch_ipr_2, int_select, aep, pg_name, lacp, mtu, speed, cdp, lldp, bpdu, pc_descr, descr)
+            elif re.search('(add_pcg|add_vpc)', add_type):
+                resource_pgs_bundle(add_type, switch_ipr, int_select, aep, pg_name, lag_type, lacp, mtu, speed, cdp, lldp, bpdu, pc_descr, descr)
             line_count += 1
         elif add_type == 'brk_out':
             switch_ipr = str(r[1].value)
@@ -895,15 +923,14 @@ for r in ws8.rows:
         add_type = str(r[0].value)
         if re.search('(static)', add_type):
             pod = str(r[1].value)
-            switch_ipr = str(r[2].value)
-            node_id = str(r[3].value)
-            pg_name = str(r[4].value)
-            swpt_mode = str(r[5].value)
-            native_vlan = str(r[6].value)
-            trunk_vlans = str(r[7].value)
+            node_id = str(r[2].value)
+            pg_name = str(r[3].value)
+            swpt_mode = str(r[4].value)
+            native_vlan = str(r[5].value)
+            trunk_vlans = str(r[6].value)
             
             # Create Resource Records for Static Paths
-            loop_static_path_vlan_lists(line_count, add_type, pod, switch_ipr, node_id, pg_name, swpt_mode, native_vlan, trunk_vlans)
+            loop_static_path_vlan_lists(line_count, add_type, pod, node_id, pg_name, swpt_mode, native_vlan, trunk_vlans)
             line_count += 1
         else:
             line_count += 1
