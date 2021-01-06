@@ -159,7 +159,7 @@ def ipv4(line_count, ipv4):
         exit()
 
 def log_level(line_count, log_loc, log_level):
-    if log_loc == 'remote' or log_loc == 'local':
+    if log_loc == 'remote' or log_loc == 'local' or log_loc == 'minimum':
         if not re.match('(emergencies|alerts|critical|errors|warnings|notifications|information|debugging)', log_level):
             print(f'\n-----------------------------------------------------------------------------\n')
             print(f'   Error on Row {line_count}. Logging Level for "{log_loc}"  with "{log_level}"')

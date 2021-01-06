@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import aci
+import aci_lib
 import getpass
 import ipaddress
 import json
