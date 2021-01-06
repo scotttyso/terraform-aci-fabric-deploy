@@ -120,14 +120,15 @@ def apic_login():
             except Exception as e:
                 print('Something went wrong. Error received: {}'.format(e))
     
+    print(user, pword)
     # Initialize the fabric login method, passing appropriate variables
-    fablogin = aci.FabLogin(apic, user, pword)
+    # fablogin = aci_lib.FabLogin(apic, user, pword)
     # Run the login and load the cookies var
-    cookies = fablogin.login()
+    # cookies = fablogin.login()
 
     # Placeholder
-    if cookies == 'xyz':
-        print('yummy')
+    # if cookies == 'xyz':
+    #    print('yummy')
 
 def assign_int_descr(switch_ipr, int_select, wr_file):
     wr_file.seek(0) # Read the file from the beginning
@@ -193,7 +194,7 @@ def loop_static_path_vlan_lists(line_count, add_type, pod, node_id, pg_name, swp
     # If this is a Trunk Port get VLAN to EPG Mapping from "BD, App, EPG"
     # If Exists then create Static Paths
     if swpt_mode == 'trunk' and not trunk_vlans == 'None' :
-        vlan_list = aci.vlan_list_full(trunk_vlans)
+        vlan_list = aci_lib.vlan_list_full(trunk_vlans)
         for v in vlan_list:
             vlan = str(v)
             if re.fullmatch(r'\d+', vlan):
